@@ -1,0 +1,798 @@
+---
+  adag: 
+    xmlns: "http://pegasus.isi.edu/schema/DAX"
+    xmlns:xsi: "http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation: "http://pegasus.isi.edu/schema/DAX http://pegasus.isi.edu/schema/dax-3.6.xsd"
+    version: "3.6"
+    name: "seismology"
+    metadata: 
+      key: "dax.api"
+    jobDependencies:
+    - id: ID0000001
+      children:
+      - ID0000021
+    - id: ID0000002
+      children:
+      - ID0000021
+    - id: ID0000003
+      children:
+      - ID0000021
+    - id: ID0000004
+      children:
+      - ID0000021
+    - id: ID0000005
+      children:
+      - ID0000021
+    - id: ID0000006
+      children:
+      - ID0000021
+    - id: ID0000007
+      children:
+      - ID0000021
+    - id: ID0000008
+      children:
+      - ID0000021
+    - id: ID0000009
+      children:
+      - ID0000021
+    - id: ID0000010
+      children:
+      - ID0000021
+    - id: ID0000011
+      children:
+      - ID0000021
+    - id: ID0000012
+      children:
+      - ID0000021
+    - id: ID0000013
+      children:
+      - ID0000021
+    - id: ID0000014
+      children:
+      - ID0000021
+    - id: ID0000015
+      children:
+      - ID0000021
+    - id: ID0000016
+      children:
+      - ID0000021
+    - id: ID0000017
+      children:
+      - ID0000021
+    - id: ID0000018
+      children:
+      - ID0000021
+    - id: ID0000019
+      children:
+      - ID0000021
+    - id: ID0000020
+      children:
+      - ID0000021
+    file: 
+      - 
+        name: "mshock-b916-pb-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/b916-pb-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-b916-pb-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/b916-pb-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-g43a-ta-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/g43a-ta-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-g43a-ta-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/g43a-ta-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-d27-xt-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/d27-xt-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-d27-xt-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/d27-xt-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-nc05-xq-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/nc05-xq-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-nc05-xq-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/nc05-xq-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-q43a-ta-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/q43a-ta-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-q43a-ta-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/q43a-ta-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-ss64-xi-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/ss64-xi-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-ss64-xi-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/ss64-xi-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-enh-ic-00_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/enh-ic-00_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-enh-ic-00_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/enh-ic-00_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-ss72-xi-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/ss72-xi-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-ss72-xi-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/ss72-xi-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-maja-xv-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/maja-xv-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-maja-xv-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/maja-xv-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-n02d-ta-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/n02d-ta-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-n02d-ta-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/n02d-ta-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-i55a-ta-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/i55a-ta-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-i55a-ta-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/i55a-ta-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-149a-ta-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/149a-ta-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-149a-ta-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/149a-ta-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-bar-ci-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/bar-ci-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-bar-ci-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/bar-ci-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-dac-lb-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/dac-lb-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-dac-lb-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/dac-lb-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-d34-xt-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/d34-xt-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-d34-xt-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/d34-xt-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-pats-ps-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/pats-ps-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-pats-ps-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/pats-ps-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-tato-iu-10_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/tato-iu-10_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-tato-iu-10_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/tato-iu-10_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-gugu-xf-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/gugu-xf-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-gugu-xf-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/gugu-xf-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-b026-pb-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/b026-pb-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-b026-pb-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/b026-pb-_ldsp.lht"
+          site: "local"
+      - 
+        name: "mshock-frb-cn-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/MShock/frb-cn-_ldsp.lht"
+          site: "local"
+      - 
+        name: "egf-frb-cn-_ldsp.lht"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/input/EGF/frb-cn-_ldsp.lht"
+          site: "local"
+    executable: 
+      - 
+        name: "pytutil.py"
+        arch: "x86_64"
+        installed: "false"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/bin/pytutil.py"
+          site: "local"
+      - 
+        name: "siftSTFByMisfit"
+        arch: "x86_64"
+        installed: "false"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/bin/siftSTFByMisfit.py"
+          site: "local"
+      - 
+        name: "pysacio.py"
+        arch: "x86_64"
+        installed: "false"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/bin/pysacio.py"
+          site: "local"
+      - 
+        name: "sG1IterDecon"
+        arch: "x86_64"
+        installed: "false"
+        profile: 
+          namespace: "pegasus"
+          key: "clusters.size"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/bin/sG1IterDecon"
+          site: "local"
+      - 
+        name: "iterdecon"
+        arch: "x86_64"
+        installed: "false"
+        pfn: 
+          url: "/qfs/people/guol678/projects/seismology-workflow/bin/iterdecon"
+          site: "local"
+    transformation: 
+      - 
+        name: "sG1IterDecon"
+        uses: 
+          - 
+            name: "iterdecon"
+          - 
+            name: "sG1IterDecon"
+      - 
+        name: "siftSTFByMisfit"
+        uses: 
+          - 
+            name: "pysacio.py"
+          - 
+            name: "siftSTFByMisfit"
+          - 
+            name: "pytutil.py"
+    job: 
+      - 
+        id: "ID0000001"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-b916-pb-_ldsp.lht"
+            - 
+              name: "egf-b916-pb-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-b916-pb-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-b916-pb-_ldsp.lht"
+            link: "input"
+          - 
+            name: "b916-pb-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000002"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-g43a-ta-_ldsp.lht"
+            - 
+              name: "egf-g43a-ta-_ldsp.lht"
+        uses: 
+          - 
+            name: "mshock-g43a-ta-_ldsp.lht"
+            link: "input"
+          - 
+            name: "egf-g43a-ta-_ldsp.lht"
+            link: "input"
+          - 
+            name: "g43a-ta-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000003"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-d27-xt-_ldsp.lht"
+            - 
+              name: "egf-d27-xt-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-d27-xt-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-d27-xt-_ldsp.lht"
+            link: "input"
+          - 
+            name: "d27-xt-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000004"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-nc05-xq-_ldsp.lht"
+            - 
+              name: "egf-nc05-xq-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-nc05-xq-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-nc05-xq-_ldsp.lht"
+            link: "input"
+          - 
+            name: "nc05-xq-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000005"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-q43a-ta-_ldsp.lht"
+            - 
+              name: "egf-q43a-ta-_ldsp.lht"
+        uses: 
+          - 
+            name: "mshock-q43a-ta-_ldsp.lht"
+            link: "input"
+          - 
+            name: "egf-q43a-ta-_ldsp.lht"
+            link: "input"
+          - 
+            name: "q43a-ta-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000006"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-ss64-xi-_ldsp.lht"
+            - 
+              name: "egf-ss64-xi-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-ss64-xi-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-ss64-xi-_ldsp.lht"
+            link: "input"
+          - 
+            name: "ss64-xi-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000007"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-enh-ic-00_ldsp.lht"
+            - 
+              name: "egf-enh-ic-00_ldsp.lht"
+        uses: 
+          - 
+            name: "mshock-enh-ic-00_ldsp.lht"
+            link: "input"
+          - 
+            name: "egf-enh-ic-00_ldsp.lht"
+            link: "input"
+          - 
+            name: "enh-ic-00_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000008"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-ss72-xi-_ldsp.lht"
+            - 
+              name: "egf-ss72-xi-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-ss72-xi-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-ss72-xi-_ldsp.lht"
+            link: "input"
+          - 
+            name: "ss72-xi-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000009"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-maja-xv-_ldsp.lht"
+            - 
+              name: "egf-maja-xv-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-maja-xv-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-maja-xv-_ldsp.lht"
+            link: "input"
+          - 
+            name: "maja-xv-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000010"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-n02d-ta-_ldsp.lht"
+            - 
+              name: "egf-n02d-ta-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-n02d-ta-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-n02d-ta-_ldsp.lht"
+            link: "input"
+          - 
+            name: "n02d-ta-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000011"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-i55a-ta-_ldsp.lht"
+            - 
+              name: "egf-i55a-ta-_ldsp.lht"
+        uses: 
+          - 
+            name: "mshock-i55a-ta-_ldsp.lht"
+            link: "input"
+          - 
+            name: "egf-i55a-ta-_ldsp.lht"
+            link: "input"
+          - 
+            name: "i55a-ta-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000012"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-149a-ta-_ldsp.lht"
+            - 
+              name: "egf-149a-ta-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-149a-ta-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-149a-ta-_ldsp.lht"
+            link: "input"
+          - 
+            name: "149a-ta-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000013"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-bar-ci-_ldsp.lht"
+            - 
+              name: "egf-bar-ci-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-bar-ci-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-bar-ci-_ldsp.lht"
+            link: "input"
+          - 
+            name: "bar-ci-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000014"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-dac-lb-_ldsp.lht"
+            - 
+              name: "egf-dac-lb-_ldsp.lht"
+        uses: 
+          - 
+            name: "mshock-dac-lb-_ldsp.lht"
+            link: "input"
+          - 
+            name: "egf-dac-lb-_ldsp.lht"
+            link: "input"
+          - 
+            name: "dac-lb-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000015"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-d34-xt-_ldsp.lht"
+            - 
+              name: "egf-d34-xt-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-d34-xt-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-d34-xt-_ldsp.lht"
+            link: "input"
+          - 
+            name: "d34-xt-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000016"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-pats-ps-_ldsp.lht"
+            - 
+              name: "egf-pats-ps-_ldsp.lht"
+        uses: 
+          - 
+            name: "mshock-pats-ps-_ldsp.lht"
+            link: "input"
+          - 
+            name: "egf-pats-ps-_ldsp.lht"
+            link: "input"
+          - 
+            name: "pats-ps-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000017"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-tato-iu-10_ldsp.lht"
+            - 
+              name: "egf-tato-iu-10_ldsp.lht"
+        uses: 
+          - 
+            name: "mshock-tato-iu-10_ldsp.lht"
+            link: "input"
+          - 
+            name: "egf-tato-iu-10_ldsp.lht"
+            link: "input"
+          - 
+            name: "tato-iu-10_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000018"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-gugu-xf-_ldsp.lht"
+            - 
+              name: "egf-gugu-xf-_ldsp.lht"
+        uses: 
+          - 
+            name: "mshock-gugu-xf-_ldsp.lht"
+            link: "input"
+          - 
+            name: "egf-gugu-xf-_ldsp.lht"
+            link: "input"
+          - 
+            name: "gugu-xf-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000019"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-b026-pb-_ldsp.lht"
+            - 
+              name: "egf-b026-pb-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-b026-pb-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-b026-pb-_ldsp.lht"
+            link: "input"
+          - 
+            name: "b026-pb-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000020"
+        name: "sG1IterDecon"
+        argument: 
+          file: 
+            - 
+              name: "mshock-frb-cn-_ldsp.lht"
+            - 
+              name: "egf-frb-cn-_ldsp.lht"
+        uses: 
+          - 
+            name: "egf-frb-cn-_ldsp.lht"
+            link: "input"
+          - 
+            name: "mshock-frb-cn-_ldsp.lht"
+            link: "input"
+          - 
+            name: "frb-cn-_ldsp.lht_iter_g1.stf"
+            link: "output"
+            transfer: "false"
+      - 
+        id: "ID0000021"
+        name: "siftSTFByMisfit"
+        argument: "b916-pb-_ldsp.lht_iter_g1.stf g43a-ta-_ldsp.lht_iter_g1.stf d27-xt-_ldsp.lht_iter_g1.stf nc05-xq-_ldsp.lht_iter_g1.stf q43a-ta-_ldsp.lht_iter_g1.stf ss64-xi-_ldsp.lht_iter_g1.stf enh-ic-00_ldsp.lht_iter_g1.stf ss72-xi-_ldsp.lht_iter_g1.stf maja-xv-_ldsp.lht_iter_g1.stf n02d-ta-_ldsp.lht_iter_g1.stf i55a-ta-_ldsp.lht_iter_g1.stf 149a-ta-_ldsp.lht_iter_g1.stf bar-ci-_ldsp.lht_iter_g1.stf dac-lb-_ldsp.lht_iter_g1.stf d34-xt-_ldsp.lht_iter_g1.stf pats-ps-_ldsp.lht_iter_g1.stf tato-iu-10_ldsp.lht_iter_g1.stf gugu-xf-_ldsp.lht_iter_g1.stf b026-pb-_ldsp.lht_iter_g1.stf frb-cn-_ldsp.lht_iter_g1.stf"
+        uses: 
+          - 
+            name: "b026-pb-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "gugu-xf-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "tato-iu-10_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "pats-ps-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "d34-xt-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "dac-lb-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "bar-ci-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "frb-cn-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "149a-ta-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "i55a-ta-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "n02d-ta-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "maja-xv-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "ss72-xi-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "enh-ic-00_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "ss64-xi-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "q43a-ta-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "nc05-xq-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "d27-xt-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "g43a-ta-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "b916-pb-_ldsp.lht_iter_g1.stf"
+            link: "input"
+          - 
+            name: "good-fits.tar.gz"
+            link: "output"
+            transfer: "true"
+
