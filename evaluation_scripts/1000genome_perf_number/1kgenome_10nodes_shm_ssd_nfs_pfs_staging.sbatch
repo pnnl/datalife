@@ -1,18 +1,18 @@
 #!/bin/bash
-#SBATCH --job-name="10nodes_nfs_pfs_shm_ssd_staging"
+#SBATCH --job-name="10nodes_nfs_bfs_shm_ssd_staging"
 #SBATCH -N 10
 #SBATCH -n 200
 #SBATCH --time=01:30:00
 
 # !!! run the sbatch script following the examples below
 # sbatch 1kgenome_parallel_shm.sbatch NFS SHM 1
-# sbatch 1kgenome_parallel_shm.sbatch PFS SHM 1
+# sbatch 1kgenome_parallel_shm.sbatch BFS SHM 1
 # sbatch 1kgenome_parallel_shm.sbatch NFS SSD 0
-# sbatch 1kgenome_parallel_shm.sbatch PFS SSD 0
+# sbatch 1kgenome_parallel_shm.sbatch BFS SSD 0
 
 NODE_NAMES=`echo $SLURM_JOB_NODELIST|scontrol show hostnames`
 
-SHARE=$1 # !!! Make sure you change it to NFS or PFS for different setup
+SHARE=$1 # !!! Make sure you change it to NFS or BFS for different setup
 LOCAL=$2 # !!! Make sure you change it to SHM or SSD for different setup
 STAGE=$3 # !!! Make sure you change it to "0" or "1" for enabling or disabling staging
 
@@ -39,15 +39,15 @@ then
     CURRENT_DIR=$PWD # under NFS
     SCRIPT_DIR=$CURRENT_DIR/1kgenome_bin # under NFS
 else
-    # !!! Make sure you change the `CURRENT_DIR` to a path under PFS, such as BeeGFS
+    # !!! Make sure you change the `CURRENT_DIR` to a path under BFS, such as BeeGFS
     # !!! It is for this and all the *sbatch scripts and input files
     # !!! If you don't have it you should create one and move all the 
     # !!! *sbatch scripts and input files there
     # !!! Make sure you change the `SCRIPT_DIR` to a path under NFS
     # !!! It holds 1000genome binaries. You should create one if you don't have it
-    echo "Running on PFS" # but this behaves like NFS
-    CURRENT_DIR=$PWD # under PFS
-    SCRIPT_DIR=$CURRENT_DIR/1kgenome_bin # under PFS
+    echo "Running on BFS" # but this behaves like NFS
+    CURRENT_DIR=$PWD # under BFS
+    SCRIPT_DIR=$CURRENT_DIR/1kgenome_bin # under BFS
 fi
 
 CHROMOSOMES=10

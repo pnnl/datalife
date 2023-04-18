@@ -1,13 +1,13 @@
 #!/bin/bash  
 #SBATCH -A oddite
-#SBATCH --job-name="10nodes_nfs_pfs"
+#SBATCH --job-name="10nodes_nfs_bfs"
 #SBATCH -N 10 
 #SBATCH -n 200
 #SBATCH --time=01:30:00
 
 NODE_NAMES=`echo $SLURM_JOB_NODELIST|scontrol show hostnames`
 SCRIPT_DIR=$PWD/1kgenome_bin
-# !!! create an NFS or PFS path to hold the CURRENT directory and change CURRENT_DIR to that directory
+# !!! create an NFS or BFS path to hold the CURRENT directory and change CURRENT_DIR to that directory
 CURRENT_DIR=/people/guol678/projects/datalife/evaluation_scripts/1000genome_generic
 
 PROBLEM_SIZE=300 # the maximum number of tasks within a stage

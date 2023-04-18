@@ -1,12 +1,12 @@
 #!/bin/bash  
-#SBATCH --job-name="15nodes_nfs_pfs"
+#SBATCH --job-name="15nodes_nfs_bfs"
 #SBATCH -N 15 
 #SBATCH -n 300
 #SBATCH --time=01:30:00
 
 NODE_NAMES=`echo $SLURM_JOB_NODELIST|scontrol show hostnames`
 SCRIPT_DIR=$PWD/1kgenome_bin
-# !!! create an NFS or PFS path to hold the CURRENT directory and change CURRENT_DIR to that directory
+# !!! create an NFS or BFS path to hold the CURRENT directory and change CURRENT_DIR to that directory
 CURRENT_DIR=/qfs/projects/oddite/lenny/hermes_scripts/1kgenome_sbatch_constance
 
 PROBLEM_SIZE=300 # the maximum number of tasks within a stage
