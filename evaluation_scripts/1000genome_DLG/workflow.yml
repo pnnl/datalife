@@ -1,0 +1,453 @@
+x-pegasus:
+  apiLang: python
+  createdBy: guol678
+  createdOn: 10-31-22T13:42:10Z
+pegasus: '5.0'
+name: 1000-genome
+jobs:
+- type: job
+  name: individuals
+  id: ID0000001
+  arguments:
+  - ALL.chr1.250000.vcf
+  - '1'
+  - '1'
+  - '2'
+  - '5'
+  uses:
+  - lfn: columns.txt
+    type: input
+  - lfn: chr1n-1-2.tar.gz
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: ALL.chr1.250000.vcf
+    type: input
+- type: job
+  name: individuals
+  id: ID0000002
+  arguments:
+  - ALL.chr1.250000.vcf
+  - '1'
+  - '2'
+  - '3'
+  - '5'
+  uses:
+  - lfn: columns.txt
+    type: input
+  - lfn: chr1n-2-3.tar.gz
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: ALL.chr1.250000.vcf
+    type: input
+- type: job
+  name: individuals
+  id: ID0000003
+  arguments:
+  - ALL.chr1.250000.vcf
+  - '1'
+  - '3'
+  - '4'
+  - '5'
+  uses:
+  - lfn: columns.txt
+    type: input
+  - lfn: chr1n-3-4.tar.gz
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: ALL.chr1.250000.vcf
+    type: input
+- type: job
+  name: individuals
+  id: ID0000004
+  arguments:
+  - ALL.chr1.250000.vcf
+  - '1'
+  - '4'
+  - '5'
+  - '5'
+  uses:
+  - lfn: columns.txt
+    type: input
+  - lfn: chr1n-4-5.tar.gz
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: ALL.chr1.250000.vcf
+    type: input
+- type: job
+  name: individuals_merge
+  id: ID0000005
+  arguments:
+  - '1'
+  - chr1n-1-2.tar.gz
+  - chr1n-2-3.tar.gz
+  - chr1n-3-4.tar.gz
+  - chr1n-4-5.tar.gz
+  uses:
+  - lfn: chr1n-2-3.tar.gz
+    type: input
+  - lfn: chr1n-3-4.tar.gz
+    type: input
+  - lfn: chr1n-1-2.tar.gz
+    type: input
+  - lfn: chr1n.tar.gz
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: chr1n-4-5.tar.gz
+    type: input
+- type: job
+  name: sifting
+  id: ID0000006
+  arguments:
+  - ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf
+  - '1'
+  uses:
+  - lfn: ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf
+    type: input
+  - lfn: sifted.SIFT.chr1.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+- type: job
+  name: mutation_overlap
+  id: ID0000007
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - SAS.txt
+  uses:
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: SAS.txt
+    type: input
+  - lfn: chr1-SAS.txt.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+- type: job
+  name: frequency
+  id: ID0000008
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - SAS.txt
+  uses:
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: SAS.txt
+    type: input
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: chr1-SAS.txt-freq.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+  - lfn: columns.txt
+    type: input
+- type: job
+  name: mutation_overlap
+  id: ID0000009
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - EAS.txt
+  uses:
+  - lfn: chr1-EAS.txt.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: EAS.txt
+    type: input
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+- type: job
+  name: frequency
+  id: ID0000010
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - EAS.txt
+  uses:
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: EAS.txt
+    type: input
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+  - lfn: chr1-EAS.txt-freq.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+- type: job
+  name: mutation_overlap
+  id: ID0000011
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - GBR.txt
+  uses:
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: chr1-GBR.txt.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+  - lfn: GBR.txt
+    type: input
+- type: job
+  name: frequency
+  id: ID0000012
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - GBR.txt
+  uses:
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: chr1-GBR.txt-freq.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+  - lfn: GBR.txt
+    type: input
+- type: job
+  name: mutation_overlap
+  id: ID0000013
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - AMR.txt
+  uses:
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: AMR.txt
+    type: input
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+  - lfn: chr1-AMR.txt.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+- type: job
+  name: frequency
+  id: ID0000014
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - AMR.txt
+  uses:
+  - lfn: chr1-AMR.txt-freq.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+  - lfn: AMR.txt
+    type: input
+- type: job
+  name: mutation_overlap
+  id: ID0000015
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - AFR.txt
+  uses:
+  - lfn: chr1-AFR.txt.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+  - lfn: AFR.txt
+    type: input
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+- type: job
+  name: frequency
+  id: ID0000016
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - AFR.txt
+  uses:
+  - lfn: AFR.txt
+    type: input
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: chr1-AFR.txt-freq.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+- type: job
+  name: mutation_overlap
+  id: ID0000017
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - EUR.txt
+  uses:
+  - lfn: EUR.txt
+    type: input
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: chr1-EUR.txt.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+- type: job
+  name: frequency
+  id: ID0000018
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - EUR.txt
+  uses:
+  - lfn: EUR.txt
+    type: input
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+  - lfn: chr1-EUR.txt-freq.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+- type: job
+  name: mutation_overlap
+  id: ID0000019
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - ALL.txt
+  uses:
+  - lfn: ALL.txt
+    type: input
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: chr1-ALL.txt.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+- type: job
+  name: frequency
+  id: ID0000020
+  arguments:
+  - -c
+  - '1'
+  - -pop
+  - ALL.txt
+  uses:
+  - lfn: ALL.txt
+    type: input
+  - lfn: sifted.SIFT.chr1.txt
+    type: input
+  - lfn: chr1-ALL.txt-freq.tar.gz
+    type: output
+    stageOut: true
+    registerReplica: false
+  - lfn: chr1n.tar.gz
+    type: input
+  - lfn: columns.txt
+    type: input
+jobDependencies:
+- id: ID0000001
+  children:
+  - ID0000005
+- id: ID0000002
+  children:
+  - ID0000005
+- id: ID0000003
+  children:
+  - ID0000005
+- id: ID0000004
+  children:
+  - ID0000005
+- id: ID0000005
+  children:
+  - ID0000014
+  - ID0000018
+  - ID0000012
+  - ID0000017
+  - ID0000011
+  - ID0000007
+  - ID0000009
+  - ID0000013
+  - ID0000015
+  - ID0000010
+  - ID0000016
+  - ID0000008
+  - ID0000019
+  - ID0000020
+- id: ID0000006
+  children:
+  - ID0000014
+  - ID0000018
+  - ID0000012
+  - ID0000017
+  - ID0000011
+  - ID0000007
+  - ID0000009
+  - ID0000013
+  - ID0000015
+  - ID0000010
+  - ID0000016
+  - ID0000008
+  - ID0000019
+  - ID0000020

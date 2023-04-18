@@ -1,0 +1,46 @@
+x-pegasus:
+  apiLang: python
+  createdBy: guol678
+  createdOn: 10-31-22T13:42:10Z
+pegasus: '5.0'
+replicas:
+- lfn: columns.txt
+  pfns:
+  - site: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//data/20130502/columns.txt
+- lfn: SAS
+  pfns:
+  - site: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//data/populations/SAS
+- lfn: EAS
+  pfns:
+  - site: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//data/populations/EAS
+- lfn: GBR
+  pfns:
+  - site: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//data/populations/GBR
+- lfn: AMR
+  pfns:
+  - site: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//data/populations/AMR
+- lfn: AFR
+  pfns:
+  - site: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//data/populations/AFR
+- lfn: EUR
+  pfns:
+  - site: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//data/populations/EUR
+- lfn: ALL
+  pfns:
+  - site: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//data/populations/ALL
+- lfn: ALL.chr1.250000.vcf
+  pfns:
+  - site: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//data/20130502/ALL.chr1.250000.vcf
+- lfn: ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf
+  pfns:
+  - site: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//data/20130502/sifting/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf

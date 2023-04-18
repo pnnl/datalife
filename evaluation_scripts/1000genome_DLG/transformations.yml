@@ -1,0 +1,31 @@
+x-pegasus:
+  apiLang: python
+  createdBy: guol678
+  createdOn: 10-31-22T13:42:10Z
+pegasus: '5.0'
+transformations:
+- name: individuals
+  sites:
+  - name: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//bin/individuals.py
+    type: stageable
+- name: individuals_merge
+  sites:
+  - name: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//bin/individuals_merge.py
+    type: stageable
+- name: sifting
+  sites:
+  - name: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//bin/sifting.py
+    type: stageable
+- name: mutation_overlap
+  sites:
+  - name: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//bin/mutation_overlap.py
+    type: stageable
+- name: frequency
+  sites:
+  - name: local
+    pfn: /qfs/people/guol678/projects/1000genome-workflow//bin/frequency.py
+    type: stageable

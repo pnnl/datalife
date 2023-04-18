@@ -1,0 +1,28 @@
+x-pegasus:
+  apiLang: python
+  createdBy: guol678
+  createdOn: 10-31-22T13:42:10Z
+pegasus: '5.0'
+sites:
+- name: local
+  directories:
+  - type: sharedScratch
+    path: /qfs/people/guol678/projects/1000genome-workflow/1000-genome-1667248930/scratch
+    sharedFileSystem: false
+    fileServers:
+    - url: file:///qfs/people/guol678/projects/1000genome-workflow/1000-genome-1667248930/scratch
+      operation: all
+  - type: localStorage
+    path: /qfs/people/guol678/projects/1000genome-workflow/1000-genome-1667248930/output
+    sharedFileSystem: false
+    fileServers:
+    - url: file:///qfs/people/guol678/projects/1000genome-workflow/1000-genome-1667248930/output
+      operation: all
+- name: condorpool
+  directories: []
+  profiles:
+    condor:
+      universe: vanilla
+    pegasus:
+      style: condor
+      data.configuration: condorio
