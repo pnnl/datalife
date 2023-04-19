@@ -1,0 +1,381 @@
+transformationCatalog:
+  transformations:
+  - name: simulation
+    sites:
+    - name: local
+      pfn: /people/leeh736/git/deepdrivemd/deepdrivemd/sim/openmm/run_openmm_py
+  - name: aggregate
+    sites:
+    - name: local
+      pfn: /people/leeh736/git/deepdrivemd/deepdrivemd/aggregate/basic/aggregate_py
+  - name: training
+    sites:
+    - name: local
+      pfn: /people/leeh736/git/deepdrivemd/deepdrivemd/models/aae/train_py
+  - name: agent
+    sites:
+    - name: local
+      pfn: /people/leeh736/git/deepdrivemd/deepdrivemd/agents/lof/lof_py
+replicaCatalog:
+  replicas: 
+  - lfn: stage0000_task0002.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0002.h5
+  - lfn: stage0000_task0008.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0008.h5
+  - lfn: stage0000_task0011.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0011.h5
+  - lfn: stage0000_task0014.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0014.h5
+  - lfn: stage0000_task0015.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0015.h5
+  - lfn: stage0000_task0016.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0016.h5
+  - lfn: stage0000_task0022.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0022.h5
+  - lfn: stage0000_task0029.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0029.h5
+  - lfn: stage0000_task0030.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0030.h5
+  - lfn: stage0000_task0031.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0031.h5
+  - lfn: stage0000_task0034.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0034.h5
+  - lfn: stage0000_task0047.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0047.h5
+  - lfn: stage0000_task0048.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0048.h5
+  - lfn: stage0000_task0049.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0049.h5
+  - lfn: stage0000_task0050.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0050.h5
+  - lfn: stage0000_task0051.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0051.h5
+  - lfn: stage0000_task0052.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0052.h5
+  - lfn: stage0000_task0053.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0053.h5
+  - lfn: stage0000_task0054.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0054.h5
+  - lfn: stage0000_task0055.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0055.h5
+  - lfn: stage0000_task0056.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0056.h5
+  - lfn: stage0000_task0057.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0057.h5
+  - lfn: stage0000_task0058.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0058.h5
+  - lfn: stage0000_task0059.h5
+    pfns:
+    - site: local
+      pfn: file:///qfs/projects/oddite/leeh736/ddmd_runs/6k/molecular_dynamics_runs/stage0000/task0050/stage0000_task0059.h5
+
+jobs:
+- type: job
+  name: simulation
+  id: ID0000001
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0000.h5
+    type: output
+    registerReplica: False
+- type: job
+  name: simulation
+  id: ID0000002
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0001.h5
+    type: output
+    registerReplica: False
+- type: job
+  name: simulation
+  id: ID0000003
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0002.h5
+    type: output
+    registerReplica: False
+- type: job
+  name: simulation
+  id: ID0000004
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0003.h5
+    type: output
+    registerReplica: False
+- type: job
+  name: simulation
+  id: ID0000005
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0004.h5
+    type: output
+    registerReplica: False
+- type: job
+  name: simulation
+  id: ID0000006
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0005.h5
+    type: output
+    registerReplica: False
+- type: job
+  name: simulation
+  id: ID0000007
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0006.h5
+    type: output
+    registerReplica: False
+- type: job
+  name: simulation
+  id: ID0000008
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0007.h5
+    type: output
+    registerReplica: False
+- type: job
+  name: simulation
+  id: ID0000009
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0008.h5
+    type: output
+    registerReplica: False
+- type: job
+  name: simulation
+  id: ID0000010
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0009.h5
+    type: output
+    registerReplica: False
+
+- type: job
+  name: simulation
+  id: ID0000011
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0010.h5
+    type: output
+    registerReplica: False
+
+- type: job
+  name: simulation
+  id: ID0000012
+  arguments:
+  -
+  uses:
+  - lfn: system__1FME-unfolded.pdb
+    type: input
+  - lfn: stage0000_task0011.h5
+    type: output
+    registerReplica: False
+
+
+- type: job
+  name: aggregate
+  id: ID0000013
+  arguments:
+  -
+  uses:
+  - lfn: stage0000_task0000.h5
+    type: input
+  - lfn: stage0000_task0001.h5
+    type: input
+  - lfn: stage0000_task0002.h5
+    type: input
+  - lfn: stage0000_task0003.h5
+    type: input
+  - lfn: stage0000_task0004.h5
+    type: input
+  - lfn: stage0000_task0005.h5
+    type: input
+  - lfn: stage0000_task0006.h5
+    type: input
+  - lfn: stage0000_task0007.h5
+    type: input
+  - lfn: stage0000_task0008.h5
+    type: input
+  - lfn: stage0000_task0009.h5
+    type: input
+  - lfn: stage0000_task0010.h5
+    type: input
+  - lfn: stage0000_task0011.h5
+    type: input
+  - lfn: aggregated.h5
+    type: output
+    registerReplica: False
+
+- type: job
+  name: training
+  id: ID0000014
+  arguments:
+  -
+  uses:
+  - lfn: aggregated.h5
+    type: input
+  - lfn: embeddings-epoch-1-20230112-125118.h5
+    type: output
+    registerReplica: False
+  - lfn: embeddings-epoch-2-20230112-125238.h5
+    type: output
+    registerReplica: False
+  - lfn: embeddings-epoch-3-20230112-125357.h5
+    type: output
+    registerReplica: False
+  - lfn: embeddings-epoch-4-20230112-125526.h5
+    type: output
+    registerReplica: False
+  - lfn: embeddings-epoch-5-20230112-125655.h5
+    type: output
+    registerReplica: False
+  - lfn: embeddings-epoch-6-20230112-131442.h5
+    type: output
+    registerReplica: False
+  - lfn: embeddings-epoch-7-20230112-131601.h5
+    type: output
+    registerReplica: False
+  - lfn: embeddings-epoch-8-20230112-131719.h5
+    type: output
+    registerReplica: False
+  - lfn: embeddings-epoch-9-20230112-131848.h5
+    type: output
+    registerReplica: False
+  - lfn: embeddings-epoch-10-20230112-132011.h5
+    type: output
+    registerReplica: False
+
+- type: job
+  name: agent
+  id: ID0000015
+  arguments:
+  -
+  uses:
+  - lfn: aggregated.h5
+    type: input
+  - lfn: epoch-10-20230112-132011.pt
+    type: input
+ 
+jobDependencies:
+- id: ID0000001
+  children:
+  - ID0000013
+- id: ID0000002
+  children:
+  - ID0000013
+- id: ID0000003
+  children:
+  - ID0000013
+- id: ID0000004
+  children:
+  - ID0000013
+- id: ID0000005
+  children:
+  - ID0000013
+- id: ID0000006
+  children:
+  - ID0000013
+- id: ID0000007
+  children:
+  - ID0000013
+- id: ID0000008
+  children:
+  - ID0000013
+- id: ID0000009
+  children:
+  - ID0000013
+- id: ID0000010
+  children:
+  - ID0000013
+- id: ID0000011
+  children:
+  - ID0000013
+- id: ID0000012
+  children:
+  - ID0000013
+- id: ID0000013
+  children:
+  - ID0000014
+- id: ID0000014
+  children:
+  - ID0000015

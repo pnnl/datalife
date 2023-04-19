@@ -1,0 +1,5878 @@
+x-pegasus:
+  apiLang: python
+  createdBy: leeh736
+  createdOn: 09-29-22T09:41:05Z
+pegasus: '5.0'
+name: montage
+replicaCatalog:
+  replicas:
+  - lfn: region.hdr
+    pfns:
+    - site: local
+      pfn: file:///files0/oddite/leeh736/montage-workflow-v3/data/region.hdr
+  - lfn: region-oversized.hdr
+    pfns:
+    - site: local
+      pfn: file:///files0/oddite/leeh736/montage-workflow-v3/data/region-oversized.hdr
+  - lfn: 1-images.tbl
+    pfns:
+    - site: local
+      pfn: file:///files0/oddite/leeh736/montage-workflow-v3/data/1-images.tbl
+  - lfn: 1-raw.tbl
+    pfns:
+    - site: local
+      pfn: file:///files0/oddite/leeh736/montage-workflow-v3/data/1-raw.tbl
+  - lfn: 1-projected.tbl
+    pfns:
+    - site: local
+      pfn: file:///files0/oddite/leeh736/montage-workflow-v3/data/1-projected.tbl
+  - lfn: 1-corrected.tbl
+    pfns:
+    - site: local
+      pfn: file:///files0/oddite/leeh736/montage-workflow-v3/data/1-corrected.tbl
+  - lfn: 1-stat.tbl
+    pfns:
+    - site: local
+      pfn: file:///files0/oddite/leeh736/montage-workflow-v3/data/1-stat.tbl
+  - lfn: poss2ukstu_blue_001_001.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=57.135432&d=23.600372&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_001_002.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=57.137125&d=24.100351&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_001_003.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=57.138831&d=24.600314&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_001_004.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=57.140551&d=25.100186&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_002_001.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=56.589814&d=23.600940&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_002_002.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=56.589385&d=24.100932&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_002_003.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=56.588954&d=24.600910&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_002_004.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=56.588519&d=25.100795&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_003_001.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=56.044216&d=23.599602&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_003_002.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=56.041666&d=24.099562&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_003_003.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=56.039097&d=24.599507&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_003_004.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=56.036507&d=25.099361&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_004_001.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=55.498737&d=23.596359&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_004_002.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=55.494068&d=24.096242&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_004_003.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=55.489361&d=24.596109&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+  - lfn: poss2ukstu_blue_004_004.fits
+    pfns:
+    - site: ipac
+      pfn: http://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_blue&r=55.484619&d=25.095885&e=J2000&w=42.60&h=42.60&f=fits&c=gz
+transformationCatalog:
+  transformations:
+  - name: mConvert
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mConvert
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mFlattenExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mFlattenExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mHdrCheck
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mHdrCheck
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mHdrtbl
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mHdrtbl
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mTblSort
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mTblSort
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mTileHdr
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mTileHdr
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mTileImage
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mTileImage
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mCalibrate
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mCalibrate
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mCalExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mCalExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mCatMap
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mCatMap
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mCatSearch
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mCatSearch
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mMovingTarget
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mMovingTarget
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mPad
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mPad
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mPix2Coord
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mPix2Coord
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mFixHdr
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mFixHdr
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mRotate
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mRotate
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mSearch
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mSearch
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mShrinkHdr
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mShrinkHdr
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mTblExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mTblExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mConcatFit
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mConcatFit
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mDAG
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mDAG
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mDAGFiles
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mDAGFiles
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mDAGGalacticPlane
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mDAGGalacticPlane
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mDAGTbls
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mDAGTbls
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mDiffFit
+    requires:
+    - mDiff
+    - mFitplane
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mDiffFit
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+      pegasus:
+        clusters.size: '3'
+  - name: mGridExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mGridExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mNotify
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mNotify
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mPresentation
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mPresentation
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mExecTG
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mExecTG
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mNotifyTG
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mNotifyTG
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mAdd
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mAdd
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mAddCube
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mAddCube
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mArchiveList
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mArchiveList
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mArchiveGet
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mArchiveGet
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mArchiveExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mArchiveExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mBackground
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mBackground
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+      pegasus:
+        clusters.size: '3'
+  - name: mBestImage
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mBestImage
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mBgModel
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mBgModel
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mCoverageCheck
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mCoverageCheck
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mDiff
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mDiff
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+      pegasus:
+        clusters.size: '3'
+  - name: mExamine
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mExamine
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mFitplane
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mFitplane
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mFixNaN
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mFixNaN
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mGetHdr
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mGetHdr
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mHdr
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mHdr
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mHistogram
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mHistogram
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mImgtbl
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mImgtbl
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mMakeHdr
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mMakeHdr
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mMakeImg
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mMakeImg
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mOverlaps
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mOverlaps
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mProject
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mProject
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mProjectCube
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mProjectCube
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mProjectPP
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mProjectPP
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mProjectQL
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mProjectQL
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mPutHdr
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mPutHdr
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mShrinkCube
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mShrinkCube
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mShrink
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mShrink
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mSubCube
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mSubCube
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mSubimage
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mSubimage
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mTANHdr
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mTANHdr
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mTranspose
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mTranspose
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mHdrWWT
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mHdrWWT
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mHdrWWTExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mHdrWWTExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mProjWWTExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mProjWWTExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mPNGWWTExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mPNGWWTExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mViewer
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mViewer
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mDiffExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mDiffExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mBgExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mBgExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mDiffFitExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mDiffFitExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mFitExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mFitExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: mProjExec
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/mProjExec
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+  - name: HPXcvt
+    sites:
+    - name: local
+      pfn: /files0/oddite/leeh736/Montage/bin/HPXcvt
+      type: stageable
+    profiles:
+      condor:
+        request_memory: 1 GB
+      env:
+        PATH: /usr/bin:/bin:.
+jobs:
+- type: job
+  name: mProject
+  id: ID0000001
+  arguments:
+  - -X
+  - poss2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_001_001.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: poss2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mProject
+  id: ID0000002
+  arguments:
+  - -X
+  - poss2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_001_002.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: poss2ukstu_blue_001_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mProject
+  id: ID0000003
+  arguments:
+  - -X
+  - poss2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_001_003.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: poss2ukstu_blue_001_003.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mProject
+  id: ID0000004
+  arguments:
+  - -X
+  - poss2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_001_004.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: poss2ukstu_blue_001_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mProject
+  id: ID0000005
+  arguments:
+  - -X
+  - poss2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_002_001.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: poss2ukstu_blue_002_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+- type: job
+  name: mProject
+  id: ID0000006
+  arguments:
+  - -X
+  - poss2ukstu_blue_002_002.fits
+  - pposs2ukstu_blue_002_002.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: poss2ukstu_blue_002_002.fits
+    type: input
+- type: job
+  name: mProject
+  id: ID0000007
+  arguments:
+  - -X
+  - poss2ukstu_blue_002_003.fits
+  - pposs2ukstu_blue_002_003.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: poss2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mProject
+  id: ID0000008
+  arguments:
+  - -X
+  - poss2ukstu_blue_002_004.fits
+  - pposs2ukstu_blue_002_004.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: poss2ukstu_blue_002_004.fits
+    type: input
+- type: job
+  name: mProject
+  id: ID0000009
+  arguments:
+  - -X
+  - poss2ukstu_blue_003_001.fits
+  - pposs2ukstu_blue_003_001.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: poss2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mProject
+  id: ID0000010
+  arguments:
+  - -X
+  - poss2ukstu_blue_003_002.fits
+  - pposs2ukstu_blue_003_002.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: poss2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mProject
+  id: ID0000011
+  arguments:
+  - -X
+  - poss2ukstu_blue_003_003.fits
+  - pposs2ukstu_blue_003_003.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: poss2ukstu_blue_003_003.fits
+    type: input
+- type: job
+  name: mProject
+  id: ID0000012
+  arguments:
+  - -X
+  - poss2ukstu_blue_003_004.fits
+  - pposs2ukstu_blue_003_004.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: poss2ukstu_blue_003_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mProject
+  id: ID0000013
+  arguments:
+  - -X
+  - poss2ukstu_blue_004_001.fits
+  - pposs2ukstu_blue_004_001.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: poss2ukstu_blue_004_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mProject
+  id: ID0000014
+  arguments:
+  - -X
+  - poss2ukstu_blue_004_002.fits
+  - pposs2ukstu_blue_004_002.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: poss2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mProject
+  id: ID0000015
+  arguments:
+  - -X
+  - poss2ukstu_blue_004_003.fits
+  - pposs2ukstu_blue_004_003.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: poss2ukstu_blue_004_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mProject
+  id: ID0000016
+  arguments:
+  - -X
+  - poss2ukstu_blue_004_004.fits
+  - pposs2ukstu_blue_004_004.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: poss2ukstu_blue_004_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000017
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000002.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_001_002.fits
+  - 1-diff.000001.000002.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000001.000002.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000018
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000003.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_001_003.fits
+  - 1-diff.000001.000003.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: 1-fit.000001.000003.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000019
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000004.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_001_004.fits
+  - 1-diff.000001.000004.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000001.000004.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000020
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000005.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_002_001.fits
+  - 1-diff.000001.000005.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000001.000005.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000021
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000006.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_002_002.fits
+  - 1-diff.000001.000006.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000001.000006.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000022
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000007.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_002_003.fits
+  - 1-diff.000001.000007.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: 1-fit.000001.000007.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000023
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000008.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_002_004.fits
+  - 1-diff.000001.000008.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000001.000008.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000024
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000009.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_003_001.fits
+  - 1-diff.000001.000009.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000001.000009.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000025
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000010.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_003_002.fits
+  - 1-diff.000001.000010.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000001.000010.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000026
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000011.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_003_003.fits
+  - 1-diff.000001.000011.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000001.000011.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000027
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000012.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_003_004.fits
+  - 1-diff.000001.000012.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000001.000012.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000028
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000013.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000001.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: 1-fit.000001.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000029
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000014.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000001.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: 1-fit.000001.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000030
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000015.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000001.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000001.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000031
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000001.000016.txt
+  - pposs2ukstu_blue_001_001.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000001.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: 1-fit.000001.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000032
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000003.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_001_003.fits
+  - 1-diff.000002.000003.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: 1-fit.000002.000003.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000033
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000004.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_001_004.fits
+  - 1-diff.000002.000004.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: 1-fit.000002.000004.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000034
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000005.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_002_001.fits
+  - 1-diff.000002.000005.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000002.000005.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000035
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000006.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_002_002.fits
+  - 1-diff.000002.000006.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: 1-fit.000002.000006.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000036
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000007.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_002_003.fits
+  - 1-diff.000002.000007.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: 1-fit.000002.000007.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000037
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000008.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_002_004.fits
+  - 1-diff.000002.000008.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000002.000008.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000038
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000009.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_003_001.fits
+  - 1-diff.000002.000009.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000002.000009.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000039
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000010.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_003_002.fits
+  - 1-diff.000002.000010.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: 1-fit.000002.000010.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000040
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000011.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_003_003.fits
+  - 1-diff.000002.000011.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000002.000011.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000041
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000012.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_003_004.fits
+  - 1-diff.000002.000012.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: 1-fit.000002.000012.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000042
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000013.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000002.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: 1-fit.000002.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000043
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000014.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000002.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000002.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000044
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000015.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000002.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000002.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000045
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000002.000016.txt
+  - pposs2ukstu_blue_001_002.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000002.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000002.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000046
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000004.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_001_004.fits
+  - 1-diff.000003.000004.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: 1-fit.000003.000004.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000047
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000005.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_002_001.fits
+  - 1-diff.000003.000005.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+  - lfn: 1-fit.000003.000005.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000048
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000006.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_002_002.fits
+  - 1-diff.000003.000006.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: 1-fit.000003.000006.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000049
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000007.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_002_003.fits
+  - 1-diff.000003.000007.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000003.000007.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000050
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000008.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_002_004.fits
+  - 1-diff.000003.000008.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: 1-fit.000003.000008.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000051
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000009.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_003_001.fits
+  - 1-diff.000003.000009.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: 1-fit.000003.000009.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000052
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000010.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_003_002.fits
+  - 1-diff.000003.000010.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: 1-fit.000003.000010.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000053
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000011.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_003_003.fits
+  - 1-diff.000003.000011.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000003.000011.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000054
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000012.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_003_004.fits
+  - 1-diff.000003.000012.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+  - lfn: 1-fit.000003.000012.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000055
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000013.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000003.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: 1-fit.000003.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000056
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000014.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000003.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: 1-fit.000003.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000057
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000015.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000003.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: 1-fit.000003.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000058
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000003.000016.txt
+  - pposs2ukstu_blue_001_003.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000003.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: 1-fit.000003.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000059
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000005.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_002_001.fits
+  - 1-diff.000004.000005.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+  - lfn: 1-fit.000004.000005.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000060
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000006.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_002_002.fits
+  - 1-diff.000004.000006.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: 1-fit.000004.000006.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000061
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000007.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_002_003.fits
+  - 1-diff.000004.000007.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000004.000007.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000062
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000008.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_002_004.fits
+  - 1-diff.000004.000008.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+  - lfn: 1-fit.000004.000008.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000063
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000009.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_003_001.fits
+  - 1-diff.000004.000009.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: 1-fit.000004.000009.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000064
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000010.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_003_002.fits
+  - 1-diff.000004.000010.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000004.000010.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000065
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000011.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_003_003.fits
+  - 1-diff.000004.000011.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: 1-fit.000004.000011.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000066
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000012.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_003_004.fits
+  - 1-diff.000004.000012.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: 1-fit.000004.000012.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000067
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000013.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000004.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: 1-fit.000004.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000068
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000014.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000004.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+  - lfn: 1-fit.000004.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000069
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000015.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000004.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: 1-fit.000004.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000070
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000004.000016.txt
+  - pposs2ukstu_blue_001_004.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000004.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: 1-fit.000004.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000071
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000005.000006.txt
+  - pposs2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_002_002.fits
+  - 1-diff.000005.000006.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: 1-fit.000005.000006.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000072
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000005.000007.txt
+  - pposs2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_002_003.fits
+  - 1-diff.000005.000007.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000005.000007.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000073
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000005.000008.txt
+  - pposs2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_002_004.fits
+  - 1-diff.000005.000008.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: 1-fit.000005.000008.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000074
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000005.000009.txt
+  - pposs2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_003_001.fits
+  - 1-diff.000005.000009.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000005.000009.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000075
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000005.000010.txt
+  - pposs2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_003_002.fits
+  - 1-diff.000005.000010.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: 1-fit.000005.000010.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000076
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000005.000011.txt
+  - pposs2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_003_003.fits
+  - 1-diff.000005.000011.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000005.000011.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000077
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000005.000012.txt
+  - pposs2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_003_004.fits
+  - 1-diff.000005.000012.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000005.000012.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000078
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000005.000013.txt
+  - pposs2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000005.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: 1-fit.000005.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000079
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000005.000014.txt
+  - pposs2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000005.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: 1-fit.000005.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000080
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000005.000015.txt
+  - pposs2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000005.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: 1-fit.000005.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000081
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000005.000016.txt
+  - pposs2ukstu_blue_002_001.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000005.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: 1-fit.000005.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000082
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000006.000007.txt
+  - pposs2ukstu_blue_002_002.fits
+  - pposs2ukstu_blue_002_003.fits
+  - 1-diff.000006.000007.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000006.000007.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000083
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000006.000008.txt
+  - pposs2ukstu_blue_002_002.fits
+  - pposs2ukstu_blue_002_004.fits
+  - 1-diff.000006.000008.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: 1-fit.000006.000008.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000084
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000006.000009.txt
+  - pposs2ukstu_blue_002_002.fits
+  - pposs2ukstu_blue_003_001.fits
+  - 1-diff.000006.000009.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: 1-fit.000006.000009.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000085
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000006.000010.txt
+  - pposs2ukstu_blue_002_002.fits
+  - pposs2ukstu_blue_003_002.fits
+  - 1-diff.000006.000010.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: 1-fit.000006.000010.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000086
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000006.000011.txt
+  - pposs2ukstu_blue_002_002.fits
+  - pposs2ukstu_blue_003_003.fits
+  - 1-diff.000006.000011.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000006.000011.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000087
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000006.000012.txt
+  - pposs2ukstu_blue_002_002.fits
+  - pposs2ukstu_blue_003_004.fits
+  - 1-diff.000006.000012.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000006.000012.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000088
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000006.000013.txt
+  - pposs2ukstu_blue_002_002.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000006.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: 1-fit.000006.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000089
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000006.000014.txt
+  - pposs2ukstu_blue_002_002.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000006.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: 1-fit.000006.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000090
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000006.000015.txt
+  - pposs2ukstu_blue_002_002.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000006.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: 1-fit.000006.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000091
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000006.000016.txt
+  - pposs2ukstu_blue_002_002.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000006.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000006.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000092
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000007.000008.txt
+  - pposs2ukstu_blue_002_003.fits
+  - pposs2ukstu_blue_002_004.fits
+  - 1-diff.000007.000008.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: 1-fit.000007.000008.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000093
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000007.000009.txt
+  - pposs2ukstu_blue_002_003.fits
+  - pposs2ukstu_blue_003_001.fits
+  - 1-diff.000007.000009.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: 1-fit.000007.000009.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000094
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000007.000010.txt
+  - pposs2ukstu_blue_002_003.fits
+  - pposs2ukstu_blue_003_002.fits
+  - 1-diff.000007.000010.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000007.000010.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000095
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000007.000011.txt
+  - pposs2ukstu_blue_002_003.fits
+  - pposs2ukstu_blue_003_003.fits
+  - 1-diff.000007.000011.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: 1-fit.000007.000011.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000096
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000007.000012.txt
+  - pposs2ukstu_blue_002_003.fits
+  - pposs2ukstu_blue_003_004.fits
+  - 1-diff.000007.000012.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000007.000012.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000097
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000007.000013.txt
+  - pposs2ukstu_blue_002_003.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000007.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: 1-fit.000007.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000098
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000007.000014.txt
+  - pposs2ukstu_blue_002_003.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000007.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: 1-fit.000007.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000099
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000007.000015.txt
+  - pposs2ukstu_blue_002_003.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000007.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000007.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000100
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000007.000016.txt
+  - pposs2ukstu_blue_002_003.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000007.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000007.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000101
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000008.000009.txt
+  - pposs2ukstu_blue_002_004.fits
+  - pposs2ukstu_blue_003_001.fits
+  - 1-diff.000008.000009.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000008.000009.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000102
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000008.000010.txt
+  - pposs2ukstu_blue_002_004.fits
+  - pposs2ukstu_blue_003_002.fits
+  - 1-diff.000008.000010.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: 1-fit.000008.000010.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000103
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000008.000011.txt
+  - pposs2ukstu_blue_002_004.fits
+  - pposs2ukstu_blue_003_003.fits
+  - 1-diff.000008.000011.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: 1-fit.000008.000011.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000104
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000008.000012.txt
+  - pposs2ukstu_blue_002_004.fits
+  - pposs2ukstu_blue_003_004.fits
+  - 1-diff.000008.000012.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: 1-fit.000008.000012.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000105
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000008.000013.txt
+  - pposs2ukstu_blue_002_004.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000008.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000008.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000106
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000008.000014.txt
+  - pposs2ukstu_blue_002_004.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000008.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000008.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000107
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000008.000015.txt
+  - pposs2ukstu_blue_002_004.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000008.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: 1-fit.000008.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000108
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000008.000016.txt
+  - pposs2ukstu_blue_002_004.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000008.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: 1-fit.000008.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000109
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000009.000010.txt
+  - pposs2ukstu_blue_003_001.fits
+  - pposs2ukstu_blue_003_002.fits
+  - 1-diff.000009.000010.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000009.000010.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000110
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000009.000011.txt
+  - pposs2ukstu_blue_003_001.fits
+  - pposs2ukstu_blue_003_003.fits
+  - 1-diff.000009.000011.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000009.000011.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000111
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000009.000012.txt
+  - pposs2ukstu_blue_003_001.fits
+  - pposs2ukstu_blue_003_004.fits
+  - 1-diff.000009.000012.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000009.000012.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000112
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000009.000013.txt
+  - pposs2ukstu_blue_003_001.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000009.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000009.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000113
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000009.000014.txt
+  - pposs2ukstu_blue_003_001.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000009.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000009.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000114
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000009.000015.txt
+  - pposs2ukstu_blue_003_001.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000009.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: 1-fit.000009.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000115
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000009.000016.txt
+  - pposs2ukstu_blue_003_001.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000009.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000009.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000116
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000010.000011.txt
+  - pposs2ukstu_blue_003_002.fits
+  - pposs2ukstu_blue_003_003.fits
+  - 1-diff.000010.000011.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000010.000011.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000117
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000010.000012.txt
+  - pposs2ukstu_blue_003_002.fits
+  - pposs2ukstu_blue_003_004.fits
+  - 1-diff.000010.000012.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000010.000012.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000118
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000010.000013.txt
+  - pposs2ukstu_blue_003_002.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000010.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000010.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000119
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000010.000014.txt
+  - pposs2ukstu_blue_003_002.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000010.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: 1-fit.000010.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000120
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000010.000015.txt
+  - pposs2ukstu_blue_003_002.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000010.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000010.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000121
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000010.000016.txt
+  - pposs2ukstu_blue_003_002.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000010.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: 1-fit.000010.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000122
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000011.000012.txt
+  - pposs2ukstu_blue_003_003.fits
+  - pposs2ukstu_blue_003_004.fits
+  - 1-diff.000011.000012.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000011.000012.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000123
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000011.000013.txt
+  - pposs2ukstu_blue_003_003.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000011.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000011.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000124
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000011.000014.txt
+  - pposs2ukstu_blue_003_003.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000011.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000011.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000125
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000011.000015.txt
+  - pposs2ukstu_blue_003_003.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000011.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+  - lfn: 1-fit.000011.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000126
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000011.000016.txt
+  - pposs2ukstu_blue_003_003.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000011.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000011.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000127
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000012.000013.txt
+  - pposs2ukstu_blue_003_004.fits
+  - pposs2ukstu_blue_004_001.fits
+  - 1-diff.000012.000013.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000012.000013.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000128
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000012.000014.txt
+  - pposs2ukstu_blue_003_004.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000012.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000012.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000129
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000012.000015.txt
+  - pposs2ukstu_blue_003_004.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000012.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000012.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000130
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000012.000016.txt
+  - pposs2ukstu_blue_003_004.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000012.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: 1-fit.000012.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000131
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000013.000014.txt
+  - pposs2ukstu_blue_004_001.fits
+  - pposs2ukstu_blue_004_002.fits
+  - 1-diff.000013.000014.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: 1-fit.000013.000014.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mDiffFit
+  id: ID0000132
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000013.000015.txt
+  - pposs2ukstu_blue_004_001.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000013.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: 1-fit.000013.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000133
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000013.000016.txt
+  - pposs2ukstu_blue_004_001.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000013.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: 1-fit.000013.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000134
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000014.000015.txt
+  - pposs2ukstu_blue_004_002.fits
+  - pposs2ukstu_blue_004_003.fits
+  - 1-diff.000014.000015.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: 1-fit.000014.000015.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000135
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000014.000016.txt
+  - pposs2ukstu_blue_004_002.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000014.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: 1-fit.000014.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+- type: job
+  name: mDiffFit
+  id: ID0000136
+  arguments:
+  - -d
+  - -s
+  - 1-fit.000015.000016.txt
+  - pposs2ukstu_blue_004_003.fits
+  - pposs2ukstu_blue_004_004.fits
+  - 1-diff.000015.000016.fits
+  - region-oversized.hdr
+  uses:
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: 1-fit.000015.000016.txt
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: region-oversized.hdr
+    type: input
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mConcatFit
+  id: ID0000137
+  arguments:
+  - 1-stat.tbl
+  - 1-fits.tbl
+  - .
+  uses:
+  - lfn: 1-fit.000006.000007.txt
+    type: input
+  - lfn: 1-fit.000003.000004.txt
+    type: input
+  - lfn: 1-fit.000006.000008.txt
+    type: input
+  - lfn: 1-fit.000010.000014.txt
+    type: input
+  - lfn: 1-fit.000004.000009.txt
+    type: input
+  - lfn: 1-fit.000003.000014.txt
+    type: input
+  - lfn: 1-fit.000007.000008.txt
+    type: input
+  - lfn: 1-fit.000003.000011.txt
+    type: input
+  - lfn: 1-fit.000009.000011.txt
+    type: input
+  - lfn: 1-stat.tbl
+    type: input
+  - lfn: 1-fit.000006.000010.txt
+    type: input
+  - lfn: 1-fit.000001.000009.txt
+    type: input
+  - lfn: 1-fit.000007.000009.txt
+    type: input
+  - lfn: 1-fit.000009.000015.txt
+    type: input
+  - lfn: 1-fit.000003.000007.txt
+    type: input
+  - lfn: 1-fit.000004.000010.txt
+    type: input
+  - lfn: 1-fit.000001.000016.txt
+    type: input
+  - lfn: 1-fit.000013.000015.txt
+    type: input
+  - lfn: 1-fit.000005.000008.txt
+    type: input
+  - lfn: 1-fit.000002.000014.txt
+    type: input
+  - lfn: 1-fit.000003.000016.txt
+    type: input
+  - lfn: 1-fit.000002.000003.txt
+    type: input
+  - lfn: 1-fit.000007.000013.txt
+    type: input
+  - lfn: 1-fit.000002.000004.txt
+    type: input
+  - lfn: 1-fit.000001.000004.txt
+    type: input
+  - lfn: 1-fit.000005.000014.txt
+    type: input
+  - lfn: 1-fit.000003.000005.txt
+    type: input
+  - lfn: 1-fit.000004.000005.txt
+    type: input
+  - lfn: 1-fit.000008.000013.txt
+    type: input
+  - lfn: 1-fit.000001.000007.txt
+    type: input
+  - lfn: 1-fit.000004.000013.txt
+    type: input
+  - lfn: 1-fit.000006.000015.txt
+    type: input
+  - lfn: 1-fit.000002.000007.txt
+    type: input
+  - lfn: 1-fit.000002.000016.txt
+    type: input
+  - lfn: 1-fit.000006.000012.txt
+    type: input
+  - lfn: 1-fit.000012.000015.txt
+    type: input
+  - lfn: 1-fits.tbl
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: 1-fit.000012.000013.txt
+    type: input
+  - lfn: 1-fit.000014.000016.txt
+    type: input
+  - lfn: 1-fit.000008.000016.txt
+    type: input
+  - lfn: 1-fit.000004.000016.txt
+    type: input
+  - lfn: 1-fit.000009.000016.txt
+    type: input
+  - lfn: 1-fit.000004.000007.txt
+    type: input
+  - lfn: 1-fit.000006.000014.txt
+    type: input
+  - lfn: 1-fit.000010.000012.txt
+    type: input
+  - lfn: 1-fit.000003.000010.txt
+    type: input
+  - lfn: 1-fit.000011.000013.txt
+    type: input
+  - lfn: 1-fit.000009.000012.txt
+    type: input
+  - lfn: 1-fit.000009.000010.txt
+    type: input
+  - lfn: 1-fit.000004.000006.txt
+    type: input
+  - lfn: 1-fit.000003.000013.txt
+    type: input
+  - lfn: 1-fit.000007.000010.txt
+    type: input
+  - lfn: 1-fit.000001.000006.txt
+    type: input
+  - lfn: 1-fit.000008.000012.txt
+    type: input
+  - lfn: 1-fit.000002.000009.txt
+    type: input
+  - lfn: 1-fit.000002.000015.txt
+    type: input
+  - lfn: 1-fit.000007.000016.txt
+    type: input
+  - lfn: 1-fit.000002.000010.txt
+    type: input
+  - lfn: 1-fit.000008.000009.txt
+    type: input
+  - lfn: 1-fit.000010.000011.txt
+    type: input
+  - lfn: 1-fit.000013.000016.txt
+    type: input
+  - lfn: 1-fit.000001.000008.txt
+    type: input
+  - lfn: 1-fit.000002.000011.txt
+    type: input
+  - lfn: 1-fit.000010.000016.txt
+    type: input
+  - lfn: 1-fit.000005.000011.txt
+    type: input
+  - lfn: 1-fit.000003.000012.txt
+    type: input
+  - lfn: 1-fit.000005.000013.txt
+    type: input
+  - lfn: 1-fit.000006.000013.txt
+    type: input
+  - lfn: 1-fit.000005.000010.txt
+    type: input
+  - lfn: 1-fit.000012.000016.txt
+    type: input
+  - lfn: 1-fit.000011.000014.txt
+    type: input
+  - lfn: 1-fit.000001.000010.txt
+    type: input
+  - lfn: 1-fit.000007.000011.txt
+    type: input
+  - lfn: 1-fit.000003.000008.txt
+    type: input
+  - lfn: 1-fit.000005.000006.txt
+    type: input
+  - lfn: 1-fit.000007.000012.txt
+    type: input
+  - lfn: 1-fit.000013.000014.txt
+    type: input
+  - lfn: 1-fit.000001.000013.txt
+    type: input
+  - lfn: 1-fit.000005.000012.txt
+    type: input
+  - lfn: 1-fit.000010.000013.txt
+    type: input
+  - lfn: 1-fit.000001.000005.txt
+    type: input
+  - lfn: 1-fit.000002.000012.txt
+    type: input
+  - lfn: 1-fit.000003.000006.txt
+    type: input
+  - lfn: 1-fit.000007.000014.txt
+    type: input
+  - lfn: 1-fit.000001.000003.txt
+    type: input
+  - lfn: 1-fit.000004.000014.txt
+    type: input
+  - lfn: 1-fit.000002.000013.txt
+    type: input
+  - lfn: 1-fit.000009.000013.txt
+    type: input
+  - lfn: 1-fit.000003.000015.txt
+    type: input
+  - lfn: 1-fit.000006.000016.txt
+    type: input
+  - lfn: 1-fit.000001.000015.txt
+    type: input
+  - lfn: 1-fit.000004.000015.txt
+    type: input
+  - lfn: 1-fit.000005.000015.txt
+    type: input
+  - lfn: 1-fit.000015.000016.txt
+    type: input
+  - lfn: 1-fit.000008.000011.txt
+    type: input
+  - lfn: 1-fit.000003.000009.txt
+    type: input
+  - lfn: 1-fit.000006.000009.txt
+    type: input
+  - lfn: 1-fit.000001.000014.txt
+    type: input
+  - lfn: 1-fit.000011.000015.txt
+    type: input
+  - lfn: 1-fit.000011.000012.txt
+    type: input
+  - lfn: 1-fit.000011.000016.txt
+    type: input
+  - lfn: 1-fit.000007.000015.txt
+    type: input
+  - lfn: 1-fit.000001.000002.txt
+    type: input
+  - lfn: 1-fit.000001.000012.txt
+    type: input
+  - lfn: 1-fit.000002.000008.txt
+    type: input
+  - lfn: 1-fit.000008.000014.txt
+    type: input
+  - lfn: 1-fit.000005.000007.txt
+    type: input
+  - lfn: 1-fit.000012.000014.txt
+    type: input
+  - lfn: 1-fit.000005.000016.txt
+    type: input
+  - lfn: 1-fit.000014.000015.txt
+    type: input
+  - lfn: 1-fit.000008.000015.txt
+    type: input
+  - lfn: 1-fit.000004.000011.txt
+    type: input
+  - lfn: 1-fit.000004.000012.txt
+    type: input
+  - lfn: 1-fit.000005.000009.txt
+    type: input
+  - lfn: 1-fit.000002.000005.txt
+    type: input
+  - lfn: 1-fit.000004.000008.txt
+    type: input
+  - lfn: 1-fit.000009.000014.txt
+    type: input
+  - lfn: 1-fit.000010.000015.txt
+    type: input
+  - lfn: 1-fit.000001.000011.txt
+    type: input
+  - lfn: 1-fit.000006.000011.txt
+    type: input
+  - lfn: 1-fit.000002.000006.txt
+    type: input
+  - lfn: 1-fit.000008.000010.txt
+    type: input
+- type: job
+  name: mBgModel
+  id: ID0000138
+  arguments:
+  - -i
+  - '100000'
+  - 1-images.tbl
+  - 1-fits.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-images.tbl
+    type: input
+  - lfn: 1-fits.tbl
+    type: input
+  - lfn: 1-corrections.tbl
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mBackground
+  id: ID0000139
+  arguments:
+  - -t
+  - pposs2ukstu_blue_001_001.fits
+  - cposs2ukstu_blue_001_001.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_001_001_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: cposs2ukstu_blue_001_001.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_001.fits
+    type: input
+- type: job
+  name: mBackground
+  id: ID0000140
+  arguments:
+  - -t
+  - pposs2ukstu_blue_001_002.fits
+  - cposs2ukstu_blue_001_002.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_001_002.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: pposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_002_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mBackground
+  id: ID0000141
+  arguments:
+  - -t
+  - pposs2ukstu_blue_001_003.fits
+  - cposs2ukstu_blue_001_003.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: pposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_001_003_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_003.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_003.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mBackground
+  id: ID0000142
+  arguments:
+  - -t
+  - pposs2ukstu_blue_001_004.fits
+  - cposs2ukstu_blue_001_004.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: pposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_004_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: cposs2ukstu_blue_001_004.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_001_004.fits
+    type: input
+- type: job
+  name: mBackground
+  id: ID0000143
+  arguments:
+  - -t
+  - pposs2ukstu_blue_002_001.fits
+  - cposs2ukstu_blue_002_001.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: pposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_001.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: cposs2ukstu_blue_002_001_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mBackground
+  id: ID0000144
+  arguments:
+  - -t
+  - pposs2ukstu_blue_002_002.fits
+  - cposs2ukstu_blue_002_002.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_002_002_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_002.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_002_area.fits
+    type: input
+- type: job
+  name: mBackground
+  id: ID0000145
+  arguments:
+  - -t
+  - pposs2ukstu_blue_002_003.fits
+  - cposs2ukstu_blue_002_003.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_002_003_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_003.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_003.fits
+    type: input
+- type: job
+  name: mBackground
+  id: ID0000146
+  arguments:
+  - -t
+  - pposs2ukstu_blue_002_004.fits
+  - cposs2ukstu_blue_002_004.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_002_004.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: pposs2ukstu_blue_002_004_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_004_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mBackground
+  id: ID0000147
+  arguments:
+  - -t
+  - pposs2ukstu_blue_003_001.fits
+  - cposs2ukstu_blue_003_001.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_003_001.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_003_001_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_001_area.fits
+    type: input
+- type: job
+  name: mBackground
+  id: ID0000148
+  arguments:
+  - -t
+  - pposs2ukstu_blue_003_002.fits
+  - cposs2ukstu_blue_003_002.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: pposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_002.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: cposs2ukstu_blue_003_002_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mBackground
+  id: ID0000149
+  arguments:
+  - -t
+  - pposs2ukstu_blue_003_003.fits
+  - cposs2ukstu_blue_003_003.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_003_003_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: cposs2ukstu_blue_003_003.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: pposs2ukstu_blue_003_003_area.fits
+    type: input
+- type: job
+  name: mBackground
+  id: ID0000150
+  arguments:
+  - -t
+  - pposs2ukstu_blue_003_004.fits
+  - cposs2ukstu_blue_003_004.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: pposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_004_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: cposs2ukstu_blue_003_004.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_003_004_area.fits
+    type: input
+- type: job
+  name: mBackground
+  id: ID0000151
+  arguments:
+  - -t
+  - pposs2ukstu_blue_004_001.fits
+  - cposs2ukstu_blue_004_001.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_004_001_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: pposs2ukstu_blue_004_001.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_001.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mBackground
+  id: ID0000152
+  arguments:
+  - -t
+  - pposs2ukstu_blue_004_002.fits
+  - cposs2ukstu_blue_004_002.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: pposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_002.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_002_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mBackground
+  id: ID0000153
+  arguments:
+  - -t
+  - pposs2ukstu_blue_004_003.fits
+  - cposs2ukstu_blue_004_003.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: pposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_003.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: cposs2ukstu_blue_004_003_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: pposs2ukstu_blue_004_003.fits
+    type: input
+- type: job
+  name: mBackground
+  id: ID0000154
+  arguments:
+  - -t
+  - pposs2ukstu_blue_004_004.fits
+  - cposs2ukstu_blue_004_004.fits
+  - 1-projected.tbl
+  - 1-corrections.tbl
+  uses:
+  - lfn: cposs2ukstu_blue_004_004.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: 1-projected.tbl
+    type: input
+  - lfn: pposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: 1-corrections.tbl
+    type: input
+  - lfn: pposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_004_area.fits
+    type: output
+    stageOut: false
+    registerReplica: true
+- type: job
+  name: mImgtbl
+  id: ID0000155
+  arguments:
+  - .
+  - -t
+  - 1-corrected.tbl
+  - 1-updated-corrected.tbl
+  uses:
+  - lfn: cposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: 1-updated-corrected.tbl
+    type: output
+    stageOut: false
+    registerReplica: true
+  - lfn: cposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_001.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_003.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_004.fits
+    type: input
+  - lfn: 1-corrected.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_003.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_003.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_001.fits
+    type: input
+- type: job
+  name: mAdd
+  id: ID0000156
+  arguments:
+  - -e
+  - 1-updated-corrected.tbl
+  - region.hdr
+  - 1-mosaic.fits
+  uses:
+  - lfn: cposs2ukstu_blue_003_001.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_004.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_003_area.fits
+    type: input
+  - lfn: region.hdr
+    type: input
+  - lfn: cposs2ukstu_blue_001_001_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_003.fits
+    type: input
+  - lfn: 1-mosaic.fits
+    type: output
+    stageOut: true
+    registerReplica: true
+  - lfn: cposs2ukstu_blue_001_004.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_004.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_003.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_004.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_002.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_004_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_001.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_004_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_003.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_002_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_001_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_001_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_004_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_002.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_002.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_003.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_002_area.fits
+    type: input
+  - lfn: 1-mosaic_area.fits
+    type: output
+    stageOut: true
+    registerReplica: true
+  - lfn: cposs2ukstu_blue_002_002_area.fits
+    type: input
+  - lfn: 1-updated-corrected.tbl
+    type: input
+  - lfn: cposs2ukstu_blue_002_003_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_003_003_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_001.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_002.fits
+    type: input
+  - lfn: cposs2ukstu_blue_001_002_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_003_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_004_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_002_001_area.fits
+    type: input
+  - lfn: cposs2ukstu_blue_004_001.fits
+    type: input
+- type: job
+  name: mViewer
+  id: ID0000157
+  arguments:
+  - -ct
+  - '1'
+  - -gray
+  - 1-mosaic.fits
+  - -1s
+  - max
+  - gaussian
+  - -png
+  - 1-mosaic.png
+  uses:
+  - lfn: 1-mosaic.fits
+    type: input
+  - lfn: 1-mosaic.png
+    type: output
+    stageOut: true
+    registerReplica: true
+jobDependencies:
+- id: ID0000001
+  children:
+  - ID0000139
+  - ID0000018
+  - ID0000019
+  - ID0000020
+  - ID0000024
+  - ID0000030
+  - ID0000031
+  - ID0000021
+  - ID0000017
+  - ID0000023
+  - ID0000027
+  - ID0000025
+  - ID0000029
+  - ID0000026
+  - ID0000022
+  - ID0000028
+- id: ID0000002
+  children:
+  - ID0000036
+  - ID0000038
+  - ID0000043
+  - ID0000032
+  - ID0000044
+  - ID0000041
+  - ID0000034
+  - ID0000039
+  - ID0000037
+  - ID0000045
+  - ID0000017
+  - ID0000040
+  - ID0000042
+  - ID0000140
+  - ID0000035
+  - ID0000033
+- id: ID0000003
+  children:
+  - ID0000051
+  - ID0000056
+  - ID0000141
+  - ID0000018
+  - ID0000032
+  - ID0000048
+  - ID0000050
+  - ID0000054
+  - ID0000058
+  - ID0000057
+  - ID0000055
+  - ID0000052
+  - ID0000046
+  - ID0000053
+  - ID0000049
+  - ID0000047
+- id: ID0000004
+  children:
+  - ID0000142
+  - ID0000069
+  - ID0000060
+  - ID0000059
+  - ID0000063
+  - ID0000062
+  - ID0000067
+  - ID0000019
+  - ID0000061
+  - ID0000068
+  - ID0000070
+  - ID0000046
+  - ID0000064
+  - ID0000066
+  - ID0000065
+  - ID0000033
+- id: ID0000005
+  children:
+  - ID0000077
+  - ID0000080
+  - ID0000059
+  - ID0000078
+  - ID0000034
+  - ID0000143
+  - ID0000074
+  - ID0000020
+  - ID0000071
+  - ID0000076
+  - ID0000075
+  - ID0000081
+  - ID0000079
+  - ID0000047
+  - ID0000073
+  - ID0000072
+- id: ID0000006
+  children:
+  - ID0000091
+  - ID0000060
+  - ID0000088
+  - ID0000048
+  - ID0000083
+  - ID0000071
+  - ID0000035
+  - ID0000090
+  - ID0000021
+  - ID0000086
+  - ID0000084
+  - ID0000085
+  - ID0000089
+  - ID0000087
+  - ID0000144
+  - ID0000082
+- id: ID0000007
+  children:
+  - ID0000036
+  - ID0000098
+  - ID0000145
+  - ID0000099
+  - ID0000061
+  - ID0000094
+  - ID0000095
+  - ID0000097
+  - ID0000100
+  - ID0000096
+  - ID0000049
+  - ID0000092
+  - ID0000093
+  - ID0000022
+  - ID0000082
+  - ID0000072
+- id: ID0000008
+  children:
+  - ID0000103
+  - ID0000108
+  - ID0000073
+  - ID0000062
+  - ID0000146
+  - ID0000050
+  - ID0000106
+  - ID0000101
+  - ID0000037
+  - ID0000023
+  - ID0000102
+  - ID0000107
+  - ID0000092
+  - ID0000083
+  - ID0000104
+  - ID0000105
+- id: ID0000009
+  children:
+  - ID0000051
+  - ID0000038
+  - ID0000114
+  - ID0000063
+  - ID0000024
+  - ID0000074
+  - ID0000101
+  - ID0000147
+  - ID0000109
+  - ID0000115
+  - ID0000084
+  - ID0000113
+  - ID0000093
+  - ID0000111
+  - ID0000110
+  - ID0000112
+- id: ID0000010
+  children:
+  - ID0000121
+  - ID0000117
+  - ID0000039
+  - ID0000109
+  - ID0000120
+  - ID0000094
+  - ID0000116
+  - ID0000064
+  - ID0000075
+  - ID0000102
+  - ID0000085
+  - ID0000148
+  - ID0000118
+  - ID0000052
+  - ID0000025
+  - ID0000119
+- id: ID0000011
+  children:
+  - ID0000103
+  - ID0000123
+  - ID0000065
+  - ID0000076
+  - ID0000040
+  - ID0000086
+  - ID0000095
+  - ID0000124
+  - ID0000116
+  - ID0000149
+  - ID0000053
+  - ID0000125
+  - ID0000126
+  - ID0000026
+  - ID0000110
+  - ID0000122
+- id: ID0000012
+  children:
+  - ID0000077
+  - ID0000127
+  - ID0000122
+  - ID0000041
+  - ID0000150
+  - ID0000117
+  - ID0000054
+  - ID0000128
+  - ID0000129
+  - ID0000027
+  - ID0000066
+  - ID0000096
+  - ID0000087
+  - ID0000111
+  - ID0000104
+  - ID0000130
+- id: ID0000013
+  children:
+  - ID0000151
+  - ID0000127
+  - ID0000123
+  - ID0000132
+  - ID0000088
+  - ID0000078
+  - ID0000067
+  - ID0000055
+  - ID0000042
+  - ID0000097
+  - ID0000131
+  - ID0000133
+  - ID0000118
+  - ID0000112
+  - ID0000105
+  - ID0000028
+- id: ID0000014
+  children:
+  - ID0000056
+  - ID0000043
+  - ID0000119
+  - ID0000089
+  - ID0000135
+  - ID0000106
+  - ID0000128
+  - ID0000152
+  - ID0000068
+  - ID0000124
+  - ID0000113
+  - ID0000131
+  - ID0000079
+  - ID0000029
+  - ID0000134
+  - ID0000098
+- id: ID0000015
+  children:
+  - ID0000069
+  - ID0000080
+  - ID0000132
+  - ID0000114
+  - ID0000044
+  - ID0000153
+  - ID0000136
+  - ID0000099
+  - ID0000030
+  - ID0000090
+  - ID0000057
+  - ID0000120
+  - ID0000129
+  - ID0000107
+  - ID0000125
+  - ID0000134
+- id: ID0000016
+  children:
+  - ID0000121
+  - ID0000091
+  - ID0000108
+  - ID0000136
+  - ID0000058
+  - ID0000135
+  - ID0000070
+  - ID0000045
+  - ID0000115
+  - ID0000031
+  - ID0000100
+  - ID0000081
+  - ID0000133
+  - ID0000126
+  - ID0000154
+  - ID0000130
+- id: ID0000017
+  children:
+  - ID0000137
+- id: ID0000018
+  children:
+  - ID0000137
+- id: ID0000019
+  children:
+  - ID0000137
+- id: ID0000020
+  children:
+  - ID0000137
+- id: ID0000021
+  children:
+  - ID0000137
+- id: ID0000022
+  children:
+  - ID0000137
+- id: ID0000023
+  children:
+  - ID0000137
+- id: ID0000024
+  children:
+  - ID0000137
+- id: ID0000025
+  children:
+  - ID0000137
+- id: ID0000026
+  children:
+  - ID0000137
+- id: ID0000027
+  children:
+  - ID0000137
+- id: ID0000028
+  children:
+  - ID0000137
+- id: ID0000029
+  children:
+  - ID0000137
+- id: ID0000030
+  children:
+  - ID0000137
+- id: ID0000031
+  children:
+  - ID0000137
+- id: ID0000032
+  children:
+  - ID0000137
+- id: ID0000033
+  children:
+  - ID0000137
+- id: ID0000034
+  children:
+  - ID0000137
+- id: ID0000035
+  children:
+  - ID0000137
+- id: ID0000036
+  children:
+  - ID0000137
+- id: ID0000037
+  children:
+  - ID0000137
+- id: ID0000038
+  children:
+  - ID0000137
+- id: ID0000039
+  children:
+  - ID0000137
+- id: ID0000040
+  children:
+  - ID0000137
+- id: ID0000041
+  children:
+  - ID0000137
+- id: ID0000042
+  children:
+  - ID0000137
+- id: ID0000043
+  children:
+  - ID0000137
+- id: ID0000044
+  children:
+  - ID0000137
+- id: ID0000045
+  children:
+  - ID0000137
+- id: ID0000046
+  children:
+  - ID0000137
+- id: ID0000047
+  children:
+  - ID0000137
+- id: ID0000048
+  children:
+  - ID0000137
+- id: ID0000049
+  children:
+  - ID0000137
+- id: ID0000050
+  children:
+  - ID0000137
+- id: ID0000051
+  children:
+  - ID0000137
+- id: ID0000052
+  children:
+  - ID0000137
+- id: ID0000053
+  children:
+  - ID0000137
+- id: ID0000054
+  children:
+  - ID0000137
+- id: ID0000055
+  children:
+  - ID0000137
+- id: ID0000056
+  children:
+  - ID0000137
+- id: ID0000057
+  children:
+  - ID0000137
+- id: ID0000058
+  children:
+  - ID0000137
+- id: ID0000059
+  children:
+  - ID0000137
+- id: ID0000060
+  children:
+  - ID0000137
+- id: ID0000061
+  children:
+  - ID0000137
+- id: ID0000062
+  children:
+  - ID0000137
+- id: ID0000063
+  children:
+  - ID0000137
+- id: ID0000064
+  children:
+  - ID0000137
+- id: ID0000065
+  children:
+  - ID0000137
+- id: ID0000066
+  children:
+  - ID0000137
+- id: ID0000067
+  children:
+  - ID0000137
+- id: ID0000068
+  children:
+  - ID0000137
+- id: ID0000069
+  children:
+  - ID0000137
+- id: ID0000070
+  children:
+  - ID0000137
+- id: ID0000071
+  children:
+  - ID0000137
+- id: ID0000072
+  children:
+  - ID0000137
+- id: ID0000073
+  children:
+  - ID0000137
+- id: ID0000074
+  children:
+  - ID0000137
+- id: ID0000075
+  children:
+  - ID0000137
+- id: ID0000076
+  children:
+  - ID0000137
+- id: ID0000077
+  children:
+  - ID0000137
+- id: ID0000078
+  children:
+  - ID0000137
+- id: ID0000079
+  children:
+  - ID0000137
+- id: ID0000080
+  children:
+  - ID0000137
+- id: ID0000081
+  children:
+  - ID0000137
+- id: ID0000082
+  children:
+  - ID0000137
+- id: ID0000083
+  children:
+  - ID0000137
+- id: ID0000084
+  children:
+  - ID0000137
+- id: ID0000085
+  children:
+  - ID0000137
+- id: ID0000086
+  children:
+  - ID0000137
+- id: ID0000087
+  children:
+  - ID0000137
+- id: ID0000088
+  children:
+  - ID0000137
+- id: ID0000089
+  children:
+  - ID0000137
+- id: ID0000090
+  children:
+  - ID0000137
+- id: ID0000091
+  children:
+  - ID0000137
+- id: ID0000092
+  children:
+  - ID0000137
+- id: ID0000093
+  children:
+  - ID0000137
+- id: ID0000094
+  children:
+  - ID0000137
+- id: ID0000095
+  children:
+  - ID0000137
+- id: ID0000096
+  children:
+  - ID0000137
+- id: ID0000097
+  children:
+  - ID0000137
+- id: ID0000098
+  children:
+  - ID0000137
+- id: ID0000099
+  children:
+  - ID0000137
+- id: ID0000100
+  children:
+  - ID0000137
+- id: ID0000101
+  children:
+  - ID0000137
+- id: ID0000102
+  children:
+  - ID0000137
+- id: ID0000103
+  children:
+  - ID0000137
+- id: ID0000104
+  children:
+  - ID0000137
+- id: ID0000105
+  children:
+  - ID0000137
+- id: ID0000106
+  children:
+  - ID0000137
+- id: ID0000107
+  children:
+  - ID0000137
+- id: ID0000108
+  children:
+  - ID0000137
+- id: ID0000109
+  children:
+  - ID0000137
+- id: ID0000110
+  children:
+  - ID0000137
+- id: ID0000111
+  children:
+  - ID0000137
+- id: ID0000112
+  children:
+  - ID0000137
+- id: ID0000113
+  children:
+  - ID0000137
+- id: ID0000114
+  children:
+  - ID0000137
+- id: ID0000115
+  children:
+  - ID0000137
+- id: ID0000116
+  children:
+  - ID0000137
+- id: ID0000117
+  children:
+  - ID0000137
+- id: ID0000118
+  children:
+  - ID0000137
+- id: ID0000119
+  children:
+  - ID0000137
+- id: ID0000120
+  children:
+  - ID0000137
+- id: ID0000121
+  children:
+  - ID0000137
+- id: ID0000122
+  children:
+  - ID0000137
+- id: ID0000123
+  children:
+  - ID0000137
+- id: ID0000124
+  children:
+  - ID0000137
+- id: ID0000125
+  children:
+  - ID0000137
+- id: ID0000126
+  children:
+  - ID0000137
+- id: ID0000127
+  children:
+  - ID0000137
+- id: ID0000128
+  children:
+  - ID0000137
+- id: ID0000129
+  children:
+  - ID0000137
+- id: ID0000130
+  children:
+  - ID0000137
+- id: ID0000131
+  children:
+  - ID0000137
+- id: ID0000132
+  children:
+  - ID0000137
+- id: ID0000133
+  children:
+  - ID0000137
+- id: ID0000134
+  children:
+  - ID0000137
+- id: ID0000135
+  children:
+  - ID0000137
+- id: ID0000136
+  children:
+  - ID0000137
+- id: ID0000137
+  children:
+  - ID0000138
+- id: ID0000138
+  children:
+  - ID0000151
+  - ID0000139
+  - ID0000142
+  - ID0000141
+  - ID0000150
+  - ID0000153
+  - ID0000145
+  - ID0000146
+  - ID0000143
+  - ID0000152
+  - ID0000147
+  - ID0000140
+  - ID0000148
+  - ID0000149
+  - ID0000154
+  - ID0000144
+- id: ID0000139
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000140
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000141
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000142
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000143
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000144
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000145
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000146
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000147
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000148
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000149
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000150
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000151
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000152
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000153
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000154
+  children:
+  - ID0000156
+  - ID0000155
+- id: ID0000155
+  children:
+  - ID0000156
+- id: ID0000156
+  children:
+  - ID0000157
