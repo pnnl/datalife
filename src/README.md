@@ -40,11 +40,11 @@ sd.build_links()
 sd.plot()
 ```
 
-![Montage Sankey](src/montage_sankey.pdf "Montage Data Lifecycles Graph in Sankey")
+![Montage Sankey](montage_sankey.png "Montage Data Lifecycles Graph in Sankey")
 
 ## Identifying Caterpillar Tree
 
 With a caterpillar tree, Data Lifecycles shows  a critical path with one degree of fan-in and out tasks which helps reducing the complexity of data analysis and scheduling.
 
 
-![Montage Caterpillar](https://gitlab.pnnl.gov/perf-lab/bigflowtools/datalife/-/raw/main/src/montage_sankey.pdf "Montage Caterpillar Tree")
+![Montage Caterpillar](montage_caterpillar_tree_sankey.png "Montage Caterpillar Tree")
