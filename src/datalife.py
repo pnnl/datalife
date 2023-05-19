@@ -1,6 +1,8 @@
 import pandas as pd
 import os
 import glob
+import networkx as nx
+
 
 class DataLife(object):
     """Data Lifecycles for Optimizing Workflow Task & Data Coordination
@@ -9,10 +11,12 @@ class DataLife(object):
         dl_name (str): name for data lifecycles
     """
     def __init__(self, dl_name=''):
+        self.g = nx.DiGraph()
         self.wf_tasknames = []
         self.stat_path = ''
         self.dl_name = dl_name
         self.stat_in_df_all = {}
+        self.stat_key_idx = ['block_idx', 'frequency', 'access_size']
         
         
     def set_wf_tasknames(self, names):
@@ -96,6 +100,30 @@ class DataLife(object):
         """
         df = pd.read_csv(stat_fname, sep=' ', names=column_names, skiprows=skip_header_rows)
         return df
+
+
+    def get_graph(self):
+        """Returns NetworkX DiGraph built from loaded stats
+        """
+
+        g = self.g
+        df_all = self.get_df_all()
+        key_idx = self.stat_key_idx        
+        for tname, fnames in df_all.items():
+            g.add_node(tname, ntype='task')    
+            for fname, _df in fnames.items():
+                size_r = (_df['r'][key_idx[1]] * _df['r'][key_idx[2]])
+                size_r = pd.Series([0]) if size_r.empty else size_r
+                size_w = (_df['w'][key_idx[1]] * _df['w'][key_idx[2]])
+                size_w = pd.Series([0]) if size_w.empty else size_w
+                size_r = size_r.sum()
+                size_w = size_w.sum()
+                if size_w > size_r:
+                    g.add_edge(tname, fname, value=size_w)
+                else:
+                    g.add_edge(fname, tname, value=size_r) 
+
+        return self.g       
 
     
     def get_df_all(self):
