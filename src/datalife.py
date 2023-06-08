@@ -153,3 +153,91 @@ class DataLife(object):
         summary = pd.DataFrame.from_dict(data, orient='index',
                        columns=column_names)
         return summary
+
+
+def get_critical_path(G, weight='weight'):
+    return nx.dag_longest_path(G, weight=weight)
+
+
+def get_neighbor_leaves(G, cpath):
+    nb_leaves = {}
+    for node in cpath:
+        #neighbors = set(G.neighbors(node)) #| set(tmp)
+        neighbors = set([x[0] for x in G.in_edges(node)] + [x[1] for x in G.out_edges(node)])
+        nb_leaves[node] = neighbors - set(cpath)
+    return nb_leaves
+
+
+def max_leaves(nb_leaves):
+    return max(len(v) for v in nb_leaves.values())
+
+
+def node_space(nb_leaves):
+    return 1 + int((nb_leaves - 1) / 2)
+
+
+def space_needed(nb_leaves):
+    return 1 + sum(node_space(len(v)) for v in nb_leaves.values())
+
+
+def caterpillar_tree_in_graph(G, nb_leaves):
+
+    caterpillar_graph = nx.DiGraph()
+    prev = None
+    for k, v in nb_leaves.items():
+        v = list(v)
+        for v_i in range(len(v)):
+            try:
+                caterpillar_graph.add_edge(k, v[v_i], value=G.get_edge_data(k, v[v_i])['weight'])
+            except:
+                caterpillar_graph.add_edge(v[v_i], k, value=G.get_edge_data(v[v_i], k)['weight'])
+        if prev is not None:
+            caterpillar_graph.add_edge(prev, k, value=G.get_edge_data(prev, k)['weight'])
+        if k in G.nodes and 'ntype' in G.nodes[k] and G.nodes[k]['ntype'] == 'task':
+            caterpillar_graph.add_node(k, ntype='task')
+        for vv in v:
+            if vv in G.nodes and 'ntype' in G.nodes[vv] and G.nodes[vv]['ntype'] == 'task':
+                caterpillar_graph.add_node(vv, ntype='task')
+        prev = k
+    return caterpillar_graph
+
+
+def caterpillar_tree(G, cpath=None):
+
+    if cpath is None:
+        cpath = get_critical_path(G)
+
+    nb_leaves = get_neighbor_leaves(G, cpath)
+    ct_graph = caterpillar_tree_in_graph(G, nb_leaves)
+    return ct_graph
+
+
+def remove_cpath_from_graph(G, cpath):
+    Gtmp = G.copy()
+    Gtmp.remove_nodes_from(cpath)
+    return Gtmp
+
+
+def find_caterpillar_forest(G):
+    CT_s = []
+    dependent_edges = []
+    while(G.nodes or G.edges):
+        # find a critical path
+        cpath = get_critical_path(G)
+        # extract the CT along the critical path
+        CT_c = caterpillar_tree(G, cpath)
+        # Remove the vertices and edges only along the critical path
+        removed_g = remove_cpath_from_graph(G, cpath)
+        # (find dependencies across CT_s) for each of the vertices,
+        # v_c on the critical path of the current caterpillar tree, CT_c
+        for node in CT_c.nodes:
+            for ct_i in CT_s:
+                # if there is an edge between v_p and v_c, 
+                # add a dependency edge between CT_c  and ct_i
+                o_edges = ct_i.out_edges(node)
+                i_edges = ct_i.in_edges(node)
+                dependent_edges += list(o_edges) + list(i_edges)
+        dependent_edges = list(set(dependent_edges))
+        CT_s.append(CT_c)
+        G = removed_g    
+    return (CT_s, dependent_edges)
