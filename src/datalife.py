@@ -221,6 +221,7 @@ def remove_cpath_from_graph(G, cpath):
 def find_caterpillar_forest(G):
     CT_s = []
     dependent_edges = []
+    cf = nx.DiGraph()
     while(G.nodes or G.edges):
         # find a critical path
         cpath = get_critical_path(G)
@@ -230,14 +231,22 @@ def find_caterpillar_forest(G):
         removed_g = remove_cpath_from_graph(G, cpath)
         # (find dependencies across CT_s) for each of the vertices,
         # v_c on the critical path of the current caterpillar tree, CT_c
-        for node in CT_c.nodes:
-            for ct_i in CT_s:
-                # if there is an edge between v_p and v_c, 
+        for ct_i in CT_s:
+            for node in CT_c.nodes:
+                # if there is an edge between v_p and v_c,
                 # add a dependency edge between CT_c  and ct_i
                 o_edges = ct_i.out_edges(node)
                 i_edges = ct_i.in_edges(node)
-                dependent_edges += list(o_edges) + list(i_edges)
+                tmp = list(o_edges) + list(i_edges)
+                dependent_edges += tmp
+                if len(tmp) > 0:
+                    if(len(o_edges) > 0):
+                        cf.add_edge(CT_c, ct_i)
+                    if(len(i_edges) > 0):
+                        cf.add_edge(ct_i, CT_c)
+
         dependent_edges = list(set(dependent_edges))
         CT_s.append(CT_c)
-        G = removed_g    
-    return (CT_s, dependent_edges)
+        G = removed_g
+    return (cf, dependent_edges)
+
