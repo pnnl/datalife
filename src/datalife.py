@@ -250,3 +250,61 @@ def find_caterpillar_forest(G):
         G = removed_g
     return (cf, dependent_edges)
 
+
+def get_roots(G):
+    roots = []
+    for ct_node in G.nodes:
+        pred_iter = G.predecessors(ct_node)
+        pred_l = [x for x in pred_iter]
+        if len(pred_l) == 0:
+            roots.append(ct_node)
+    return roots
+
+
+def get_dependent_ct_count(G, ctree_list):
+    res = {}
+    for ctree in ctree_list:
+        succ_iter = G.successors(ctree)
+        succ_l = [x for x in succ_iter]
+        res[ctree] = len(succ_l)
+    return res
+
+
+def get_first_stalls(G, d_edges):
+    d_edges_flattened = []
+    for edge in d_edges:
+        d_edges_flattened += edge
+    d_edges_flattened = list(set(d_edges_flattened))
+    found_node = None
+    for node in d_edges_flattened:
+        tmp = G.edges(node)
+        if len(tmp) > 0:
+            found_node = node
+            break
+    first_stalls = []
+    if found_node is not None:
+        tmp = [found_node]
+        while (tmp):
+            curr = tmp.pop()
+            pred_iter = G.predecessors(curr)
+            pred_l = [x for x in pred_iter]
+            if len(pred_l) > 0:
+                tmp = pred_l
+                first_stalls += pred_l
+    return first_stalls
+
+
+def get_edge_attributes(G, metric='value'):
+    return [x[2][metric] for x in G.edges(data=True)]
+
+
+def find_vertex_priority(cforest, G_list, dependent_edges, metric='value', op='sum'):
+    cts_cnt = get_dependent_ct_count(cforest, G_list)
+    res = {}
+    for G in G_list:
+        first_stalls = get_first_stalls(G, dependent_edges)
+        attrs = get_edge_attributes(G, metric)
+        func = getattr(np, op)
+        mvalue = func(attrs)
+        res[G] = (cts_cnt[G], len(first_stalls), mvalue)
+    return res
