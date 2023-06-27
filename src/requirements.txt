@@ -3,3 +3,5 @@ pandas
 plotly
 networkx
 pyaml
+ipython
+matplotlib
