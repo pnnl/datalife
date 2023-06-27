@@ -2,18 +2,18 @@
 
 SCRIPT_DIR=/home/cc/datalife/evaluation_scripts/performance/1000genome_plot/1000genome_perf_number
 
-SUMMARY_LOG=perf_test_sum.log
+SUMMARY_LOG=hierarchy_perf_test_sum.log
 # rm -rf $OUTPUT_LOG
 
 echo "Test [$(date)]" | tee -a $SUMMARY_LOG
 
-TEST_STORAGES=(SHM DISK)
+TEST_STORAGES=(SHM HDD SSD NVME)
 
 RUN_ALL_TESTS() {
     # Run tests on all storages
     for TEST_STOR in "${TEST_STORAGES[@]}"; do
         OUTPUT_LOG="$TEST_STOR-PERF-TEST.log"
-        bash "$SCRIPT_DIR/1kgenome_1node_parallel.sh" "$TEST_STOR" > "$OUTPUT_LOG"
+        bash "$SCRIPT_DIR/1kgenome_1node_parallel_tierd.sh" "$TEST_STOR" > "$OUTPUT_LOG"
 
         echo "$TEST_STOR performance :" | tee -a $SUMMARY_LOG
         cat "$OUTPUT_LOG" | grep "(msec) :" | tee -a $SUMMARY_LOG
