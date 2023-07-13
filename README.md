@@ -3,11 +3,11 @@
 $Id: 5d5d6440d5e0710858b3e9ed8947a45b1956bfae $
 
 
-MemGaze
+DataLife
 =============================================================================
 
 **Home**:
-  - https://github.com/pnnl/memgaze
+  - https://gitlab.pnnl.gov/perf-lab/bigflowtools/datalife/
 
 
 **About**: DataLife is measurement and analysis toolset for
