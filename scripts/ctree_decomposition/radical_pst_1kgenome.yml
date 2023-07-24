@@ -1,0 +1,364 @@
+stage_1:
+- task_0:
+    args:
+    - ALL.chr1.250000.vcf
+    - '1'
+    - '1'
+    - '2'
+    - '5'
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/individuals.py
+    inputs:
+    - columns.txt
+    - ALL.chr1.250000.vcf
+    outputs:
+    - chr1n-1-2.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/ALL.chr1.250000.vcf
+      - ./
+- task_1:
+    args:
+    - ALL.chr1.250000.vcf
+    - '1'
+    - '2'
+    - '3'
+    - '5'
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/individuals.py
+    inputs:
+    - columns.txt
+    - ALL.chr1.250000.vcf
+    outputs:
+    - chr1n-2-3.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/ALL.chr1.250000.vcf
+      - ./
+- task_2:
+    args:
+    - ALL.chr1.250000.vcf
+    - '1'
+    - '3'
+    - '4'
+    - '5'
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/individuals.py
+    inputs:
+    - columns.txt
+    - ALL.chr1.250000.vcf
+    outputs:
+    - chr1n-3-4.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/ALL.chr1.250000.vcf
+      - ./
+- task_3:
+    args:
+    - ALL.chr1.250000.vcf
+    - '1'
+    - '4'
+    - '5'
+    - '5'
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/individuals.py
+    inputs:
+    - columns.txt
+    - ALL.chr1.250000.vcf
+    outputs:
+    - chr1n-4-5.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/ALL.chr1.250000.vcf
+      - ./
+- task_4:
+    args:
+    - ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf
+    - '1'
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/sifting.py
+    inputs:
+    - ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf
+    outputs:
+    - sifted.SIFT.chr1.txt
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/sifting/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf
+      - ./
+stage_2:
+- task_5:
+    args:
+    - '1'
+    - chr1n-1-2.tar.gz
+    - chr1n-2-3.tar.gz
+    - chr1n-3-4.tar.gz
+    - chr1n-4-5.tar.gz
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/individuals_merge.py
+    inputs:
+    - chr1n-2-3.tar.gz
+    - chr1n-3-4.tar.gz
+    - chr1n-1-2.tar.gz
+    - chr1n-4-5.tar.gz
+    outputs:
+    - chr1n.tar.gz
+    pre_exec: []
+stage_3:
+- task_6:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - AMR.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/frequency.py
+    inputs:
+    - sifted.SIFT.chr1.txt
+    - chr1n.tar.gz
+    - columns.txt
+    - AMR.txt
+    outputs:
+    - chr1-AMR.txt-freq.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_7:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - EUR.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/frequency.py
+    inputs:
+    - EUR.txt
+    - sifted.SIFT.chr1.txt
+    - chr1n.tar.gz
+    - columns.txt
+    outputs:
+    - chr1-EUR.txt-freq.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_8:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - GBR.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/frequency.py
+    inputs:
+    - sifted.SIFT.chr1.txt
+    - chr1n.tar.gz
+    - columns.txt
+    - GBR.txt
+    outputs:
+    - chr1-GBR.txt-freq.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_9:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - EUR.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/mutation_overlap.py
+    inputs:
+    - EUR.txt
+    - sifted.SIFT.chr1.txt
+    - chr1n.tar.gz
+    - columns.txt
+    outputs:
+    - chr1-EUR.txt.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_10:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - GBR.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/mutation_overlap.py
+    inputs:
+    - sifted.SIFT.chr1.txt
+    - chr1n.tar.gz
+    - columns.txt
+    - GBR.txt
+    outputs:
+    - chr1-GBR.txt.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_11:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - SAS.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/mutation_overlap.py
+    inputs:
+    - sifted.SIFT.chr1.txt
+    - SAS.txt
+    - chr1n.tar.gz
+    - columns.txt
+    outputs:
+    - chr1-SAS.txt.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_12:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - EAS.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/mutation_overlap.py
+    inputs:
+    - sifted.SIFT.chr1.txt
+    - EAS.txt
+    - chr1n.tar.gz
+    - columns.txt
+    outputs:
+    - chr1-EAS.txt.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_13:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - AMR.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/mutation_overlap.py
+    inputs:
+    - sifted.SIFT.chr1.txt
+    - AMR.txt
+    - chr1n.tar.gz
+    - columns.txt
+    outputs:
+    - chr1-AMR.txt.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_14:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - AFR.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/mutation_overlap.py
+    inputs:
+    - AFR.txt
+    - sifted.SIFT.chr1.txt
+    - chr1n.tar.gz
+    - columns.txt
+    outputs:
+    - chr1-AFR.txt.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_15:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - EAS.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/frequency.py
+    inputs:
+    - sifted.SIFT.chr1.txt
+    - EAS.txt
+    - chr1n.tar.gz
+    - columns.txt
+    outputs:
+    - chr1-EAS.txt-freq.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_16:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - AFR.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/frequency.py
+    inputs:
+    - AFR.txt
+    - sifted.SIFT.chr1.txt
+    - chr1n.tar.gz
+    - columns.txt
+    outputs:
+    - chr1-AFR.txt-freq.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_17:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - SAS.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/frequency.py
+    inputs:
+    - sifted.SIFT.chr1.txt
+    - SAS.txt
+    - chr1n.tar.gz
+    - columns.txt
+    outputs:
+    - chr1-SAS.txt-freq.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_18:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - ALL.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/mutation_overlap.py
+    inputs:
+    - ALL.txt
+    - sifted.SIFT.chr1.txt
+    - chr1n.tar.gz
+    - columns.txt
+    outputs:
+    - chr1-ALL.txt.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
+- task_19:
+    args:
+    - -c
+    - '1'
+    - -pop
+    - ALL.txt
+    exec: /qfs/projects/oddite/leeh736/1000genome-workflow/bin/frequency.py
+    inputs:
+    - ALL.txt
+    - sifted.SIFT.chr1.txt
+    - chr1n.tar.gz
+    - columns.txt
+    outputs:
+    - chr1-ALL.txt-freq.tar.gz
+    pre_exec:
+    - - /bin/cp
+      - /qfs/projects/oddite/leeh736/1000genome-workflow/data/20130502/columns.txt
+      - ./
