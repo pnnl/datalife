@@ -102,6 +102,34 @@ class DataLife(object):
         return df
 
 
+    def get_critical_path(self, G=None, weight='weight'):
+        G = self.g if G is None else G
+        cpath = nx.dag_longest_path(G, weight=weight)
+        self.cpath = cpath
+        return self.cpath
+
+
+    def get_neighbor_leaves(self, G=None, cpath=None):
+        cpath = self.cpath if cpath is None else cpath
+        G = self.g if G is None else G
+        nb_leaves = {}
+        for node in cpath:
+            neighbors = set([x[0] for x in G.in_edges(node)] + [x[1] for x in G.out_edges(node)])
+            nb_leaves[node] = neighbors - set(cpath)
+        self.neighbor_leaves = nb_leaves
+        return self.neighbor_leaves
+
+
+    def caterpillar_tree(self, G=None, cpath=None, weight='weight'):
+        cpath = self.get_critical_path(weight=weight) if cpath is None else cpath
+        G = self.g if G is None else G
+
+        nb_leaves = self.get_neighbor_leaves(G, cpath)
+        ctree_graph = caterpillar_tree_in_graph(G, nb_leaves, weight=weight)
+        self.ctree_graph = ctree_graph
+        return self.ctree_graph
+
+
     def get_graph(self):
         """Returns NetworkX DiGraph built from loaded stats
         """
@@ -155,8 +183,85 @@ class DataLife(object):
         return summary
 
 
+def _new_graph_with_top_x(G, df, metric_name, edges_to_collect="both", count=10, ascending=False):
+
+    new_G = nx.DiGraph()
+    t = df.sort_values(by=[metric_name], ascending=ascending)
+    cnt = 0
+    for idx, row in t.iterrows():
+        if(len(row[0]) > 1 and isinstance(row[0][0], tuple)):
+            iedge, oedge = row[0][0], row[0][1]
+            ival = G.edges[iedge]['value']
+            new_G.add_edges_from([iedge], value=1)
+            oval = G.edges[oedge]['value']
+            new_G.add_edges_from([oedge], value=1)
+        elif (len(row[0]) > 1 and isinstance(row[0], tuple)):
+            edge = row[0]
+            val = G.edges[edge]['value']
+            new_G.add_edges_from([edge], value=1)
+        else:
+            node_name = row[0]
+            if edges_to_collect == "in" or edges_to_collect == "both":
+                for edge in G.in_edges(node_name):
+                    val = G.edges[edge]['value']
+                    new_G.add_edges_from([edge], value=1)
+            if edges_to_collect == "out" or edges_to_collect == "both":
+                for edge in G.out_edges(node_name):
+                    val = G.edges[edge]['value']
+                    new_G.add_edges_from([edge], value=1)
+        cnt += 1
+        if cnt >= count:
+            break
+    return new_G
+
+
+def _edge_attr_in_unit(G, unit='byte', metric='value'):
+
+    col1 = []
+    col2 = []
+    is_round = True
+    if unit.lower() == "gb":
+        unit_size = 10e8
+    elif unit.lower() == "mb":
+        unit_size = 10e5
+    elif unit.lower() == "kb":
+        unit_size = 10e2
+    else:
+        unit = "byte"
+        unit_size = 10e-1
+        
+    for u, v, attr in G.edges(data=True):
+        col1.append((u, v))
+        val = attr[metric]
+        col2.append(round(val / unit_size, 2)  if is_round else val)
+    
+    return pd.DataFrame({f'node (edge)':col1, 
+                         f'{metric} ({unit})': col2})
+
+
+def data_branches_and_task_joins(orig_G, unit="GB", sort_order='descending'):
+
+    df = _edge_attr_in_unit(orig_G, unit)
+    val = f'value ({unit})'
+    is_ascend = False if sort_order == 'descending' else True
+    df.sort_values(by=val, ascending=is_ascend)
+    num_rows_to_select = len(df)
+    new_G = _new_graph_with_top_x(orig_G, df, val, count=num_rows_to_select, ascending=is_ascend)
+    return new_G
+
+
 def get_critical_path(G, weight='weight'):
     return nx.dag_longest_path(G, weight=weight)
+
+
+def get_critical_path_edges(G, weight='weight'):
+    """Take a networkx graph G with a weight to provide
+    a list of edge tuples identified as a critical path
+    dag_longest_path provides node list in a DiGraph
+    """
+    path = get_critical_path(G, weight)
+    path_edges = list(zip(path,path[1:]))
+    return path_edges
 
 
 def get_neighbor_leaves(G, cpath):
@@ -180,7 +285,7 @@ def space_needed(nb_leaves):
     return 1 + sum(node_space(len(v)) for v in nb_leaves.values())
 
 
-def caterpillar_tree_in_graph(G, nb_leaves):
+def caterpillar_tree_in_graph(G, nb_leaves, weight='weight'):
 
     caterpillar_graph = nx.DiGraph()
     prev = None
@@ -188,11 +293,11 @@ def caterpillar_tree_in_graph(G, nb_leaves):
         v = list(v)
         for v_i in range(len(v)):
             try:
-                caterpillar_graph.add_edge(k, v[v_i], value=G.get_edge_data(k, v[v_i])['weight'])
+                caterpillar_graph.add_edge(k, v[v_i], value=G.get_edge_data(k, v[v_i])[weight])
             except:
-                caterpillar_graph.add_edge(v[v_i], k, value=G.get_edge_data(v[v_i], k)['weight'])
+                caterpillar_graph.add_edge(v[v_i], k, value=G.get_edge_data(v[v_i], k)[weight])
         if prev is not None:
-            caterpillar_graph.add_edge(prev, k, value=G.get_edge_data(prev, k)['weight'])
+            caterpillar_graph.add_edge(prev, k, value=G.get_edge_data(prev, k)[weight])
         if k in G.nodes and 'ntype' in G.nodes[k] and G.nodes[k]['ntype'] == 'task':
             caterpillar_graph.add_node(k, ntype='task')
         for vv in v:
