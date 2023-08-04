@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import glob
 import networkx as nx
+import caterpillar
 
 
 class DataLife(object):
