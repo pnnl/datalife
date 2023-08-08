@@ -1,3 +1,10 @@
+# Inputs (1000 genomes VCFs multi-individual, with genotypes listed for each sample)
+
+`prepare_input.sh` downloads 10 chromosomes vcf files.
+
+For more details of preparing 1000 genomes workflow execution, please review the instruction from the original github repo, https://github.com/pegasus-isi/1000genome-workflow/tree/master.
+
+
 # Test Scripts used for paper final evaluations
 These scripts are for the multiple configurations used in the evluations for 1000genome. \
 They will produce performance numbers for Figure 6 in the paper.
