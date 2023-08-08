@@ -240,6 +240,12 @@ def _edge_attr_in_unit(G, unit='byte', metric='value'):
                          f'{metric} ({unit})': col2})
 
 
+def producer_consumer_ranking_table(G, unit='GB', metric='value'):
+    df = _edge_attr_in_unit(G, unit, metric)
+    val = f'value ({unit})'
+    return df.sort_values(by=val, ascending=False)
+
+
 def data_branches_and_task_joins(orig_G, unit="GB", sort_order='descending'):
 
     df = _edge_attr_in_unit(orig_G, unit)
