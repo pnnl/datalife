@@ -24,5 +24,5 @@ The edges flows from left to right:
 - Dataset is placed as it's last access time.
 - File is placed as it's first access time.
 - Flow from file-to-dataset and dataset-to-task is graphed with dataset access size (memory access volume)
-- Flow from dataset-to-file is graphed with actual file size
+- Flow from dataset-to-file is graphed with actual file size.
 - Edge width is graphed with square-root to reduce variability, but the number represents actual access size and actual bandwidth.
