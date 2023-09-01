@@ -141,9 +141,15 @@ class DataLife(object):
         for tname, fnames in df_all.items():
             g.add_node(tname, ntype='task')    
             for fname, _df in fnames.items():
-                size_r = (_df['r'][key_idx[1]] * _df['r'][key_idx[2]])
+                if 'r' in _df:
+                    size_r = (_df['r'][key_idx[1]] * _df['r'][key_idx[2]])
+                else:
+                    size_r = pd.DataFrame()
                 size_r = pd.Series([0]) if size_r.empty else size_r
-                size_w = (_df['w'][key_idx[1]] * _df['w'][key_idx[2]])
+                if 'w' in _df:
+                    size_w = (_df['w'][key_idx[1]] * _df['w'][key_idx[2]])
+                else:
+                    size_w = pd.DataFrame()
                 size_w = pd.Series([0]) if size_w.empty else size_w
                 size_r = size_r.sum()
                 size_w = size_w.sum()
