@@ -1,6 +1,5 @@
--*-Mode: markdown;-*-
-
-$Id: 5d5d6440d5e0710858b3e9ed8947a45b1956bfae $
+<!-- -*-Mode: markdown;-*- -->
+<!-- $Id: 4098d4ffce45696ec3497ad9e08e712906c9d8fe $ -->
 
 
 DataLife
@@ -8,7 +7,6 @@ DataLife
 
 **Home**:
   - https://github.com/pnnl/datalife
-  - https://gitlab.pnnl.gov/perf-lab/bigflowtools/datalife/ [[Deprecated]]
   
 
 **About**: DataLife is measurement and analysis toolset for
