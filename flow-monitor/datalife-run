@@ -1,0 +1,155 @@
+#!/bin/bash
+# -*- mode: sh -*-
+
+#*BeginPNNLCopyright*********************************************************
+#
+# $HeadURL$
+# $Id: 0cae9f95d9ed0841bbf77c91eef5f3d4c9a73f2e $
+#
+#***********************************************************EndPNNLCopyright*
+
+# set -x
+
+
+hostName=`hostname -s`
+scriptPath0="${BASH_SOURCE[0]}" # works when script is sourced (unlike $0)
+scriptPath=$(readlink -f "${scriptPath0}")
+scriptCmd=${scriptPath##*/} # cf. $(basename ...)
+scriptDir=${scriptPath%/*}  # cf. $(dirname ...)
+
+use_stdin=0
+if test ! -t 0; then
+  use_stdin=1
+  echo "Redirecting STDIN to use it as argument for application"
+fi
+
+#****************************************************************************
+
+MG_XLIB_ROOT="${MG_XLIB_ROOT:-${scriptDir}/../../xlib/lib}"
+MG_PERF_ROOT="${MG_PERF_ROOT:-${scriptDir}/../../xlib/perf}"
+
+#-----------------------------------------------------------
+
+#perf="${MG_PERF_ROOT}/linux-5.5.9/tools/perf/perf"
+perf="${MG_PERF_ROOT}/linux-5.18.14/tools/perf/perf"
+
+#-----------------------------------------------------------
+
+DYNINST_ROOT="${MG_XLIB_ROOT}/dyninst-12.1.0"
+DYNINST_LIB="${DYNINST_ROOT}/lib"
+export DYNINSTAPI_RT_LIB="${DYNINST_LIB}/libdyninstAPI_RT.so"
+export LD_LIBRARY_PATH="${DYNINST_LIB}"
+
+#echo ${perf}
+
+#****************************************************************************
+
+zero=0
+opt_period=0
+opt_method='pt-load'
+opt_buffer=8192
+
+#****************************************************************************
+# Parse arguments
+#****************************************************************************
+
+die()
+{
+    cat <<EOF 1>&2
+${scriptCmd}: $*
+Use '${scriptCmd} -h' for usage.
+EOF
+    exit 1
+}
+
+usage()
+{
+    cat <<EOF
+Usage: ${scriptCmd} [options] [--] <app> [app-args]
+
+Trace memory behavior of application <app> (normally the result of
+instrumentation). Generates output in <path>.
+
+Options (defaults in [])
+  -h / --help          help
+
+  -o / --output <path> output directory [<app>-trace-b<buffer>-p<period>]
+
+  -e / --event <e>     collection type for <pt-load> <pt-load-store> <pt-time> <ldlat> [pt-load]
+  -b / --buffer <sz>   buffers size in bytes [8192]
+  -p / --period <p>    period for sampling (0 for full trace) [0]
+EOF
+    exit 0
+}
+
+#-----------------------------------------------------------
+# optional arguments
+#-----------------------------------------------------------
+
+while [[ $# -gt 0 ]] ; do
+
+    arg="$1"
+    shift # past argument
+
+    case "${arg}" in
+        -h | --help )
+            usage
+            ;;
+
+        -e | --event )
+            opt_method="$1"
+            shift # past value
+            ;;
+
+        -b | --buffer-size )
+            opt_buffer="$1"
+            shift # past value
+            ;;
+
+        -p | --period)
+            opt_period="$1"
+            shift
+            ;;
+
+        -o | --output)
+            opt_outDir="$1"
+            shift
+            ;;
+
+
+        -- ) # "$@" now contains "<app> <app-args>"
+            break
+            ;;
+
+        * ) # we have consumed one token of "<app> <app-args>", reset "$@"
+            set -- "$arg" "$@"
+            break
+            ;;
+    esac
+done
+
+#-----------------------------------------------------------
+# required args
+#-----------------------------------------------------------
+
+if [[ -z $1 ]] ; then
+    die "no command to monitor"
+fi
+
+#****************************************************************************
+#
+#****************************************************************************
+
+
+#-----------------------------------------------------------
+# launch
+#-----------------------------------------------------------
+
+#printf "${scriptCmd}: collecting data for $app with ${args_arr[@]:1}\n"
+
+if [[ -z "${LD_LIBRARY_PATH}" ]] ; then unset LD_LIBRARY_PATH; fi
+
+LD_PRELOAD:+="<data-life monitoring lib>"
+
+export LD_LIBRARY_PATH LD_PRELOAD
+exec "$@"
