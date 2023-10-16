@@ -1,130 +1,66 @@
-#!/bin/bash
-# -*- mode: sh -*-
+#! /usr/bin/env PYTHONPATH=./src python
+# -*-Mode: python;-*-
 
-#*BeginPNNLCopyright*********************************************************
+# $HeadURL: https:// $
+# $Id: 51c72ca84a3d22959cff41b0515e1a2f3bd4b6b0 $
+
+#****************************************************************************
 #
-# $HeadURL$
-# $Id: 0cae9f95d9ed0841bbf77c91eef5f3d4c9a73f2e $
-#
-#***********************************************************EndPNNLCopyright*
+#****************************************************************************
 
-# set -x
+import sys
+import argparse
 
-scriptPath0="${BASH_SOURCE[0]}" # works when script is sourced (unlike $0)
-scriptPath=$(readlink -f "${scriptPath0}")
-scriptCmd=${scriptPath##*/} # cf. $(basename ...)
-scriptDir=${scriptPath%/*}  # cf. $(dirname ...)
+from datalife import DataLife
+from sankeydata import SankeyData
+
+def main():
+
+    datalife_help = '''datalife-analyze produces data flow lifecycle (DFL)
+    graph to guide decisions regarding coordinating tasks and data flows on
+    distributed resources. 
+    '''
+
+    parser = argparse.ArgumentParser(description=datalife_help,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('-i', '--input', help='read I/O monitor stats from directory path')
+    parser.add_argument('-o', '--output', help='write a graph output to a file')
+    args = parser.parse_args()
+   
+    global dlife
+
+    dlife = DataLife()
+    if args.input:
+        read_stats(args.input)
+    else:
+        parser.print_help(sys.stderr)
+        return
+    write_graph(args.output) if args.output else ''
+
+
+def read_stats(dirpath):
+
+    dlife.read_stats(dirpath)
+    msg = dlife.get_stat_summary()
+    print(msg)
+
+
+def write_graph(dirpath):
+
+    dlife.write_graph(dirpath)
+
+
+def build_sankey():
+
+    sd = SankeyData()
+    sd.load_stat_all(dlife.get_df_all())
+    sd.build_links()
+    sd.plot()
+
 
 #****************************************************************************
 
-MEMGAZE_ROOT="${scriptDir}"
-#MEMGAZE_ROOT="${DL_ANALYSIS_ROOT:-${scriptDir}/../../lib/flow-analysis}"
-
-#-----------------------------------------------------------
-
-datalife_anal="${scriptDir}"
+if (__name__ == "__main__"):
+    sys.exit(main())
 
 #****************************************************************************
-
-opt_outDir='.'
-opt_trace_dir=''
-#opt_inst_dir=''
-opt_loads='1'
-opt_stores='0'
-opt_strided='1'
-opt_indirect='1'
-opt_frame='0'
-opt_analysis_file=''
-
-#****************************************************************************
-# Parse arguments
-#****************************************************************************
-
-die()
-{
-    cat <<EOF 1>&2
-${scriptCmd}: $*
-Use '${scriptCmd} -h' for usage.
-EOF
-    exit 1
-}
-
-usage()
-{
-    cat <<EOF
-Usage: ${scriptCmd} [options] <trace-dir>
-
-Analyze memory behavior of <trace-dir>.
-
-Options:
-  -h / --help              help
-
-  -t / --trace-dir <path>  memgaze trace directory
-
-  -o / --output => output directory name (optional)
-EOF
-    exit 0
-}
-
-#-----------------------------------------------------------
-# optional arguments
-#-----------------------------------------------------------
-while [[ $# -gt 0 ]] ; do
-
-    arg="$1"
-    shift # past argument
-
-    case "${arg}" in
-        -h | --help )
-            usage
-            ;;
-
-        -o | --output )
-            opt_outDir="$1"
-            shift # past value
-            ;;
-
-        # FIXME: to deprecate
-          -t | --trace-dir )
-            opt_trace_dir="$1"
-            shift # past value
-            ;;
-
-          # -s | --inst-dir )
-        #     opt_inst_dir="$1"
-        #     shift # past value
-        #     ;;
-
-        -- ) # next token contains "<opt_trace_dir>..."
-            ;;
-
-        * ) # $arg is "<opt_trace_dir>" (and options could follow)
-            opt_trace_dir=${arg}
-            ;;
-    esac
-done
-
-
-#-----------------------------------------------------------
-# required args
-#-----------------------------------------------------------
-
-trace=''
-binanlys=''
-hpcstruct=''
-mode=''
-period=''
-callpath=''
-binary=''
-output='memgaze-fp.txt'
-
-
-#****************************************************************************
-# 
-#****************************************************************************
-
-if [[ ! -d ${opt_outDir} ]] ; then
-    mkdir -p ${opt_outDir}
-fi
-
-${mg_anal} -t ${trace} -l ${binanlys} -s ${hpcstruct} -o ${opt_outDir}/${output} -m ${mode} -p ${period} -c ${callpath}

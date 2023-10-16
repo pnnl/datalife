@@ -160,6 +160,16 @@ class DataLife(object):
 
         return self.g       
 
+    def write_graph(self, fpath, gformat='gpickle'):
+        """Writes Networkx DiGraph from self.g
+        """
+
+        g = self.g
+        if gformat == 'gpickle':
+            nx.write_gpickle(g, fpath)
+        else:
+            nx.write_gpickle(g, fpath)
+
     
     def get_df_all(self):
         """Returns loaded stats in Pandas Dataframe
