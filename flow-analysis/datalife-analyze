@@ -14,12 +14,14 @@ import argparse
 from datalife import DataLife
 from sankeydata import SankeyData
 
-def main():
+datalife_help = '''
+datalife-analyze produces data flow lifecycle (DFL) graph to guide
+decisions regarding coordinating tasks and data flows on distributed
+resources.
+'''
 
-    datalife_help = '''datalife-analyze produces data flow lifecycle (DFL)
-    graph to guide decisions regarding coordinating tasks and data flows on
-    distributed resources. 
-    '''
+
+def main():
 
     parser = argparse.ArgumentParser(description=datalife_help,
                                      formatter_class=argparse.RawTextHelpFormatter)
