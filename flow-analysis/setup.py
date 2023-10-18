@@ -8,6 +8,7 @@ setup(
     description="DataLife is measurement and analysis toolset for distributed scientific workflows.",
     license="BSD",
     url="https://github.com/pnnl/datalife",
+    keywords="distributed workflows, performance analysis, data flow lifecycles, storage bottlenecks, caterpillar tree",
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
@@ -15,11 +16,15 @@ setup(
         "Development Status :: 4 - Beta",
     ],
 
-    packages=['community'],
+    package_dir = { "datalife": "src" },
     install_requires=[
         "networkx",
-        "numpy"
+        "numpy",
+        "pandas",
+        "plotly",
+        "pyaml",
+        "matplotlib"
     ],
 
-    scripts=['bin/community'] # TODO: from https://github.com/taynaud/python-louvain
+    scripts=['bin/datalife-analyze'] 
 )
