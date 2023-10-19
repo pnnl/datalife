@@ -1,4 +1,4 @@
-#! /usr/bin/env PYTHONPATH=./src python
+#! /usr/bin/env python
 # -*-Mode: python;-*-
 
 # $HeadURL: https:// $
