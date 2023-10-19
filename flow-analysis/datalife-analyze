@@ -38,4 +38,6 @@ fi
 
 #-----------------------------------------------------------------------------
 
-PYTHONPATH+=${datalife_lib} "${cmd}" "$@"
+export PYTHONPATH+=${datalife_lib}
+
+"${cmd}" "$@"
