@@ -30,8 +30,8 @@ cmd=${datalife_lib}/${scriptCmd}
 if [[ $1 =~ ^--debug ]] ; then
     cat <<EOF
 ${ClrBeg}Hello from: ${scriptPath}${ClrEnd}
-  datalife_lib=${datalife_lib}
-  cmd=${cmd}
+  datalife_lib = '${datalife_lib}'
+  cmd          = '${cmd}'
 EOF
     #exit
 fi
