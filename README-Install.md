@@ -25,9 +25,6 @@ Building & Installing
      -DCMAKE_INSTALL_PREFIX=<install> \
      <path-to-datalife-root>
    make install
-   cd <memgaze>/flow-monitor
-   make ...
-   make perf # optional
    ```
 
 2. Or individual Build, first monitor:
@@ -51,7 +48,6 @@ Building & Installing
    cmake \
     -DCMAKE_INSTALL_PREFIX=<install> \
     <path-to-monitor-root>
-   make install
    ```
 
 
