@@ -41,7 +41,7 @@ Building & Installing
   - `-DCMAKE_CXX_COMPILER=...`
   
 
-3. Build flow-analysis:
+3. Or individual Build, flow-analysis:
    ```sh
    cd flow-analysis
    mkdir <build> && cd <build>
