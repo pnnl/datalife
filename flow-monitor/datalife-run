@@ -10,37 +10,27 @@
 
 # set -x
 
-
 hostName=`hostname -s`
 scriptPath0="${BASH_SOURCE[0]}" # works when script is sourced (unlike $0)
 scriptPath=$(readlink -f "${scriptPath0}")
 scriptCmd=${scriptPath##*/} # cf. $(basename ...)
 scriptDir=${scriptPath%/*}  # cf. $(dirname ...)
 
-use_stdin=0
-if test ! -t 0; then
-  use_stdin=1
-  echo "Redirecting STDIN to use it as argument for application"
-fi
-
 #****************************************************************************
 
-MG_XLIB_ROOT="${MG_XLIB_ROOT:-${scriptDir}/../../xlib/lib}"
-MG_PERF_ROOT="${MG_PERF_ROOT:-${scriptDir}/../../xlib/perf}"
+# https://misc.flogisoft.com/bash/tip_colors_and_formatting
+ClrBeg=$'\e[1m\e[4m\e[31m' # '$' syntax quotes escapes
+ClrEnd=$'\e[0m'
 
 #-----------------------------------------------------------
 
-#perf="${MG_PERF_ROOT}/linux-5.5.9/tools/perf/perf"
-perf="${MG_PERF_ROOT}/linux-5.18.14/tools/perf/perf"
+# Canonical ${scriptDir} is ${DATALIFE_ROOT}/bin
+DATALIFE_ROOT="${DATALIFE_ROOT:-${scriptDir}/../}"
 
 #-----------------------------------------------------------
 
-DYNINST_ROOT="${MG_XLIB_ROOT}/dyninst-12.1.0"
-DYNINST_LIB="${DYNINST_ROOT}/lib"
-export DYNINSTAPI_RT_LIB="${DYNINST_LIB}/libdyninstAPI_RT.so"
-export LD_LIBRARY_PATH="${DYNINST_LIB}"
+my_lib="${DATALIFE_ROOT}/...."
 
-#echo ${perf}
 
 #****************************************************************************
 

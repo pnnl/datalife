@@ -21,23 +21,37 @@ scriptDir=${scriptPath%/*}  # cf. $(dirname ...)
 ClrBeg=$'\e[1m\e[4m\e[31m' # '$' syntax quotes escapes
 ClrEnd=$'\e[0m'
 
+#-----------------------------------------------------------
+
+# Canonical ${scriptDir} is ${DATALIFE_ROOT}/bin
+DATALIFE_ROOT="${DATALIFE_ROOT:-${scriptDir}/../}"
+
+#-----------------------------------------------------------
+
+#datalife_lib="${DATALIFE_ROOT}/...."
 datalife_lib=${scriptDir}/src # TODO: update for official install
 
 cmd=${datalife_lib}/${scriptCmd}
 
 #-----------------------------------------------------------------------------
 
+is_debug=0
+
 if [[ $1 =~ ^--debug ]] ; then
+    is_debug=1
+fi
+
+
+#****************************************************************************
+
+if (( $is_debug )) ; then
     cat <<EOF
 ${ClrBeg}Hello from: ${scriptPath}${ClrEnd}
   datalife_lib = '${datalife_lib}'
   cmd          = '${cmd}'
 EOF
-    #exit
 fi
-
-#-----------------------------------------------------------------------------
 
 export PYTHONPATH+="${datalife_lib}"
 
-"${cmd}" "$@"
+exec "${cmd}" "$@"
