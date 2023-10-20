@@ -28,14 +28,14 @@ Building & Installing
    ```
 
 2. Or individual Build, first monitor:
-  ```sh
-  cd flow-monitor
-  mkdir <build> && cd <build>
-  cmake \
-    -DCMAKE_INSTALL_PREFIX=<install> \
-    <path-to-monitor-root>
-  make install
-  ```
+   ```sh
+   cd flow-monitor
+   mkdir <build> && cd <build>
+   cmake \
+     -DCMAKE_INSTALL_PREFIX=<install> \
+     <path-to-monitor-root>
+   make install
+   ```
 
   To supply a compiler path, use:
   - `-DCMAKE_CXX_COMPILER=...`
