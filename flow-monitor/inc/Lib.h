@@ -270,7 +270,7 @@ inline auto innerWrapper(const char *pathname, bool &isMonitorFile, Func monitor
   patterns.push_back("*.fna");
   patterns.push_back("*.*.bt2");
   patterns.push_back("*.fastaq");
-  patterns.push_back("*.tar.gz");
+  patterns.push_back("*.gz");
   patterns.push_back("*.txt");
   patterns.push_back("*.lht");
   patterns.push_back("*.fasta.amb");

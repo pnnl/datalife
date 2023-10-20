@@ -441,7 +441,6 @@ ssize_t monitorWrite(MonitorFile *file, unsigned int fp, int fd, const void *buf
 }
 
 ssize_t write(int fd, const void *buf, size_t count) {
-    printf("Printing fd in write %d and count %u\n", fd, count);
     vLock.readerLock();
     DPRINTF("Printing fd in write %d and count %u\n", fd, count);
     auto ret = outerWrapper("write", fd, Timer::Metric::write, monitorWrite, unixwrite, fd, buf, count);
@@ -606,6 +605,7 @@ FILE *fopen(const char *__restrict fileName, const char *__restrict modes) {
   patterns.push_back("*.*.bt2");
   patterns.push_back("*.fastq");
   patterns.push_back("*.lht");
+  patterns.push_back("*.tar.gz");
     patterns.push_back("*.fasta.amb");
     patterns.push_back("*.fasta.sa");
     patterns.push_back("*.fasta.bwt");
@@ -631,6 +631,7 @@ FILE *fopen64(const char *__restrict fileName, const char *__restrict modes) {
   patterns.push_back("*.*.bt2");
   patterns.push_back("*.fastq");
   patterns.push_back("*.lht");
+  patterns.push_back("*.tar.gz");
     patterns.push_back("*.fasta.amb");
     patterns.push_back("*.fasta.sa");
     patterns.push_back("*.fasta.bwt");
@@ -654,6 +655,7 @@ int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
   std::vector<std::string> patterns;
   patterns.push_back("*.fits");
   patterns.push_back("*.lht");
+  patterns.push_back("*.tar.gz");
   patterns.push_back("*.*.bt2");
   patterns.push_back("*.fastq");
   patterns.push_back("*.fasta.amb");
