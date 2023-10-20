@@ -11,8 +11,8 @@ else()
 endif()
 
 set(_pypkg ${DATALIFE_ROOT}/../flow-analysis)
-set(_pypkg_lib ${DATALIFE_ROOT}/flow-analysis/lib)
+set(_pypkg_libexec ${DATALIFE_ROOT}/flow-analysis/libexec)
 
-execute_process(COMMAND echo ${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_lib})
-execute_process(COMMAND ${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_lib})
+execute_process(COMMAND echo ${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_libexec})
+execute_process(COMMAND ${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_libexec})
 
