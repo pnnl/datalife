@@ -8,6 +8,8 @@ DataLife
 **Home**:
   - https://github.com/pnnl/datalife
   
+  - [Performance Lab for EXtreme Computing and daTa](https://github.com/perflab-exact)
+
 
 **About**: DataLife is measurement and analysis toolset for
 distributed scientific workflows that use I/O and storage for task
@@ -24,7 +26,7 @@ assignment.
 
 
 **Contacts**: (_firstname_._lastname_@pnnl.gov)
-  - Nathan R. Tallent
+  - Nathan R. Tallent ([www](https://hpc.pnnl.gov/people/tallent)), ([www](https://www.pnnl.gov/people/nathan-tallent))
   - Hyungro Lee
   - Lenny Guo
   - Jesun Firoz
@@ -34,8 +36,8 @@ assignment.
   - Lenny Guo (PNNL)
   - Jesun Firoz (PNNL)
   - Meng Tang (Illinois Institute of Technology)
-  - Nathan R. Tallent (PNNL)
-  
+  - Nathan R. Tallent (PNNL) ([www](https://hpc.pnnl.gov/people/tallent)), ([www](https://www.pnnl.gov/people/nathan-tallent))
+
 
 References
 -----------------------------------------------------------------------------
