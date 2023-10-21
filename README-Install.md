@@ -6,8 +6,8 @@ Prerequisites
 =============================================================================
 
 Environment
+  - CMake (>= version 2.8)
   - C++11 compiler, GCC preferred
-  - CMake (>= version 2.6)
   - Python 3.7+
 
 

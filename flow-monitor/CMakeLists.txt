@@ -1,6 +1,20 @@
-cmake_minimum_required (VERSION 2.8)
-project(Monitor)
+# -*-Mode: cmake;-*-
 
+#*BeginPNNLCopyright*********************************************************
+#
+# $HeadURL$
+# $Id: b3a9434b0207745daf99726c43f05688ac1e068f $
+#
+#***********************************************************EndPNNLCopyright*
+
+#****************************************************************************
+# 
+#****************************************************************************
+
+cmake_minimum_required(VERSION 2.8...3.27)
+project(DataLife-FlowMonitor)
+
+message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -Wall -pedantic -pthread -g -Wl,--no-as-needed -ldl -fPIC")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage -ftls-model=global-dynamic -fPIC ")
@@ -14,5 +28,9 @@ else()
 endif()
 
 set(LIB_PATH "${CMAKE_BINARY_DIR}/src/libmonitor.so")
-SET(MONITOR_INC_DIR ${CMAKE_SOURCE_DIR}/inc)
+
+# tallent:
+#   CMAKE_SOURCE_DIR: source dir of any top level (outer) 'project' command
+#   PROJECT_SOURCE_DIR: source dir of most recent 'project' command
+SET(MONITOR_INC_DIR ${PROJECT_SOURCE_DIR}/inc)
 add_subdirectory(src)

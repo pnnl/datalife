@@ -1,5 +1,18 @@
-cmake_minimum_required (VERSION 2.8)
-project(Analyze)
+# -*-Mode: cmake;-*-
+
+#*BeginPNNLCopyright*********************************************************
+#
+# $HeadURL$
+# $Id: b3a9434b0207745daf99726c43f05688ac1e068f $
+#
+#***********************************************************EndPNNLCopyright*
+
+#****************************************************************************
+# 
+#****************************************************************************
+
+cmake_minimum_required(VERSION 2.8...3.27)
+project(DataLife-FlowAnalysis)
 
 find_package(Python COMPONENTS Interpreter REQUIRED)
 
@@ -19,6 +32,7 @@ else()
     set(_pypkg_libexec ${DATALIFE_ROOT}/flow-analysis/libexec)
 endif()
 
-execute_process(COMMAND echo ${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_libexec})
+message(STATUS "Python_EXECUTABLE: ${Python_EXECUTABLE}")
+message(STATUS "${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_libexec}")
 execute_process(COMMAND ${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_libexec})
 
