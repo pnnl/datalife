@@ -7,7 +7,7 @@ Prerequisites
 
 Environment
   - CMake (>= version 2.8)
-  - C++11 compiler, GCC preferred
+  - C++14 compiler, GCC preferred
   - Python 3.7+
 
 
@@ -17,37 +17,37 @@ Building & Installing
 
 ....
 
+1. Common build options:
 
-1. Build the datalife (analysis and monitor) within directory _build_:
+   - `CMAKE_INSTALL_PREFIX=<path>`: Install path
+
+   - `-DDO_MAKE_FlowMonitor=<ON|OFF>`: Enable build of FlowMonitor
+
+   - `-DDO_MAKE_FlowAnalysis=<ON|OFF>`: Enable build of FlowAnalysis
+   
+   - `-DCMAKE_CXX_COMPILER=<path>`: Path for C++ compiler
+
+   - All options:
+   ```sh
+   cmake -LH <path-to-datalife-root>
+   cmake -LA <path-to-datalife-root>
+   ```
+
+2. Build the datalife (monitor and analysis) within directory _build_:
    ```sh
    mkdir <build> && cd <build>
    cmake \
-     -DCMAKE_INSTALL_PREFIX=<install> \
-     <path-to-datalife-root>
+     -DCMAKE_INSTALL_PREFIX=<install-path> \
+     <datalife-root-path>
    make install
    ```
 
-2. Or individual Build, first monitor:
+   Individual packages can also be built, e.g.:
    ```sh
    cd flow-monitor
    mkdir <build> && cd <build>
-   cmake \
-     -DCMAKE_INSTALL_PREFIX=<install> \
-     <path-to-monitor-root>
+   cmake ...
    make install
-   ```
-
-  To supply a compiler path, use:
-  - `-DCMAKE_CXX_COMPILER=...`
-  
-
-3. Or individual Build, flow-analysis:
-   ```sh
-   cd flow-analysis
-   mkdir <build> && cd <build>
-   cmake \
-    -DCMAKE_INSTALL_PREFIX=<install> \
-    <path-to-monitor-root>
    ```
 
 
