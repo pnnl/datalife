@@ -29,9 +29,9 @@ DATALIFE_ROOT="${DATALIFE_ROOT:-${scriptDir}/../}"
 #-----------------------------------------------------------
 
 #datalife_lib="${DATALIFE_ROOT}/...."
-datalife_lib=${scriptDir}/src # TODO: update for official install
+datalife_lib=${scriptDir}/../libexec # TODO: update for official install
 
-cmd=${datalife_lib}/${scriptCmd}
+cmd=${datalife_lib}/bin/${scriptCmd}
 
 #-----------------------------------------------------------------------------
 

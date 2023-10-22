@@ -26,5 +26,5 @@ setup(
         "matplotlib"
     ],
 
-    scripts=['datalife-analyze'] 
+    scripts=['src/datalife-analyze'] 
 )

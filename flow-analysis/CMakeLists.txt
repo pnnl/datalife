@@ -35,4 +35,9 @@ endif()
 message(STATUS "Python_EXECUTABLE: ${Python_EXECUTABLE}")
 message(STATUS "${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_libexec}")
 execute_process(COMMAND ${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_libexec})
-
+add_custom_target(flow-analysis-bin)
+add_custom_command(
+    TARGET flow-analysis-bin PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    ${_pypkg}/datalife-analyze
+    ${CMAKE_CURRENT_BINARY_DIR}/bin/datalife-analyze)
