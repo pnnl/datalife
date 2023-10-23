@@ -20,7 +20,9 @@ find_package(Python COMPONENTS Interpreter REQUIRED)
 if(DEFINED ENV{VIRTUAL_ENV} OR DEFINED ENV{CONDA_PREFIX})
     set(_pip_args)
 else()
-    set(_pip_args "--user")
+    set(_pip_args)
+    # raise DistutilsOptionError("can't combine user with prefix, "
+    #set(_pip_args "--user")
 endif()
 
 if (NOT DEFINED DATALIFE_ROOT)
@@ -35,9 +37,6 @@ endif()
 message(STATUS "Python_EXECUTABLE: ${Python_EXECUTABLE}")
 message(STATUS "${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_libexec}")
 execute_process(COMMAND ${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_libexec})
-add_custom_target(flow-analysis-bin)
-add_custom_command(
-    TARGET flow-analysis-bin PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-    ${_pypkg}/datalife-analyze
-    ${CMAKE_CURRENT_BINARY_DIR}/bin/datalife-analyze)
+
+install(FILES datalife-analyze DESTINATION bin PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+install(DIRECTORY ${_pypkg_libexec} DESTINATION libexec/flow-analysis/python/site-packages USE_SOURCE_PERMISSIONS)

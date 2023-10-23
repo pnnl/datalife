@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name="datalife-analyze",
@@ -17,6 +17,7 @@ setup(
     ],
 
     package_dir = { "datalife": "src" },
+    packages = find_packages(),
     install_requires=[
         "networkx",
         "numpy",
@@ -26,5 +27,5 @@ setup(
         "matplotlib"
     ],
 
-    scripts=['src/datalife-analyze'] 
+    scripts=['src/datalife-analyze.py'] 
 )
