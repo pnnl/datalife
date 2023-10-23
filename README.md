@@ -27,12 +27,12 @@ assignment.
 
 **Contacts**: (_firstname_._lastname_@pnnl.gov)
   - Nathan R. Tallent ([www](https://hpc.pnnl.gov/people/tallent)), ([www](https://www.pnnl.gov/people/nathan-tallent))
-  - Hyungro Lee
+  - Hyungro Lee ([www](https://www.pnnl.gov/science/staff/staff_info.asp?staff_num=10843)), ([www](https://lee212.github.io/))
   - Lenny Guo
   - Jesun Firoz
 
 **Contributors**:
-  - Hyungro Lee (PNNL)
+  - Hyungro Lee (PNNL) ([www](https://www.pnnl.gov/science/staff/staff_info.asp?staff_num=10843)), ([www](https://lee212.github.io/))
   - Lenny Guo (PNNL)
   - Jesun Firoz (PNNL)
   - Meng Tang (Illinois Institute of Technology)
