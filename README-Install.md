@@ -61,6 +61,13 @@ DataLife has two main steps.
 
 2. Analysis and diagnostics:
 
+   First, make a copy of the analysis cmd to <build>/bin directory by:
+   ```sh
+     make flow-analysis-bin
+   ```
+
+   And execute the cmd:
+
    ```sh
     datalife-analyze
     usage: datalife-analyze [-h] [-i INPUT] [-o OUTPUT]
