@@ -28,10 +28,10 @@ endif()
 if (NOT DEFINED DATALIFE_ROOT)
     set(DATALIFE_ROOT ${CMAKE_BINARY_DIR})
     set(_pypkg ${DATALIFE_ROOT}/../)
-    set(_pypkg_libexec ${DATALIFE_ROOT}/libexec)
+    set(_pypkg_libexec ${DATALIFE_ROOT}/libexec/flow-analysis)
 else()
     set(_pypkg ${DATALIFE_ROOT}/../flow-analysis)
-    set(_pypkg_libexec ${DATALIFE_ROOT}/flow-analysis/libexec)
+    set(_pypkg_libexec ${DATALIFE_ROOT}/flow-analysis/libexec/flow-analysis)
 endif()
 
 message(STATUS "Python_EXECUTABLE: ${Python_EXECUTABLE}")
@@ -39,4 +39,4 @@ message(STATUS "${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --tar
 execute_process(COMMAND ${Python_EXECUTABLE} -m pip install ${_pip_args} ${_pypkg} --target ${_pypkg_libexec})
 
 install(FILES datalife-analyze DESTINATION bin PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-install(DIRECTORY ${_pypkg_libexec} DESTINATION libexec/flow-analysis/python/site-packages USE_SOURCE_PERMISSIONS)
+install(DIRECTORY ${_pypkg_libexec} DESTINATION libexec USE_SOURCE_PERMISSIONS)

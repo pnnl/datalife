@@ -29,7 +29,7 @@ DATALIFE_ROOT="${DATALIFE_ROOT:-${scriptDir}/../}"
 #-----------------------------------------------------------
 
 #datalife_lib="${DATALIFE_ROOT}/...."
-datalife_lib=${scriptDir}/../libexec/flow-analysis/python/site-packages/libexec # TODO: update for official install
+datalife_lib=${scriptDir}/../libexec/flow-analysis/ # TODO: update for official install
 
 cmd=${datalife_lib}/bin/${scriptCmd}.py
 
