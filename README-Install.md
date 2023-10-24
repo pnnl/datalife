@@ -21,9 +21,9 @@ Building & Installing
 
    - `CMAKE_INSTALL_PREFIX=<path>`: Install path
 
-   - `-DDO_MAKE_FlowMonitor=<ON|OFF>`: Enable build of FlowMonitor
+   - `-DENABLE_FlowMonitor=<ON|OFF>`: Enable build of FlowMonitor
 
-   - `-DDO_MAKE_FlowAnalysis=<ON|OFF>`: Enable build of FlowAnalysis
+   - `-DENABLE_FlowAnalysis=<ON|OFF>`: Enable build of FlowAnalysis
    
    - `-DCMAKE_CXX_COMPILER=<path>`: Path for C++ compiler
 
