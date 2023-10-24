@@ -32,3 +32,9 @@ endif(DO_MAKE_FlowAnalysis)
 
 message(STATUS "DATALIFE_ROOT=${DATALIFE_ROOT}")
 #execute_process(COMMAND echo ${DATALIFE_ROOT})
+
+# install datalife-run
+#add_executable(datalife-run flow-monitor/datalife-run)
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+configure_file(flow-monitor/datalife-run ${CMAKE_BINARY_DIR}/bin COPYONLY)
+configure_file(flow-analysis/datalife-analyze ${CMAKE_BINARY_DIR}/bin COPYONLY)

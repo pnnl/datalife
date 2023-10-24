@@ -86,3 +86,6 @@ target_link_libraries(monitor stdc++fs)
 target_include_directories(monitor PUBLIC ${MONITOR_INC_DIR})
 install(TARGETS monitor LIBRARY DESTINATION lib)
  
+install(FILES ../datalife-run 
+	PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+	DESTINATION bin)
