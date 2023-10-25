@@ -50,6 +50,7 @@ Building & Installing
    make install
    ```
 
+  <!-- mkdir BUILD && cd BUILD && cmake -DCMAKE_INSTALL_PREFIX=`pwd`/../INSTALL -DENABLE_FlowMonitor=OFF .. -->
 
 Using
 =============================================================================
