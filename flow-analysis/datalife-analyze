@@ -28,8 +28,8 @@ DATALIFE_ROOT="${DATALIFE_ROOT:-${scriptDir}/../}"
 
 #-----------------------------------------------------------
 
-#datalife_lib="${DATALIFE_ROOT}/libexec/flow-analysis"
-datalife_lib=${scriptDir}/../libexec/flow-analysis/
+datalife_lib="${DATALIFE_ROOT}/libexec/flow-analysis"
+#datalife_lib=${scriptDir}/../libexec/flow-analysis/
 
 cmd=${datalife_lib}/bin/${scriptCmd}.py
 
