@@ -21,8 +21,8 @@ project(DataLife-FlowMonitor)
 # Compiler
 message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -Wall -pedantic -pthread -g -Wl,--no-as-needed -ldl -fPIC")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage -ftls-model=global-dynamic -fPIC ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -pthread -g -Wl,--no-as-needed -ldl -fPIC")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ftls-model=global-dynamic -fPIC ")
 
 # Input dir
 option(INPUT_DIR "Default input directory" ON)
