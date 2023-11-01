@@ -39,6 +39,9 @@ opt_period=0
 opt_method='pt-load'
 opt_buffer=8192
 
+is_debug=0
+
+
 #****************************************************************************
 # Parse arguments
 #****************************************************************************
@@ -84,6 +87,10 @@ while [[ $# -gt 0 ]] ; do
     case "${arg}" in
         -h | --help )
             usage
+            ;;
+
+        --debug )
+            is_debug=1
             ;;
 
         -e | --event )
@@ -140,6 +147,16 @@ fi
 if [[ -z "${LD_LIBRARY_PATH}" ]] ; then unset LD_LIBRARY_PATH; fi
 
 LD_PRELOAD:+="<data-life monitoring lib>"
+
+
+if (( $is_debug )) ; then
+    cat <<EOF
+${ClrBeg}Hello from: ${scriptPath}${ClrEnd}
+  LD_LIBRARY_PATH = '${LD_LIBRARY_PATH}'
+  LD_PRELOAD      = '${LD_PRELOAD}'
+EOF
+fi
+
 
 export LD_LIBRARY_PATH LD_PRELOAD
 exec "$@"
