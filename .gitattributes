@@ -1,0 +1,11 @@
+*.md      ident
+*.txt     ident
+[mM]ake*  ident
+*.mk      ident
+*.sh      ident
+*.rb      ident
+*.py      ident
+*.cpp     ident
+*.hpp     ident
+*.C       ident
+*.[ch]    ident
