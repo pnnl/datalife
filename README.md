@@ -1,5 +1,5 @@
 <!-- -*-Mode: markdown;-*- -->
-<!-- $Id: 4098d4ffce45696ec3497ad9e08e712906c9d8fe $ -->
+<!-- $Id$ -->
 
 
 DataLife
@@ -11,7 +11,7 @@ DataLife
   - [Performance Lab for EXtreme Computing and daTa](https://github.com/perflab-exact)
 
 
-**About**: DataLife is measurement and analysis toolset for
+**About (Technical)**: DataLife is measurement and analysis toolset for
 distributed scientific workflows that use I/O and storage for task
 composition. DataLife performs _data flow lifecycle_ (DFL) analysis to
 guide decisions regarding coordinating tasks and data flows on
@@ -23,6 +23,35 @@ currently focuses on POSIX and C I/O. The post-mortem analysis
 provides several helpful analyses and visualizations to help identify
 opportunities for improving task and data placement and resource
 assignment.
+
+
+**About (General)**: 
+
+New materials have the potential for improving solar generation,
+creating new batteries, developing new health care treatments, and
+enabling new techniques in computing. The problem is that new
+materials with just the right properties are extremely hard to
+find. The key to accelerating this discovery is automation of the
+complex theory-experiment cycle that consists of guidance and
+explanation from theory and experimental measurement and validation of
+experimentalists. In other words, new computational techniques are
+needed for the workflows that coordination large computational models,
+hypothesis generation, instrument control, and experimental
+interpretation and feedback.
+
+Distributed scientific workflows pass information -- often large
+volumes -- along chains of different computational tasks [in the
+experiment-instrument-theory cycle], causing data flow bottlenecks in
+storage and networks. We have developed DataLife, a measurement and
+analysis toolset for these workflows. DataLife performs data flow
+lifecycle (DFL) analysis to guide decisions regarding coordinating
+task and data flows on distributed resources. DataLife provides tools
+for measuring, analyzing, visualizing, and estimating the severity of
+flow bottlenecks. DataLife's measurement introduces techniques that
+deliver high precision while also imposing minimal overhead. The
+bottleneck estimator provides several analyses and visualizations to
+identify and rank opportunities for improving task and data placement
+and resource assignment.
 
 
 **Contacts**: (_firstname_._lastname_@pnnl.gov)
@@ -37,6 +66,7 @@ assignment.
   - Jesun Firoz (PNNL)
   - Meng Tang (Illinois Institute of Technology)
   - Nathan R. Tallent (PNNL) ([www](https://hpc.pnnl.gov/people/tallent)), ([www](https://www.pnnl.gov/people/nathan-tallent))
+
 
 
 References
