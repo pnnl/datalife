@@ -24,12 +24,17 @@ ClrEnd=$'\e[0m'
 
 #-----------------------------------------------------------
 
-# Canonical ${scriptDir} is ${DATALIFE_ROOT}/bin
-DATALIFE_ROOT="${DATALIFE_ROOT:-${scriptDir}/../}"
+# Canonical ${scriptDir} is ${DATALIFE_INSTALL}/bin
+DATALIFE_INSTALL="${DATALIFE_INSTALL:-${scriptDir}/../}"
+echo "DATALIFE_INSTALL: ${DATALIFE_INSTALL}"
 
 #-----------------------------------------------------------
 
-my_lib="${DATALIFE_ROOT}/...."
+if [ -f "${DATALIFE_INSTALL}/flow-monitor/src/libmonitor.so" ]; then
+    my_lib="${DATALIFE_INSTALL}/flow-monitor/src/libmonitor.so"
+else
+    my_lib="${DATALIFE_INSTALL}/lib/libmonitor.so"
+fi
 
 
 #****************************************************************************
@@ -138,8 +143,5 @@ fi
 #printf "${scriptCmd}: collecting data for $app with ${args_arr[@]:1}\n"
 
 if [[ -z "${LD_LIBRARY_PATH}" ]] ; then unset LD_LIBRARY_PATH; fi
-
-LD_PRELOAD:+="<data-life monitoring lib>"
-
-export LD_LIBRARY_PATH LD_PRELOAD
+export LD_LIBRARY_PATH LD_PRELOAD=${my_lib}
 exec "$@"
