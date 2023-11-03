@@ -1,17 +1,4 @@
 *~
-*/*~
-*/*.[oa]
-*/*/*/*.[oa]
-bin-anlys/install/
-bin-anlys/objs/
 tags
-*/tags
 *.swp
-*/*.swp
 cscope.out
-*/cscope.out
-bin-anlys/x-ExtractSourceFiles
-bin-anlys/x-Viewer
-bin-anlys/test
-xlib/lib/
-install/
