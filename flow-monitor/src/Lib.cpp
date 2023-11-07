@@ -43,14 +43,35 @@
 #include <cassert>
 #include <errno.h>
 
-// #define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
-#define DPRINTF(...)
+#define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
+// #define DPRINTF(...)
 #define MONITOR_ID "MONITOR"
 #define MONITOR_ID_LEN 5 
 #define MONITOR_VERSION "0.1"
 #define MONITOR_VERSION_LEN 3 //5+3
 
 #define TRACKFILECHANGES 1 // tmp-ly added
+
+class CleanupTrackFile {
+public:
+  CleanupTrackFile(){}
+  ~CleanupTrackFile() {
+  auto iter = Trackable<int, MonitorFileDescriptor *>::begin();
+  while (true) {
+    auto next_iter = Trackable<int, MonitorFileDescriptor *>::next(iter);
+    if (next_iter == Trackable<int, MonitorFileDescriptor *>::end()) {
+      break;
+    }
+    auto fd_ = next_iter->first;
+    auto file_desc = next_iter->second;
+    auto file = file_desc->getFile();
+    file->close();
+    MonitorFile::removeMonitorFile(file);
+    MonitorFileDescriptor::removeMonitorFileDescriptor(fd_);
+    iter = next_iter;
+  }
+  }
+};
 
 void __attribute__((constructor)) monitorInit(void) {
     std::call_once(log_flag, []() {
@@ -135,6 +156,7 @@ void __attribute__((constructor)) monitorInit(void) {
 }
 
 void __attribute__((destructor)) monitorCleanup(void) {
+    static CleanupTrackFile aCleanupTrackFile; 
     timer->start();
     init = false; //set to false because we cant ensure our static members have not already been deleted.
 
@@ -348,6 +370,7 @@ int monitorClose(MonitorFile *file, unsigned int fp, int fd) {
   patterns.push_back("*.h5");
   patterns.push_back("*.vcf");
   patterns.push_back("*.*.bt2");
+  patterns.push_back("*.fna");
   patterns.push_back("*.tar.gz");
   patterns.push_back("*.txt");
   patterns.push_back("*.lht");
@@ -367,8 +390,9 @@ int monitorClose(MonitorFile *file, unsigned int fp, int fd) {
     }
   }
 #endif
-    MonitorFile::removeMonitorFile(file);
-    MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
+    //MonitorFile::removeMonitorFile(file);
+    //MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
+    //
 // #ifdef TRACKFILECHANGES
 //     return 0;
 // #else
@@ -416,7 +440,6 @@ void exit_group(int status) {
   (*unix_exit_group)(status);
 }
 #endif
-
 
 ssize_t monitorRead(MonitorFile *file, unsigned int fp, int fd, void *buf, size_t count) {
   ssize_t ret = file->read(buf, count, fp);
@@ -603,6 +626,7 @@ FILE *fopen(const char *__restrict fileName, const char *__restrict modes) {
   std::vector<std::string> patterns;
   patterns.push_back("*.fits");
   patterns.push_back("*.*.bt2");
+  patterns.push_back("*.fna");
   patterns.push_back("*.fastq");
   patterns.push_back("*.lht");
   patterns.push_back("*.tar.gz");
@@ -629,6 +653,7 @@ FILE *fopen64(const char *__restrict fileName, const char *__restrict modes) {
   std::vector<std::string> patterns;
   patterns.push_back("*.fits");
   patterns.push_back("*.*.bt2");
+  patterns.push_back("*.fna");
   patterns.push_back("*.fastq");
   patterns.push_back("*.lht");
   patterns.push_back("*.tar.gz");
@@ -657,6 +682,7 @@ int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
   patterns.push_back("*.lht");
   patterns.push_back("*.tar.gz");
   patterns.push_back("*.*.bt2");
+  patterns.push_back("*.fna");
   patterns.push_back("*.fastq");
   patterns.push_back("*.fasta.amb");
   patterns.push_back("*.fasta.sa");
@@ -672,8 +698,9 @@ int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
     }
   }
 #endif
-    MonitorFile::removeMonitorFile(file);
-    MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
+    //MonitorFile::removeMonitorFile(file);
+    //MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
+    //
 // #ifdef TRACKFILECHANGES
 //     return 0;
 // #else

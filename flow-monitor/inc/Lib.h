@@ -245,7 +245,7 @@ inline auto innerWrapper(FILE *fp, bool &isMonitorFile, Func monitorFun, FuncLoc
 	    // }
             auto ret = monitorFun(file, pos, fd, args...);
             lock->writerUnlock();
-            removeFileStream(localFun, fp);
+            //removeFileStream(localFun, fp);
             return ret;
         }
     }
