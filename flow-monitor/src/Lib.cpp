@@ -56,9 +56,10 @@ class CleanupTrackFile {
 public:
   CleanupTrackFile(){}
   ~CleanupTrackFile() {
-  auto iter = Trackable<int, MonitorFileDescriptor *>::begin();
-  while (true) {
-    auto next_iter = Trackable<int, MonitorFileDescriptor *>::next(iter);
+  auto next_iter = Trackable<int, MonitorFileDescriptor *>::begin();
+  auto itered = Trackable<int, MonitorFileDescriptor *>::end();
+  while (next_iter != itered) {
+    next_iter = Trackable<int, MonitorFileDescriptor *>::next(next_iter);
     if (next_iter == Trackable<int, MonitorFileDescriptor *>::end()) {
       break;
     }
@@ -68,7 +69,6 @@ public:
     file->close();
     MonitorFile::removeMonitorFile(file);
     MonitorFileDescriptor::removeMonitorFileDescriptor(fd_);
-    iter = next_iter;
   }
   }
 };
@@ -390,8 +390,8 @@ int monitorClose(MonitorFile *file, unsigned int fp, int fd) {
     }
   }
 #endif
-    //MonitorFile::removeMonitorFile(file);
-    //MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
+    MonitorFile::removeMonitorFile(file);
+    MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
     //
 // #ifdef TRACKFILECHANGES
 //     return 0;
@@ -698,8 +698,8 @@ int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
     }
   }
 #endif
-    //MonitorFile::removeMonitorFile(file);
-    //MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
+    MonitorFile::removeMonitorFile(file);
+    MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
     //
 // #ifdef TRACKFILECHANGES
 //     return 0;
