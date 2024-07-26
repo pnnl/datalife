@@ -4,6 +4,6 @@
 
 # Steps to reproduce plots in the paper
 
-- Step 0: To generate the DataLifecycle graphs, ranking table, and caterpillar tree in Figures 3, 4 and 5, please go to the `DLG` folder.  
+- Step 0: To generate the DataLifecycle graphs, ranking table, and caterpillar tree in Figures 2 (f), 4 (a) and 5, please go to the `DFL` folder.  
 
 - Step 1: To generate the execution time plots in Figures 6, 7 and 8, please go to the `Performance` folder.
