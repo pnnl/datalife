@@ -74,6 +74,8 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
   auto ret_val_14 = fnmatch(pattern_14, name.c_str(), 0);
   char pattern_15[] = "*.fasta";
   auto ret_val_15 = fnmatch(pattern_15, name.c_str(), 0);
+  char pattern_16[] = "*.nc";
+  auto ret_val_16 = fnmatch(pattern_16, name.c_str(), 0);
   //  std::string hdf_file_name(name);
     // auto found = hdf_file_name.find("residue");
     //if (hdf_file_name.find("residue") == std::string::npos) {
@@ -81,7 +83,8 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
       && ret_val_4 != 0 && ret_val_5 != 0 && ret_val_6 !=0
       && ret_val_7 !=0 && ret_val_8 !=0 && ret_val_9 !=0
       && ret_val_10 !=0 && ret_val_11 !=0 && ret_val_12 !=0 
-      && ret_val_13 !=0 && ret_val_14 !=0 && ret_val_15 !=0 ) {
+      && ret_val_13 !=0 && ret_val_14 !=0 && ret_val_15 !=0 
+      && ret_val_16 !=0 ) {
 #endif
     readMetaInfo();
 #ifdef TRACKFILECHANGES
