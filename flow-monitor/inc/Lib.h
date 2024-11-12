@@ -279,6 +279,10 @@ inline auto innerWrapper(const char *pathname, bool &isMonitorFile, Func monitor
   patterns.push_back("*.fasta.pac");
   patterns.push_back("*.fasta.ann");
   patterns.push_back("*.fasta");
+  patterns.push_back("*.sra");
+  patterns.push_back("*.fastq");
+  patterns.push_back("*.bam");
+  patterns.push_back("*.bam.bai");
   for (auto pattern: patterns) {
     auto ret_val = fnmatch(pattern.c_str(), pathname, 0);
     // DPRINTF("PATTERN: %s PATHNAME: %s \n", pattern.c_str(), pathname);

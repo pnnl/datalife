@@ -120,7 +120,8 @@ ssize_t TrackFile::read(void *buf, size_t count, uint32_t index) {
     uint32_t endBlockForStat = (diff + bytes_read) / blockSizeForStat;
   
     if (((diff + bytes_read) % blockSizeForStat)) {
-      endBlockForStat++;
+        ;
+      //endBlockForStat++;
     }
     DPRINTF("bytes_read: %d; startBlockForStat: %d; endBlockForStat: %d; blockSizeForStat: %d", bytes_read, startBlockForStat, endBlockForStat, blockSizeForStat);
 
@@ -135,7 +136,7 @@ ssize_t TrackFile::read(void *buf, size_t count, uint32_t index) {
 	    track_file_blk_r_stat[_name].end()) {
 	  track_file_blk_r_stat[_name].insert(std::make_pair(index, 1));
 	//track_file_blk_r_stat_size[_name].insert(std::make_pair(i, bytes_read - ((i - startBlockForStat) * blockSizeForStat)));
-	  track_file_blk_r_stat_size[_name].insert(std::make_pair(index, bytes_read));
+	  track_file_blk_r_stat_size[_name].insert(std::make_pair(index, std::min(bytes_read - (i * blockSizeForStat), blockSizeForStat)));
 	} else {
 	  track_file_blk_r_stat[_name][index]++;
 	}
@@ -179,7 +180,7 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index) {
     uint32_t startBlockForStat = precNumBlocks; 
     uint32_t endBlockForStat = (diff + bytes_written) / _blkSize; 
     if (((diff + bytes_written) % _blkSize)) {
-      endBlockForStat++;
+      ;//endBlockForStat++;
     }
 
     // DPRINTF("w startBlockForStat: %d endBlockForStat: %d \n", startBlockForStat, endBlockForStat);
@@ -193,7 +194,8 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index) {
 	if (track_file_blk_w_stat[_name].find(index) == track_file_blk_w_stat[_name].end()) {
 	  // DPRINTF("%s: 1 \n",_name.c_str());
 	  track_file_blk_w_stat[_name].insert(std::make_pair(index, 1)); // not thread-safe
-	track_file_blk_w_stat_size[_name].insert(std::make_pair(i, bytes_written)); // not thread-safe
+	//track_file_blk_w_stat_size[_name].insert(std::make_pair(i, bytes_written)); // not thread-safe
+	track_file_blk_w_stat_size[_name].insert(std::make_pair(i, std::min(bytes_written - (i*_blkSize), _blkSize))); // not thread-safe
         }
         else {
 	  // DPRINTF("%s: 2 \n",_name.c_str());

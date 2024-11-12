@@ -43,8 +43,8 @@
 #include <cassert>
 #include <errno.h>
 
-#define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
-// #define DPRINTF(...)
+// #define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
+#define DPRINTF(...)
 #define MONITOR_ID "MONITOR"
 #define MONITOR_ID_LEN 5 
 #define MONITOR_VERSION "0.1"
@@ -257,6 +257,10 @@ int open(const char *pathname, int flags, ...) {
   patterns.push_back("*.fasta.pac");
   patterns.push_back("*.fasta.ann");
   patterns.push_back("*.fasta");
+  patterns.push_back("*.sra");
+  patterns.push_back("*.fastq");
+  patterns.push_back("*.bam");
+  patterns.push_back("*.bam.bai");
   for (auto pattern: patterns) {
     auto ret_val = fnmatch(pattern.c_str(), pathname, 0);
     if (ret_val == 0) {
@@ -292,6 +296,10 @@ int open64(const char *pathname, int flags, ...) {
     patterns.push_back("*.fasta.pac");
     patterns.push_back("*.fasta.ann");
     patterns.push_back("*.fasta");
+    patterns.push_back("*.sra");
+    patterns.push_back("*.fastq");
+    patterns.push_back("*.bam");
+    patterns.push_back("*.bam.bai");
 
     for (auto pattern: patterns) {
         auto ret_val = fnmatch(pattern.c_str(), pathname, 0);
@@ -349,6 +357,11 @@ int openat(int dirfd, const char *pathname, int flags, ...) {
     patterns.push_back("*.fasta.pac");
     patterns.push_back("*.fasta.ann");
     patterns.push_back("*.fasta");
+  patterns.push_back("*.sra");
+  patterns.push_back("*.fastq");
+  patterns.push_back("*.bam");
+  patterns.push_back("*.bam.bai");
+
   for (auto pattern: patterns) {
     auto ret_val = fnmatch(pattern.c_str(), pathname, 0);
     if (ret_val == 0) {
@@ -380,6 +393,11 @@ int monitorClose(MonitorFile *file, unsigned int fp, int fd) {
     patterns.push_back("*.fasta.pac");
     patterns.push_back("*.fasta.ann");
     patterns.push_back("*.fasta");
+  patterns.push_back("*.sra");
+  patterns.push_back("*.fastq");
+  patterns.push_back("*.bam");
+  patterns.push_back("*.bam.bai");
+
 
   for (auto pattern: patterns) {
     auto ret_val = fnmatch(pattern.c_str(), file->name().c_str(), 0);
@@ -735,7 +753,7 @@ size_t monitorFwrite(MonitorFile *file, unsigned int pos, int fd, const void *__
 }
 
 size_t fwrite(const void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
-  printf("fwrite Invoking fread\n");
+    //printf("fwrite Invoking fread\n");
     //return outerWrapper("fwrite", fp, Timer::Metric::read, monitorFwrite, unixfwrite, ptr, size, n, fp);
     return outerWrapper("fwrite", fp, Timer::Metric::write, monitorFwrite, unixfwrite, ptr, size, n, fp);
 }
