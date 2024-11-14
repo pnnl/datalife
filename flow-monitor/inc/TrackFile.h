@@ -14,6 +14,7 @@ extern std::map<std::string, std::map<int, std::atomic<int64_t> > > track_file_b
 //extern std::map<std::string, std::map<int, std::tuple<std::atomic<int64_t>, std::atomic<int64_t> > > > track_file_blk_w_stat;
 
 // For tracing
+extern std::vector<std::string> patterns;
 extern std::map<std::string, std::vector<int> > trace_read_blk_seq;
 extern std::map<std::string, std::vector<int> > trace_write_blk_seq;
 

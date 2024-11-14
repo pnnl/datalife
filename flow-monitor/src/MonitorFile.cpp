@@ -43,53 +43,66 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
     _active(false),
     _fd(fd)
      {
+// #ifdef TRACKFILECHANGES
+//   char pattern[] = "*.h5";
+//   auto ret_val = fnmatch(pattern, name.c_str(), 0);
+//   char pattern_2[] = "*.fits";
+//   auto ret_val_2 = fnmatch(pattern_2, name.c_str(), 0);
+//   char pattern_3[] = "*.vcf";
+//   auto ret_val_3 = fnmatch(pattern_3, name.c_str(), 0);
+//   char pattern_4[] = "*.tar.gz";
+//   auto ret_val_4 = fnmatch(pattern_4, name.c_str(), 0);
+//   char pattern_5[] = "*.txt";
+//   auto ret_val_5 = fnmatch(pattern_5, name.c_str(), 0);
+//   char pattern_6[] = "*.lht";
+//   auto ret_val_6 = fnmatch(pattern_6, name.c_str(), 0);
+//   char pattern_7[] = "*.fna";
+//   auto ret_val_7 = fnmatch(pattern_7, name.c_str(), 0);
+//   char pattern_8[] = "*.*.bt2";
+//   auto ret_val_8 = fnmatch(pattern_8, name.c_str(), 0);
+//   char pattern_9[] = "*.fastq";
+//   auto ret_val_9 = fnmatch(pattern_9, name.c_str(), 0);
+//   char pattern_10[] = "*.fasta.amb";
+//   auto ret_val_10 = fnmatch(pattern_10, name.c_str(), 0);
+//   char pattern_11[] = "*.fasta.sa";
+//   auto ret_val_11 = fnmatch(pattern_11, name.c_str(), 0);
+//   char pattern_12[] = "*.fasta.bwt";
+//   auto ret_val_12 = fnmatch(pattern_12, name.c_str(), 0);
+//   char pattern_13[] = "*.fasta.pac";
+//   auto ret_val_13 = fnmatch(pattern_13, name.c_str(), 0);
+//   char pattern_14[] = "*.fasta.ann";
+//   auto ret_val_14 = fnmatch(pattern_14, name.c_str(), 0);
+//   char pattern_15[] = "*.fasta";
+//   auto ret_val_15 = fnmatch(pattern_15, name.c_str(), 0);
+//   char pattern_16[] = "*.nc";
+//   auto ret_val_16 = fnmatch(pattern_16, name.c_str(), 0);
+//   //  std::string hdf_file_name(name);
+//     // auto found = hdf_file_name.find("residue");
+//     //if (hdf_file_name.find("residue") == std::string::npos) {
+//   if (ret_val !=0 && ret_val_2 != 0 && ret_val_3 != 0 
+//       && ret_val_4 != 0 && ret_val_5 != 0 && ret_val_6 !=0
+//       && ret_val_7 !=0 && ret_val_8 !=0 && ret_val_9 !=0
+//       && ret_val_10 !=0 && ret_val_11 !=0 && ret_val_12 !=0 
+//       && ret_val_13 !=0 && ret_val_14 !=0 && ret_val_15 !=0 
+//       && ret_val_16 !=0 ) {
+
+
 #ifdef TRACKFILECHANGES
-  char pattern[] = "*.h5";
-  auto ret_val = fnmatch(pattern, name.c_str(), 0);
-  char pattern_2[] = "*.fits";
-  auto ret_val_2 = fnmatch(pattern_2, name.c_str(), 0);
-  char pattern_3[] = "*.vcf";
-  auto ret_val_3 = fnmatch(pattern_3, name.c_str(), 0);
-  char pattern_4[] = "*.tar.gz";
-  auto ret_val_4 = fnmatch(pattern_4, name.c_str(), 0);
-  char pattern_5[] = "*.txt";
-  auto ret_val_5 = fnmatch(pattern_5, name.c_str(), 0);
-  char pattern_6[] = "*.lht";
-  auto ret_val_6 = fnmatch(pattern_6, name.c_str(), 0);
-  char pattern_7[] = "*.fna";
-  auto ret_val_7 = fnmatch(pattern_7, name.c_str(), 0);
-  char pattern_8[] = "*.*.bt2";
-  auto ret_val_8 = fnmatch(pattern_8, name.c_str(), 0);
-  char pattern_9[] = "*.fastq";
-  auto ret_val_9 = fnmatch(pattern_9, name.c_str(), 0);
-  char pattern_10[] = "*.fasta.amb";
-  auto ret_val_10 = fnmatch(pattern_10, name.c_str(), 0);
-  char pattern_11[] = "*.fasta.sa";
-  auto ret_val_11 = fnmatch(pattern_11, name.c_str(), 0);
-  char pattern_12[] = "*.fasta.bwt";
-  auto ret_val_12 = fnmatch(pattern_12, name.c_str(), 0);
-  char pattern_13[] = "*.fasta.pac";
-  auto ret_val_13 = fnmatch(pattern_13, name.c_str(), 0);
-  char pattern_14[] = "*.fasta.ann";
-  auto ret_val_14 = fnmatch(pattern_14, name.c_str(), 0);
-  char pattern_15[] = "*.fasta";
-  auto ret_val_15 = fnmatch(pattern_15, name.c_str(), 0);
-  char pattern_16[] = "*.nc";
-  auto ret_val_16 = fnmatch(pattern_16, name.c_str(), 0);
-  //  std::string hdf_file_name(name);
-    // auto found = hdf_file_name.find("residue");
-    //if (hdf_file_name.find("residue") == std::string::npos) {
-  if (ret_val !=0 && ret_val_2 != 0 && ret_val_3 != 0 
-      && ret_val_4 != 0 && ret_val_5 != 0 && ret_val_6 !=0
-      && ret_val_7 !=0 && ret_val_8 !=0 && ret_val_9 !=0
-      && ret_val_10 !=0 && ret_val_11 !=0 && ret_val_12 !=0 
-      && ret_val_13 !=0 && ret_val_14 !=0 && ret_val_15 !=0 
-      && ret_val_16 !=0 ) {
-#endif
-    readMetaInfo();
-#ifdef TRACKFILECHANGES
+
+    bool matched = true;
+    for (const auto& pattern : patterns) {
+        if (fnmatch(pattern.c_str(), name.c_str(), 0) != 0) {
+            matched = false;
+            break;
+        }
     }
+
+    if (matched) {
+        readMetaInfo();
+    }
+
 #endif
+
     newFilePosIndex();
 }
 

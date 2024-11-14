@@ -43,6 +43,15 @@
 
 #define TRACKFILECHANGES 1
 
+std::vector<std::string> patterns = {
+    "*.h5", "*.nc", "*.fits", "*.vcf", "*.tar.gz", "*.lht", "*.fna",
+    "*.*.bt2", "*.fastq", "*.fasta.amb", "*.fasta.sa", "*.fasta.bwt",
+    "*.fasta.pac", "*.fasta.ann", "*.fasta", "*.stf",
+    "*.out", "*.dot", "*.gz", "*.dcd", "*.pt", "*.txt",
+    //"*.pdb",
+    // "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
+};
+
 static Timer* timer;
 
 std::once_flag log_flag;
