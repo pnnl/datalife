@@ -32,7 +32,11 @@
 
 using namespace std::chrono;
 //#define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
+#ifdef LIBDEBUG
+#define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
+#else
 #define DPRINTF(...)
+#endif
 
 #define GATHERSTAT 1
 // #define USE_HASH 1
