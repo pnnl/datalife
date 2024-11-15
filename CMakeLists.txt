@@ -22,6 +22,17 @@ project(DataLife VERSION 0.1.0)
 option(ENABLE_FlowMonitor "Enable build of DataLife-FlowMonitor" ON)
 option(ENABLE_FlowAnalysis "Enable build of DataLife-FlowAnalysis" ON)
 option(ENABLE_TESTS "Build test programs" OFF)
+# Compiling Mode
+# Set a default build type if none was specified
+set(default_build_type "Release")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("IN DEBUG MODE")
+    add_compile_options(-g -O0)
+    add_compile_definitions(LIBDEBUG)
+else()
+    message("IN RELEASE MODE")
+    add_compile_options(-g -O3)
+endif()
 
 #****************************************************************************
 # 
