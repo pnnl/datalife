@@ -37,18 +37,22 @@
 
 #define ADD_THROW __THROW
 
-//#define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
 #define DPRINTF(...)
+// #ifdef LIBDEBUG
+// #define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
+// #else
+// #define DPRINTF(...)
+// #endif
 // #define MYPRINTF(...) fprintf(stderr, __VA_ARGS__)
 
 #define TRACKFILECHANGES 1
 
 std::vector<std::string> patterns = {
-    "*.h5", "*.nc", "*.fits", "*.vcf", "*.tar.gz", "*.lht", "*.fna",
+    "*.fits", "*.vcf", "*.lht", "*.fna",
     "*.*.bt2", "*.fastq", "*.fasta.amb", "*.fasta.sa", "*.fasta.bwt",
     "*.fasta.pac", "*.fasta.ann", "*.fasta", "*.stf",
-    "*.out", "*.dot", "*.gz", "*.dcd", "*.pt", "*.txt",
-    //"*.pdb",
+    "*.out", "*.dot", "*.gz", "*.tar.gz", "*.dcd", "*.pt", "*.h5", "*.nc", 
+    //"*.txt", //"*.pdb",
     // "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
 };
 
@@ -79,6 +83,11 @@ std::map<std::string, std::map<int, std::atomic<int64_t> > > track_file_blk_w_st
 // For tracing
 std::map<std::string, std::vector<int> > trace_read_blk_seq;
 std::map<std::string, std::vector<int> > trace_write_blk_seq;
+#ifdef HDF5_IO
+size_t readIndex = -1;
+size_t writeIndex = -1;
+std::string currFileName;
+#endif
 
 unixopen_t unixopen = NULL;
 unixopen_t unixopen64 = NULL;
@@ -88,6 +97,8 @@ unixread_t unixread = NULL;
 unixwrite_t unixwrite = NULL;
 unixlseek_t unixlseek = NULL;
 unixlseek64_t unixlseek64 = NULL;
+// unixlstat_t unixlstat = NULL;
+unixfstat_t unixfstat = NULL;
 unixxstat_t unixxstat = NULL;
 unixxstat64_t unixxstat64 = NULL;
 unixxstat_t unixlxstat = NULL;
@@ -117,6 +128,15 @@ unix_exit_t unix_exit = NULL;
 unix_Exit_t unix_Exit = NULL;
 unix_exit_group_t unix_exit_group = NULL;
 unix_vfprintf_t unix_vfprintf = NULL;
+mmap_t unixmmap = NULL;
+// For POSIX
+pread_t unixpread = NULL;
+pwrite_t unixpwrite = NULL;
+pread64_t unixpread64 = NULL;
+pwrite64_t unixpwrite64 = NULL;
+std::unordered_map<int, std::string> fdToFileMap;
+std::mutex fdToFileMapMutex;
+
 
 bool write_printf = false;
 bool open_printf = false;
