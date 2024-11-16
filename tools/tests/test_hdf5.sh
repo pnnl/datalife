@@ -11,7 +11,7 @@ DATALIFE_LIB_PATH=../../build/flow-monitor/src/libmonitor.so
 
 
 # Cleanup previous logs
-rm -rf *blk_trace.json *.datalife.json
+rm -rf *_stat
 
 # # datalife monitor env variables
 # export MONITOR_SOCKETS_PER_CONN=0
@@ -30,24 +30,27 @@ rm -rf *blk_trace.json *.datalife.json
 # Run datalife simple test
 # Measure time in milliseconds
 
+exp_ext=$(echo "$(pwd)" | rev | cut -d'/' -f1-5 | rev)
+export EXPERIMENT_PATH="/qfs/projects/oddite/$USER/$exp_ext"
 export HDF5_USE_FILE_LOCKING=FALSE
-
-filename="test_IO_file.nc"
+TEST_LOG=datalife_hdf5_test.log
+filename="test_IO_file.h5"
+rm -rf $TEST_LOG
 
 sudo /sbin/sysctl vm.drop_caches=3
 t1=$(date +%s%3N)
-LD_PRELOAD=$DATALIFE_LIB_PATH \
-    strace python vlen_h5_write.py $filename 2>&1 | tee datalife_hdf5_test.log
+LD_PRELOAD=$DATALIFE_LIB_PATH:$LD_PRELOAD \
+    python vlen_h5_write.py $filename 2>&1 | tee -a $TEST_LOG
 
 LD_PRELOAD=$DATALIFE_LIB_PATH \
-    strace python vlen_h5_read2.py $filename 2>&1 | tee -a datalife_hdf5_test.log
+    python vlen_h5_read2.py $filename 2>&1 | tee -a $TEST_LOG
 # datalife-run python io_test.py 2>&1 | tee datalife_hdf5_test.log
 t2=$(date +%s%3N)
-echo "Time taken[datalife-run]: $((t2-t1)) milliseconds"
+echo "Time taken[datalife-run]: $((t2-t1)) milliseconds" | tee -a $TEST_LOG
 
-rm -rf ./$filename
+# rm -rf ./$filename
 # mv ///scratch/$USER/*blk_trace ./
-sleep 5
+# sleep 5
 
 # # Run simple test
 # # Measure time in milliseconds

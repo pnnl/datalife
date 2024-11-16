@@ -5,8 +5,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#define FILE_NAME "test_io_file.txt"
-#define DATA_SIZE 4 * 1024 * 1024  // 4MB
+#define FILE_NAME "testIOfile.out"
+#define DATA_SIZE 64 * 1024 * 1024  // 64MB
 
 int main() {
     int file;

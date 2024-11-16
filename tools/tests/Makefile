@@ -1,13 +1,16 @@
-# Makefile to compile io_test.c
+# Makefile to compile io_test.c and fio_test.c
 
 CC = gcc
 CFLAGS = -Wall -Wextra -O2
-TARGET = io_test
+TARGETS = io_test fio_test
 
-all: $(TARGET)
+all: $(TARGETS)
 
-$(TARGET): io_test.c
-	$(CC) $(CFLAGS) -o $(TARGET) io_test.c
+io_test: io_test.c
+	$(CC) $(CFLAGS) -o io_test io_test.c
+
+fio_test: fio_test.c
+	$(CC) $(CFLAGS) -o fio_test fio_test.c
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGETS)
