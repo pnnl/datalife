@@ -114,7 +114,7 @@ ssize_t TrackFile::read(void *buf, size_t count, uint32_t index) {
   auto read_file_end_time = high_resolution_clock::now();
   auto duration = duration_cast<seconds>(read_file_end_time - read_file_start_time); 
   total_time_spent_read += duration;
-  // DPRINTF("bytes_read: %ld _fd_orig: %d _name: %s \n", bytes_read, _fd_orig, _name.c_str());
+  DPRINTF("bytes_read: %ld _fd_orig: %d _name: %s \n", bytes_read, _fd_orig, _name.c_str());
 #ifdef GATHERSTAT
   if (bytes_read != -1) { // Only update stats if nonzero byte counts are read
     auto blockSizeForStat = Config::blockSizeForStat;
@@ -177,6 +177,7 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index) {
   auto write_file_end_time = high_resolution_clock::now();
   auto duration = duration_cast<seconds>(write_file_end_time - write_file_start_time);
   total_time_spent_write += duration;
+  DPRINTF("bytes_written: %ld _fd_orig: %d _name: %s \n", bytes_written, _fd_orig, _name.c_str());
 #ifdef GATHERSTAT
   if (bytes_written != -1) {
     auto diff = _filePos[index]; //  - _filePos[0];
@@ -296,7 +297,7 @@ off_t TrackFile::seek(off_t offset, int whence, uint32_t index) {
 
 void TrackFile::close() {
   // #if 0  
-  DPRINTF("Calling TrackFile close \n");
+  DPRINTF("Calling TrackFile close : %s\n", _name.c_str());
   // if (!_closed) {
   // unixclose_t unixClose = (unixclose_t)dlsym(RTLD_NEXT, "close");
   // auto close_success = (*unixClose)(_fd_orig);
