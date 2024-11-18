@@ -912,11 +912,28 @@ ssize_t monitorPread(MonitorFile *file, unsigned int pos, int fd, void *buf, siz
 }
 
 ssize_t pread(int fd, void *buf, size_t count, off_t offset) {
-    vLock.readerLock();
-    DPRINTF("Invoking pread: fd=%d, count=%zu, offset=%ld\n", fd, count, offset);
+    // vLock.readerLock();
+    // Retrieve the file name
+    std::string fileName = getFileNameFromFd(fd);
+    DPRINTF("Invoking pread: fd=%d, count=%zu, offset=%ld, fileName=%s\n",
+           fd, count, offset, fileName.empty() ? "UNKNOWN" : fileName.c_str());
+#ifdef HDF5_IO
+    if (!fileName.empty()) {
+        // Update tracking statistics
+        DPRINTF("Tracking track_file_blk_r_stat[%s]\n", fileName.c_str());
+        auto pid = std::to_string(getpid());
+        // Update block read statistics
+        track_file_blk_r_stat[fileName][offset]++;
+        track_file_blk_r_stat_size[fileName][offset] += count;
+        // Maintain read order
+        trace_read_blk_seq[fileName].push_back(offset);
+    } else {
+        DPRINTF("Warning: Unable to find file name for fd=%d\n", fd);
+    }
+#endif
     auto ret = outerWrapper("pread", fd, Timer::Metric::read, 
                             monitorPread, unixpread, fd, buf, count, offset);
-    vLock.readerUnlock();
+    // vLock.readerUnlock();
     return ret;
 }
 
@@ -927,47 +944,33 @@ ssize_t monitorPwrite(MonitorFile *file, unsigned int pos, int fd, const void *b
 }
 
 ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset) {
-    vLock.writerLock(); // Lock for thread safety
+    // vLock.writerLock(); // Lock for thread safety
 
-    // Retrieve the file name dynamically
+    // Retrieve the file name
     std::string fileName = getFileNameFromFd(fd);
     DPRINTF("Invoking pwrite: fd=%d, count=%zu, offset=%ld, fileName=%s\n",
            fd, count, offset, fileName.empty() ? "UNKNOWN" : fileName.c_str());
 
-    if (!fileName.empty()) {
 #ifdef HDF5_IO
-
+    if (!fileName.empty()) {
         // Update tracking statistics
         DPRINTF("Tracking track_file_blk_w_stat[%s]\n", fileName.c_str());
         auto pid = std::to_string(getpid());
-
         // Update block write statistics
         track_file_blk_w_stat[fileName][offset]++;
         track_file_blk_w_stat_size[fileName][offset] += count;
-
         // Maintain write order
         trace_write_blk_seq[fileName].push_back(offset);
-
-        // // Optionally write block access stats to file
-        // std::string traceFileName = fileName + "_" + pid + "_w_trace_stat";
-        // std::ofstream traceFile(traceFileName, std::ios::out | std::ios::app);
-        // if (!traceFile) {
-        //     DPRINTF("Failed to create file for write trace stats: %s\n", traceFileName.c_str());
-        // } else {
-        //     for (const auto &blk : trace_write_blk_seq[fileName]) {
-        //         traceFile << blk << std::endl;
-        //     }
-        // }
-#endif
     } else {
         DPRINTF("Warning: Unable to find file name for fd=%d\n", fd);
     }
+#endif
 
     // Call the original pwrite function through outerWrapper
     auto ret = outerWrapper("pwrite", fd, Timer::Metric::write,
                             monitorPwrite, unixpwrite, fd, buf, count, offset);
 
-    vLock.writerUnlock(); // Release the lock
+    // vLock.writerUnlock(); // Release the lock
     return ret;
 }
 
@@ -979,11 +982,29 @@ ssize_t monitorPread64(MonitorFile *file, unsigned int pos, int fd, void *buf, s
 }
 
 ssize_t pread64(int fd, void *buf, size_t count, off64_t offset) {
-    vLock.readerLock();
+    // vLock.readerLock();
+    // Retrieve the file name
+    std::string fileName = getFileNameFromFd(fd);
+    DPRINTF("Invoking pread64: fd=%d, count=%zu, offset=%ld, fileName=%s\n",
+           fd, count, offset, fileName.empty() ? "UNKNOWN" : fileName.c_str());
+#ifdef HDF5_IO
+    if (!fileName.empty()) {
+        // Update tracking statistics
+        DPRINTF("Tracking track_file_blk_r_stat[%s]\n", fileName.c_str());
+        auto pid = std::to_string(getpid());
+        // Update block read statistics
+        track_file_blk_r_stat[fileName][offset]++;
+        track_file_blk_r_stat_size[fileName][offset] += count;
+        // Maintain read order
+        trace_read_blk_seq[fileName].push_back(offset);
+    } else {
+        DPRINTF("Warning: Unable to find file name for fd=%d\n", fd);
+    }
+#endif
     DPRINTF("Invoking pread64: fd=%d, count=%zu, offset=%lld\n", fd, count, (long long)offset);
     auto ret = outerWrapper("pread64", fd, Timer::Metric::read, 
                             monitorPread64, unixpread64, fd, buf, count, offset);
-    vLock.readerUnlock();
+    // vLock.readerUnlock();
     return ret;
 }
 
@@ -995,11 +1016,32 @@ ssize_t monitorPwrite64(MonitorFile *file, unsigned int pos, int fd, const void 
 }
 
 ssize_t pwrite64(int fd, const void *buf, size_t count, off64_t offset) {
-    vLock.writerLock();
-    DPRINTF("Invoking pwrite64: fd=%d, count=%zu, offset=%lld\n", fd, count, (long long)offset);
+    // vLock.writerLock();
+
+    // Retrieve the file name
+    std::string fileName = getFileNameFromFd(fd);
+    DPRINTF("Invoking pwrite64: fd=%d, count=%zu, offset=%ld, fileName=%s\n",
+           fd, count, offset, fileName.empty() ? "UNKNOWN" : fileName.c_str());
+
+#ifdef HDF5_IO
+    if (!fileName.empty()) {
+        // Update tracking statistics
+        DPRINTF("Tracking track_file_blk_w_stat[%s]\n", fileName.c_str());
+        auto pid = std::to_string(getpid());
+        // Update block write statistics
+        track_file_blk_w_stat[fileName][offset]++;
+        track_file_blk_w_stat_size[fileName][offset] += count;
+        // Maintain write order
+        trace_write_blk_seq[fileName].push_back(offset);
+    } else {
+        DPRINTF("Warning: Unable to find file name for fd=%d\n", fd);
+    }
+#endif
+
     auto ret = outerWrapper("pwrite64", fd, Timer::Metric::write, 
                             monitorPwrite64, unixpwrite64, fd, buf, count, offset);
-    vLock.writerUnlock();
+
+    // vLock.writerUnlock();
     return ret;
 }
 
