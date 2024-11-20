@@ -52,8 +52,8 @@ std::vector<std::string> patterns = {
     "*.*.bt2", "*.fastq", "*.fasta.amb", "*.fasta.sa", "*.fasta.bwt",
     "*.fasta.pac", "*.fasta.ann", "*.fasta", "*.stf",
     "*.out", "*.dot", "*.gz", "*.tar.gz", "*.dcd", "*.pt", "*.h5", "*.nc", 
+    "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
     //"*.txt", //"*.pdb",
-    // "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
 };
 
 static Timer* timer;
@@ -231,7 +231,7 @@ inline void removeFileStream(unixfclose_t posixFun, FILE *fp) {
 
 template <typename Func, typename FuncLocal, typename... Args>
 inline auto innerWrapper(int fd, bool &isMonitorFile, Func monitorFun, FuncLocal localFun, Args... args) {
-  // DPRINTF("[MONITOR] in innerwrapper 3\n");
+    DPRINTF("[MONITOR] in innerwrapper fd: %ld\n", fd);
 
     MonitorFile *file = NULL;
     unsigned int fp = 0;
@@ -241,9 +241,9 @@ inline auto innerWrapper(int fd, bool &isMonitorFile, Func monitorFun, FuncLocal
     
     if (init && MonitorFileDescriptor::lookupMonitorFileDescriptor(fd, file, fp)) {
       DPRINTF("Found a file with fd %d\n", fd);
-        isMonitorFile = true;
-	DPRINTF("calling Monitor function\n");	
-        return monitorFun(file, fp, args...);
+      isMonitorFile = true;
+      DPRINTF("calling Monitor function\n");	
+      return monitorFun(file, fp, args...);
     }
     // else if (not internal write) {
     // do track
@@ -259,6 +259,7 @@ inline auto innerWrapper(FILE *fp, bool &isMonitorFile, Func monitorFun, FuncLoc
   // if (write_printf == true) {
   //   DPRINTF("[MONITOR] in innerwrapper 2 for write\n");
   // }
+  DPRINTF("[MONITOR] in innerwrapper fp: %ld\n", fp);
 
   if (init) {
         ReaderWriterLock *lock = NULL;
@@ -292,37 +293,26 @@ inline auto innerWrapper(const char *pathname, bool &isMonitorFile, Func monitor
     return posixFun(args...);
   }
 
-  std::vector<std::string> patterns;
-  patterns.push_back("*.fits");
-  patterns.push_back("*.h5");
-  patterns.push_back("*.vcf");
-  patterns.push_back("*.fna");
-  patterns.push_back("*.*.bt2");
-  patterns.push_back("*.fastaq");
-  patterns.push_back("*.gz");
-  patterns.push_back("*.txt");
-  patterns.push_back("*.lht");
-  patterns.push_back("*.fasta.amb");
-  patterns.push_back("*.fasta.sa");
-  patterns.push_back("*.fasta.bwt");
-  patterns.push_back("*.fasta.pac");
-  patterns.push_back("*.fasta.ann");
-  patterns.push_back("*.fasta");
-  patterns.push_back("*.sra");
-  patterns.push_back("*.fastq");
-  patterns.push_back("*.bam");
-  patterns.push_back("*.bam.bai");
+    std::vector<std::string> patterns = {
+        "*.fits", "*.vcf", "*.lht", "*.fna",
+        "*.*.bt2", "*.fastq", "*.fasta.amb", "*.fasta.sa", "*.fasta.bwt",
+        "*.fasta.pac", "*.fasta.ann", "*.fasta", "*.stf",
+        "*.out", "*.dot", "*.gz", "*.tar.gz", "*.dcd", "*.pt", "*.h5", "*.nc", 
+        //"*.txt", //"*.pdb",
+        // "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
+    };
+
   for (auto pattern: patterns) {
     auto ret_val = fnmatch(pattern.c_str(), pathname, 0);
-    // DPRINTF("PATTERN: %s PATHNAME: %s \n", pattern.c_str(), pathname);
     if (ret_val == 0) {
-      isMonitorFile = true;
-      std::string filename(pathname);
-      type = MonitorFile::TrackLocal;
-      file = filename;
-      path = filename;
-      DPRINTF("Calling HDF/FITS open: \n");
-      return monitorFun(file, path, type, args...);
+        DPRINTF("PATTERN: %s PATHNAME: %s \n", pattern.c_str(), pathname);
+        isMonitorFile = true;
+        std::string filename(pathname);
+        type = MonitorFile::TrackLocal;
+        file = filename;
+        path = filename;
+        DPRINTF("Calling HDF/FITS open: \n");
+        return monitorFun(file, path, type, args...);
     }
   }
 
