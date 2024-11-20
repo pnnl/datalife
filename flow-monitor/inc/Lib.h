@@ -83,11 +83,6 @@ std::map<std::string, std::map<int, std::atomic<int64_t> > > track_file_blk_w_st
 // For tracing
 std::map<std::string, std::vector<int> > trace_read_blk_seq;
 std::map<std::string, std::vector<int> > trace_write_blk_seq;
-#ifdef HDF5_IO
-size_t readIndex = -1;
-size_t writeIndex = -1;
-std::string currFileName;
-#endif
 
 unixopen_t unixopen = NULL;
 unixopen_t unixopen64 = NULL;
