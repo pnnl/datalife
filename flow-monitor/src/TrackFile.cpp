@@ -40,8 +40,8 @@ using namespace std::chrono;
 
 #define GATHERSTAT 1
 // #define USE_HASH 1
-#define ENABLE_TRACE 1
-// #define WRITE_STAT_EACH 1
+// #define ENABLE_TRACE 1
+// #define WRITE_STAT_EACH 0
 
 
 TrackFile::TrackFile(std::string name, int fd, bool openFile) : 
@@ -90,7 +90,6 @@ void TrackFile::open() {
 						std::atomic<int64_t> >()));
   }
 
-
   if (trace_read_blk_seq.find(_name) == trace_read_blk_seq.end()) {
     trace_read_blk_seq.insert(std::make_pair(_name, std::vector<int>()));
   }
@@ -106,129 +105,150 @@ void TrackFile::open() {
 
 }
 
-ssize_t TrackFile::read(void *buf, size_t count, uint32_t index) {
-  DPRINTF("In trackfile read count %u \n", count);
-  auto read_file_start_time = high_resolution_clock::now();
-  unixread_t unixRead = (unixread_t)dlsym(RTLD_NEXT, "read");
-  auto bytes_read = (*unixRead)(_fd_orig, buf, count);
-  auto read_file_end_time = high_resolution_clock::now();
-  auto duration = duration_cast<seconds>(read_file_end_time - read_file_start_time); 
-  total_time_spent_read += duration;
-  DPRINTF("bytes_read: %ld _fd_orig: %d _name: %s \n", bytes_read, _fd_orig, _name.c_str());
+ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
+    DPRINTF("In trackfile read count %u\n", count);
+
+    auto start_time = high_resolution_clock::now();
+    unixread_t unixRead = (unixread_t)dlsym(RTLD_NEXT, offset == -1 ? "read" : "pread");
+
+    // Handle offset for `pread`
+    ssize_t bytes_read = (offset == -1)
+        ? (*unixRead)(_fd_orig, buf, count)
+        : ((unixpread_t)unixRead)(_fd_orig, buf, count, offset);
+
+    total_time_spent_read += duration_cast<seconds>(high_resolution_clock::now() - start_time);
+
+    DPRINTF("bytes_read: %ld _fd_orig: %d _name: %s\n", bytes_read, _fd_orig, _name.c_str());
+
 #ifdef GATHERSTAT
-  if (bytes_read != -1) { // Only update stats if nonzero byte counts are read
-    auto blockSizeForStat = Config::blockSizeForStat;
-    auto diff = _filePos[index]; //- _filePos[0]; // technically index is always equal to 0 for us, assuming there is only one fp for a file open at a time.
-    auto precNumBlocks = diff / blockSizeForStat;
-    uint32_t startBlockForStat = precNumBlocks; 
-    uint32_t endBlockForStat = (diff + bytes_read) / blockSizeForStat;
-  
-    if (((diff + bytes_read) % blockSizeForStat)) {
-        ;
-      //endBlockForStat++;
-    }
-    DPRINTF("bytes_read: %d; startBlockForStat: %d; endBlockForStat: %d; blockSizeForStat: %d", bytes_read, startBlockForStat, endBlockForStat, blockSizeForStat);
+    if (bytes_read > -1) {
+        auto blockSize = Config::blockSizeForStat;
+        auto file_pos = (offset == -1) ? _filePos[index] : offset; // Use offset for `pread`
+        uint32_t start_block = file_pos / blockSize;
+        uint32_t end_block = (file_pos + bytes_read) / blockSize;
 
-    for (auto i = startBlockForStat; i <= endBlockForStat; i++) {
-      auto index = i;
+        DPRINTF("bytes_read: %ld; start_block: %u; end_block: %u; blockSize: %u\n",
+                bytes_read, start_block, end_block, blockSize);
+
+        for (uint32_t block = start_block; block <= end_block; ++block) {
 #ifdef USE_HASH
-      auto sample = hashed(index) % Config::hashtableSizeForStat;
-      if (sample < Config::hashtableSizeForStat/2) { // Sample only 50%
-	// index = sample;
-#endif      
-	if (track_file_blk_r_stat[_name].find(index) == 
-	    track_file_blk_r_stat[_name].end()) {
-	  track_file_blk_r_stat[_name].insert(std::make_pair(index, 1));
-	//track_file_blk_r_stat_size[_name].insert(std::make_pair(i, bytes_read - ((i - startBlockForStat) * blockSizeForStat)));
-	  track_file_blk_r_stat_size[_name].insert(std::make_pair(index, std::min(bytes_read - (i * blockSizeForStat), blockSizeForStat)));
-	} else {
-	  track_file_blk_r_stat[_name][index]++;
-	}
-	// For tracing order
-	trace_read_blk_seq[_name].push_back(index);
+            auto sample = hashed(block) % Config::hashtableSizeForStat;
+            if (sample >= Config::hashtableSizeForStat / 2) continue;
+#endif
+            auto &block_stat = track_file_blk_r_stat[_name];
+            auto &block_stat_size = track_file_blk_r_stat_size[_name];
 
-#ifdef USE_HASH    
-      } else {
-	continue;
-      }
-#endif
+            if (block_stat.find(block) == block_stat.end()) {
+                block_stat[block] = 1;
+                block_stat_size[block] = std::min(bytes_read - (block * blockSize), blockSize);
+            } else {
+                block_stat[block]++;
+            }
+            trace_read_blk_seq[_name].push_back(block);
+        }
     }
-  }
 #endif
-  if (bytes_read != -1) {
-    DPRINTF("Successfully read the TrackFile\n");
-    _filePos[index] += bytes_read;
-  }
+
+    if (bytes_read != -1) {
+        DPRINTF("Successfully read the TrackFile\n");
+        if (offset == -1) {
+            _filePos[index] += bytes_read; // Only update file position for `read`
+        }
+    }
+
 #ifdef WRITE_STAT_EACH
-  close();
+    close();
 #endif
-  return bytes_read;
-  //  return 0;
+
+    return bytes_read;
 }
 
-ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index) {
-  DPRINTF("In trackfile write count %u \n", count);
-  auto write_file_start_time = high_resolution_clock::now();
-  unixwrite_t unixWrite = (unixwrite_t)dlsym(RTLD_NEXT, "write");
-  DPRINTF("About to write %u count to file with fd %d and file_name: %s\n", 
-	  count, _fd_orig, _filename.c_str());
-  auto bytes_written = (*unixWrite)(_fd_orig, buf, count);
-  // DPRINTF("bytes_written: %ld _fd_orig: %d _name: %s \n", bytes_written, _fd_orig, _name.c_str());
-  auto write_file_end_time = high_resolution_clock::now();
-  auto duration = duration_cast<seconds>(write_file_end_time - write_file_start_time);
-  total_time_spent_write += duration;
-  DPRINTF("bytes_written: %ld _fd_orig: %d _name: %s \n", bytes_written, _fd_orig, _name.c_str());
+ssize_t TrackFile::write(const void *buf, size_t count, uint32_t filePosIndex) {
+    DPRINTF("TrackFile::write with count=%zu, filePosIndex=%u\n", count, filePosIndex);
+
+    // Dynamically load the original write function
+    unixwrite_t unixWrite = (unixwrite_t)dlsym(RTLD_NEXT, "write");
+
+    // Perform the write
+    auto bytes_written = (*unixWrite)(_fd_orig, buf, count);
+    if (bytes_written < 0) {
+        perror("TrackFile::write failed");
+        return bytes_written;
+    }
+
+    // Update file position tracking
+    _filePos[filePosIndex] += bytes_written;
+
+    return bytes_written;
+}
+
+
+ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index, off_t offset) {
+    DPRINTF("In TrackFile::write with count: %u\n", count);
+
+    auto start_time = high_resolution_clock::now();
+
+    // Use the appropriate system call based on the offset
+    ssize_t bytes_written;
+    if (offset >= 0) {
+        // Use pwrite for positional writes
+        unixpwrite_t unixPwrite = (unixpwrite_t)dlsym(RTLD_NEXT, "pwrite");
+        bytes_written = (*unixPwrite)(_fd_orig, buf, count, offset);
+        DPRINTF("Performing pwrite: offset=%ld\n", offset);
+    } else {
+        // Use write for sequential writes
+        unixwrite_t unixWrite = (unixwrite_t)dlsym(RTLD_NEXT, "write");
+        bytes_written = (*unixWrite)(_fd_orig, buf, count);
+    }
+
+    if (bytes_written < 0) {
+        perror("Write failed");
+        return bytes_written;
+    }
+
+    auto end_time = high_resolution_clock::now();
+    total_time_spent_write += duration_cast<seconds>(end_time - start_time);
+
+    DPRINTF("Bytes written: %ld, FD: %d, File: %s\n", bytes_written, _fd_orig, _name.c_str());
+
 #ifdef GATHERSTAT
-  if (bytes_written != -1) {
-    auto diff = _filePos[index]; //  - _filePos[0];
-    auto precNumBlocks = diff / _blkSize;
-    uint32_t startBlockForStat = precNumBlocks; 
-    uint32_t endBlockForStat = (diff + bytes_written) / _blkSize; 
-    if (((diff + bytes_written) % _blkSize)) {
-      ;//endBlockForStat++;
-    }
+    if (bytes_written > 0) {
+        // Determine the file position
+        off_t file_position = (offset >= 0) ? offset : _filePos[index];
+        uint32_t start_block = file_position / _blkSize;
+        uint32_t end_block = (file_position + bytes_written) / _blkSize;
 
-    // DPRINTF("w startBlockForStat: %d endBlockForStat: %d \n", startBlockForStat, endBlockForStat);
-    for (auto i = startBlockForStat; i <= endBlockForStat; i++) {
-      auto index = i;
+        // Update statistics for each block affected by the write
+        for (uint32_t block_index = start_block; block_index <= end_block; ++block_index) {
 #ifdef USE_HASH
-      auto sample = hashed(index) % Config::hashtableSizeForStat;
-      if (sample < Config::hashtableSizeForStat/2) { // Sample only 50%
-	// index = sample;
-#endif      
-	if (track_file_blk_w_stat[_name].find(index) == track_file_blk_w_stat[_name].end()) {
-	  // DPRINTF("%s: 1 \n",_name.c_str());
-	  track_file_blk_w_stat[_name].insert(std::make_pair(index, 1)); // not thread-safe
-	//track_file_blk_w_stat_size[_name].insert(std::make_pair(i, bytes_written)); // not thread-safe
-	track_file_blk_w_stat_size[_name].insert(std::make_pair(i, std::min(bytes_written - (i*_blkSize), _blkSize))); // not thread-safe
-        }
-        else {
-	  // DPRINTF("%s: 2 \n",_name.c_str());
-	  track_file_blk_w_stat[_name][index]++;
-        }
-
-	trace_write_blk_seq[_name].push_back(index);
-
-#ifdef USE_HASH    
-      } else {
-	continue;
-      }
+            auto sample = hashed(block_index) % Config::hashtableSizeForStat;
+            if (sample >= Config::hashtableSizeForStat / 2) continue;
 #endif
+            if (track_file_blk_w_stat[_name].find(block_index) == track_file_blk_w_stat[_name].end()) {
+                track_file_blk_w_stat[_name][block_index] = 1;
+                track_file_blk_w_stat_size[_name][block_index] = 
+                    std::min(bytes_written - (block_index * _blkSize), _blkSize);
+            } else {
+                track_file_blk_w_stat[_name][block_index]++;
+            }
+            trace_write_blk_seq[_name].push_back(block_index);
+        }
     }
-  }
 #endif
-  if (bytes_written != -1) {
-    // DPRINTF("Successfully wrote to the TrackFile\n");
-    _filePos[index] += bytes_written;
-    // _fileSize += bytes_written;  
-  }
-  return bytes_written;
+
+    if (bytes_written > 0 && offset < 0) {
+        // Update file position tracking only for sequential writes
+        _filePos[index] += bytes_written;
+    }
+
+    return bytes_written;
 }
+
 
 int TrackFile::vfprintf(unsigned int pos, int count) {
   // DPRINTF("In trackfile vfprintf\n");
 #ifdef GATHERSTAT
-  if (count != -1) {
+  if (count > -1) {
     auto diff = _filePos[pos]; //  - _filePos[0];
     auto precNumBlocks = diff / _blkSize;
     uint32_t startBlockForStat = precNumBlocks; 
@@ -294,103 +314,97 @@ off_t TrackFile::seek(off_t offset, int whence, uint32_t index) {
   return  offset_loc; 
 }
 
-
 void TrackFile::close() {
-  // #if 0  
-  DPRINTF("Calling TrackFile close : %s\n", _name.c_str());
-  // if (!_closed) {
-  // unixclose_t unixClose = (unixclose_t)dlsym(RTLD_NEXT, "close");
-  // auto close_success = (*unixClose)(_fd_orig);
-  // if (close_success) {
-  //   // _closed = true;
-  //   DPRINTF("Closed file with fd %d with name %s successfully\n", _fd_orig, _name.c_str());
-  // }
-    // }
+    DPRINTF("Calling TrackFile close : %s\n", _name.c_str());
 
-  auto pid = std::to_string(getpid());
-  
-  close_file_end_time = high_resolution_clock::now();
-  auto elapsed_time = duration_cast<seconds>(close_file_end_time - open_file_start_time);
-   // write blk access stat in a file
-  DPRINTF("Writing r blk access stat\n");
-  std::fstream current_file_stat_r;
-  std::string file_name_r = _filename;
-  file_name_r.append("_");
-  file_name_r.append(pid);
-  auto file_stat_r = file_name_r.append("_r_stat");
-  current_file_stat_r.open(file_stat_r, std::ios::out | std::ios::app);
-  if (!current_file_stat_r) { DPRINTF("File for read stat collection not created!");}
-  current_file_stat_r << _filename << " " << "Block no." << " " << "Frequency" << " " 
-		      << "Access size in byte" << std::endl;
+    auto pid = std::to_string(getpid());
+    close_file_end_time = high_resolution_clock::now();
+    auto elapsed_time = duration_cast<seconds>(close_file_end_time - open_file_start_time);
 
-  auto sum_weight_r = 0; // TODO: Fix FPE
-  auto cumulative_weighted_sum_r = 0;
-  for (auto& blk_info  : track_file_blk_r_stat[_name]) {
-    cumulative_weighted_sum_r += blk_info.second * track_file_blk_r_stat_size[_name][blk_info.first];
-    sum_weight_r += blk_info.second;
-    current_file_stat_r << blk_info.first << " " << blk_info.second << " " 
-			<< track_file_blk_r_stat_size[_name][blk_info.first] << std::endl;
-  }
+#ifdef GATHERSTAT
+    // Write read block access stats
+    DPRINTF("Writing r blk access stat\n");
+    std::fstream current_file_stat_r;
+    std::string file_name_r = _filename + "_" + pid + "_r_stat";
 
-  if (sum_weight_r !=0 ) {
-    auto read_io_rate = cumulative_weighted_sum_r / sum_weight_r; // per byte
-    auto read_request_rate = elapsed_time / sum_weight_r;
-  }
-  DPRINTF("Writing w blk access stat\n");
-  // write blk access stat in a file
-  std::fstream current_file_stat_w;
-  std::string file_name_w = _filename;
-  file_name_w.append("_");
-  file_name_w.append(pid);
-  auto file_stat_w = file_name_w.append("_w_stat");
-  current_file_stat_w.open(file_stat_w, std::ios::out | std::ios::app);
-  if (!current_file_stat_w) {DPRINTF("File for write stat collection not created!");}
-  current_file_stat_w << _filename << " " << "Block no." << " " << "Frequency" << " " 
-		      << "Access size in byte" << std::endl;
-  
-  auto sum_weight_w = 0; // TODO: Fix FPE
-  auto cumulative_weighted_sum_w = 0;
-  for (auto& blk_info  : track_file_blk_w_stat[_name]) {
-    cumulative_weighted_sum_w += blk_info.second * track_file_blk_w_stat_size[_name][blk_info.first];
-    sum_weight_w += blk_info.second;
-    current_file_stat_w << blk_info.first << " " << blk_info.second << " " << track_file_blk_w_stat_size[_name][blk_info.first] << std::endl;
-    //current_file_stat_w << std::get<0>(blk_info) << " " << std::get<1>(blk_info) << " " << std::get<2>(blk_info) << std::endl;
-  }
+    bool write_header_r = !std::ifstream(file_name_r); // Check if the file exists
+    current_file_stat_r.open(file_name_r, std::ios::out | std::ios::app);
+    if (!current_file_stat_r) {
+        DPRINTF("File for read stat collection not created!");
+    }
+    if (write_header_r) {
+        current_file_stat_r << _filename << " " << "Block no." << " " << "Frequency" << " "
+                            << "Access size in byte" << std::endl;
+    }
 
-  if (sum_weight_w !=0 ) {
-    auto write_io_rate = cumulative_weighted_sum_w / sum_weight_w; 
-    auto write_request_rate =  elapsed_time / sum_weight_w;
-  // TODO: fix below: elapsed_time  // if (elapsed_time == 0) {elapsed_time = 1;}  
-  //  auto io_intensity = (total_time_spent_read + total_time_spent_write)/elapsed_time;
-  }
-  DPRINTF("Writing r blk access order stat\n");
-  // write blk access stat in a file
-  std::fstream current_file_trace_r;
-  std::string file_name_trace_r = _filename;
-  file_name_trace_r.append("_");
-  file_name_trace_r.append(pid);
-  auto file_trace_stat_r = file_name_trace_r.append("_r_trace_stat");
-  current_file_trace_r.open(file_trace_stat_r, std::ios::out | std::ios::app);
-  if (!current_file_trace_r) {DPRINTF("File for read trace stat collection not created!");}
-  auto const& blk_trace_info_r  = trace_read_blk_seq[_name]; 
-  for (auto const& blk_: blk_trace_info_r) {
-    current_file_trace_r << blk_ << std::endl;
-  }
-  
+    auto sum_weight_r = 0;
+    auto cumulative_weighted_sum_r = 0;
+    for (auto& blk_info : track_file_blk_r_stat[_name]) {
+        cumulative_weighted_sum_r += blk_info.second * track_file_blk_r_stat_size[_name][blk_info.first];
+        sum_weight_r += blk_info.second;
+        current_file_stat_r << blk_info.first << " " << blk_info.second << " "
+                            << track_file_blk_r_stat_size[_name][blk_info.first] << std::endl;
+    }
 
-  DPRINTF("Writing w blk access order stat\n");
-  // write blk access stat in a file
-  std::fstream current_file_trace_w;
-  std::string file_name_trace_w = _filename;
-  file_name_trace_w.append("_");
-  file_name_trace_w.append(pid);
-  auto file_trace_stat_w = file_name_trace_w.append("_w_trace_stat");
-  current_file_trace_w.open(file_trace_stat_w, std::ios::out | std::ios::app);
-  if (!current_file_trace_w) {DPRINTF("File for write trace stat collection not created!");}
-  // current_file_trace_w << _filename << " " << "Block no." << " " << "Frequency" << std::endl;
-  auto const& blk_trace_info_w = trace_write_blk_seq[_name];
-  for (auto const& blk_: blk_trace_info_w) {
-    current_file_trace_w << blk_ << std::endl;
-  }
-  // #endif
+    if (sum_weight_r != 0) {
+        auto read_io_rate = cumulative_weighted_sum_r / sum_weight_r;
+        auto read_request_rate = elapsed_time / sum_weight_r;
+    }
+
+    // Write write block access stats
+    DPRINTF("Writing w blk access stat\n");
+    std::fstream current_file_stat_w;
+    std::string file_name_w = _filename + "_" + pid + "_w_stat";
+
+    bool write_header_w = !std::ifstream(file_name_w); // Check if the file exists
+    current_file_stat_w.open(file_name_w, std::ios::out | std::ios::app);
+    if (!current_file_stat_w) {
+        DPRINTF("File for write stat collection not created!");
+    }
+    if (write_header_w) {
+        current_file_stat_w << _filename << " " << "Block no." << " " << "Frequency" << " "
+                            << "Access size in byte" << std::endl;
+    }
+
+    auto sum_weight_w = 0;
+    auto cumulative_weighted_sum_w = 0;
+    for (auto& blk_info : track_file_blk_w_stat[_name]) {
+        cumulative_weighted_sum_w += blk_info.second * track_file_blk_w_stat_size[_name][blk_info.first];
+        sum_weight_w += blk_info.second;
+        current_file_stat_w << blk_info.first << " " << blk_info.second << " "
+                            << track_file_blk_w_stat_size[_name][blk_info.first] << std::endl;
+    }
+
+    if (sum_weight_w != 0) {
+        auto write_io_rate = cumulative_weighted_sum_w / sum_weight_w;
+        auto write_request_rate = elapsed_time / sum_weight_w;
+    }
+
+    // Write read block access order stats
+    DPRINTF("Writing r blk access order stat\n");
+    std::fstream current_file_trace_r;
+    std::string file_name_trace_r = _filename + "_" + pid + "_r_trace_stat";
+    current_file_trace_r.open(file_name_trace_r, std::ios::out | std::ios::app);
+    if (!current_file_trace_r) {
+        DPRINTF("File for read trace stat collection not created!");
+    }
+    auto const& blk_trace_info_r = trace_read_blk_seq[_name];
+    for (auto const& blk_ : blk_trace_info_r) {
+        current_file_trace_r << blk_ << std::endl;
+    }
+
+    // Write write block access order stats
+    DPRINTF("Writing w blk access order stat\n");
+    std::fstream current_file_trace_w;
+    std::string file_name_trace_w = _filename + "_" + pid + "_w_trace_stat";
+    current_file_trace_w.open(file_name_trace_w, std::ios::out | std::ios::app);
+    if (!current_file_trace_w) {
+        DPRINTF("File for write trace stat collection not created!");
+    }
+    auto const& blk_trace_info_w = trace_write_blk_seq[_name];
+    for (auto const& blk_ : blk_trace_info_w) {
+        current_file_trace_w << blk_ << std::endl;
+    }
+#endif
 }
+

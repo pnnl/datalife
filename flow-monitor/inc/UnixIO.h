@@ -9,6 +9,8 @@ typedef int (*unixopenat_t)(int dirfd, const char *pathname, int flags, ...);
 
 typedef ssize_t (*unixread_t)(int fd, void *buf, size_t count);
 typedef ssize_t (*unixwrite_t)(int fd, const void *buf, size_t count);
+typedef ssize_t (*unixpwrite_t)(int fd, const void *buf, size_t count, off_t offset);
+typedef ssize_t (*unixpread_t)(int fd, const void *buf, size_t count, off_t offset);
 
 typedef ssize_t (*unixlseek_t)(int fd, off_t offset, int whence);
 typedef off64_t (*unixlseek64_t)(int fd, off64_t offset, int whence);

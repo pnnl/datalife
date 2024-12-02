@@ -39,7 +39,7 @@ rm -rf $TEST_LOG
 
 sudo /sbin/sysctl vm.drop_caches=3
 t1=$(date +%s%3N)
-LD_PRELOAD=$DATALIFE_LIB_PATH:$LD_PRELOAD \
+LD_PRELOAD=$DATALIFE_LIB_PATH \
     python vlen_h5_write.py $filename 2>&1 | tee -a $TEST_LOG
 
 LD_PRELOAD=$DATALIFE_LIB_PATH \

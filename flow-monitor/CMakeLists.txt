@@ -33,11 +33,6 @@ else()
     set(INPUT_DIR_PATH ".")
 endif()
 
-# Handling HDF5 pipe and stream I/O
-option(HDF5_IO "Handling HDF5 backend I/O" OFF)
-if(HDF5_IO)
-    add_compile_definitions(HDF5_IO)
-endif()
 
 #****************************************************************************
 # 
