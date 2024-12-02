@@ -34,8 +34,10 @@ class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *
     virtual uint64_t fileSize() = 0;
   //  virtual uint64_t numBlks() = 0;
   
-    virtual ssize_t read(void *buf, size_t count, uint32_t filePosIndex = 0) = 0;
-    virtual ssize_t write(const void *buf, size_t count, uint32_t filePosIndex = 0) = 0;
+    // virtual ssize_t read(void *buf, size_t count, uint32_t filePosIndex = 0) = 0;
+    // virtual ssize_t write(const void *buf, size_t count, uint32_t filePosIndex = 0) = 0;
+    virtual ssize_t read(void *buf, size_t count, uint32_t filePosIndex = 0, off_t offset = -1) = 0;
+    virtual ssize_t write(const void *buf, size_t count, uint32_t filePosIndex, off_t offset) = 0;
     virtual int vfprintf(unsigned int pos, int count) = 0;
 
     virtual uint32_t newFilePosIndex();
