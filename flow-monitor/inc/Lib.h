@@ -294,7 +294,7 @@ inline auto innerWrapper(const char *pathname, bool &isMonitorFile, Func monitor
         "*.fasta.pac", "*.fasta.ann", "*.fasta", "*.stf",
         "*.out", "*.dot", "*.gz", "*.tar.gz", "*.dcd", "*.pt", "*.h5", "*.nc", 
         //"*.txt", //"*.pdb",
-        // "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
+        "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
     };
 
   for (auto pattern: patterns) {
