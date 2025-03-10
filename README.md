@@ -63,14 +63,15 @@ and resource assignment.
   - Nathan R. Tallent ([www](https://hpc.pnnl.gov/people/tallent)), ([www](https://www.pnnl.gov/people/nathan-tallent))
   - Lenny Guo ([www](https://www.pnnl.gov/people/luanzheng-guo))
   - Jesun Firoz ([www](https://www.pnnl.gov/people/jesun-firoz))
+  - Meng Tang (Illinois Institute of Technology) ([www](https://scholar.google.com/citations?user=KXC9NesAAAAJ&hl=en))
   - Hyungro Lee ([www](https://www.pnnl.gov/science/staff/staff_info.asp?staff_num=10843)), ([www](https://lee212.github.io/))
 
 
 **Contributors**:
+  - Meng Tang (Illinois Institute of Technology)
   - Hyungro Lee (PNNL) ([www](https://www.pnnl.gov/science/staff/staff_info.asp?staff_num=10843)), ([www](https://lee212.github.io/))
   - Lenny Guo ([www](https://www.pnnl.gov/people/luanzheng-guo))
   - Jesun Firoz ([www](https://www.pnnl.gov/people/jesun-firoz))
-  - Meng Tang (Illinois Institute of Technology)
   - Nathan R. Tallent (PNNL) ([www](https://hpc.pnnl.gov/people/tallent)), ([www](https://www.pnnl.gov/people/nathan-tallent))
 
 
