@@ -68,7 +68,7 @@ and resource assignment.
 
 
 **Contributors**:
-  - Meng Tang (Illinois Institute of Technology)
+  - Meng Tang (Illinois Institute of Technology) ([www](https://scholar.google.com/citations?user=KXC9NesAAAAJ&hl=en))
   - Hyungro Lee (PNNL) ([www](https://www.pnnl.gov/science/staff/staff_info.asp?staff_num=10843)), ([www](https://lee212.github.io/))
   - Lenny Guo ([www](https://www.pnnl.gov/people/luanzheng-guo))
   - Jesun Firoz ([www](https://www.pnnl.gov/people/jesun-firoz))
