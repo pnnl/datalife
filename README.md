@@ -23,12 +23,18 @@ composition. DataLife performs _data flow lifecycle_ (DFL) analysis to
 guide decisions regarding coordinating tasks and data flows on
 distributed resources. DataLife provides measurement, analysis,
 visualization, and opportunity identification for data flow lifecycles
-(DFLs). DataLife analysis involves a profiling and post-mortem
-analysis phase. The profiling is distributed and scalable; and
-currently focuses on POSIX and C I/O. The post-mortem analysis
-provides several helpful analyses and visualizations to help identify
-opportunities for improving task and data placement and resource
-assignment.
+(DFLs). With the aid of the DaYu module, it analyzes semantic
+relationships between logical datasets and file addresses, how dataset
+operations translate into I/O, and combinations of the two across
+entire workflows.
+
+DataLife analysis involves a profiling and post-mortem analysis
+phase. The profiling is distributed and scalable; and supports I/O
+through HDF5, POSIX, C I/O.  The post-mortem analysis provides several
+helpful analyses and visualizations in order to extract workflow data
+patterns, develop insights into the behavior of data flows, and
+identify opportunities for both users and I/O libraries to optimize
+improving task placement and data placement and resource assignment.
 
 
 **About (General)**: 
