@@ -11,8 +11,8 @@ DataLife
   - [Performance Lab for EXtreme Computing and daTa](https://github.com/perflab-exact)
 
   - Related: 
-  [DataLife](https://github.com/pnnl/DataLife)
-  [DaYu](https://github.com/pnnl/DaYu)
+  [DataLife](https://github.com/pnnl/DataLife),
+  [DaYu](https://github.com/pnnl/DaYu),
   [FlowForecaster](https://github.com/pnnl/FlowForecaster)
 
 
