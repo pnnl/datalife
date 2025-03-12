@@ -12,12 +12,13 @@ DataLife
 
   - Related: 
   [DataLife](https://github.com/pnnl/DataLife)
+  [DaYu](https://github.com/pnnl/DaYu)
   [FlowForecaster](https://github.com/pnnl/FlowForecaster)
-  <!-- [DaYu](https://github.com/pnnl/DaYu) -->
 
 
-**About (Technical)**: DataLife is measurement and analysis toolset for
-distributed scientific workflows that use I/O and storage for task
+**About (Technical)**: 
+DataLife is a measurement and analysis toolset for distributed
+scientific workflows that use I/O and storage for task
 composition. DataLife performs _data flow lifecycle_ (DFL) analysis to
 guide decisions regarding coordinating tasks and data flows on
 distributed resources. DataLife provides measurement, analysis,
