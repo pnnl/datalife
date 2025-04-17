@@ -288,15 +288,6 @@ inline auto innerWrapper(const char *pathname, bool &isMonitorFile, Func monitor
     return posixFun(args...);
   }
 
-    std::vector<std::string> patterns = {
-        "*.fits", "*.vcf", "*.lht", "*.fna",
-        "*.*.bt2", "*.fastq", "*.fasta.amb", "*.fasta.sa", "*.fasta.bwt",
-        "*.fasta.pac", "*.fasta.ann", "*.fasta", "*.stf",
-        "*.out", "*.dot", "*.gz", "*.tar.gz", "*.dcd", "*.pt", "*.h5", "*.nc", 
-        //"*.txt", //"*.pdb",
-        "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
-    };
-
   for (auto pattern: patterns) {
     auto ret_val = fnmatch(pattern.c_str(), pathname, 0);
     if (ret_val == 0) {
