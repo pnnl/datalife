@@ -3,7 +3,7 @@
 #include <time.h>
 #include <string.h>
 
-#define FILE_NAME "testFIOfile.out"
+#define FILE_NAME "testFIOfile.datalifetest"
 #define DATA_SIZE 64 * 1024 * 1024  // 64MB
 
 int main() {

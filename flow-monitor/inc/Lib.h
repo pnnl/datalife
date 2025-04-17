@@ -53,6 +53,7 @@ std::vector<std::string> patterns = {
     "*.fasta.pac", "*.fasta.ann", "*.fasta", "*.stf",
     "*.out", "*.dot", "*.gz", "*.tar.gz", "*.dcd", "*.pt", "*.h5", "*.nc", 
     "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
+    "*.datalifetest",
     //"*.txt", //"*.pdb",
 };
 

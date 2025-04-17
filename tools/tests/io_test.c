@@ -5,7 +5,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define FILE_NAME "testIOfile.out"
+#define FILE_NAME "testIOfile.datalifetest"
 #define DATA_SIZE 64 * 1024 * 1024  // 64MB
 
 int main() {
