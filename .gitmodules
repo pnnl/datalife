@@ -1,3 +1,6 @@
 [submodule "hdf5-datalife/src/utils/uthash"]
 	path = hdf5-datalife/src/utils/uthash
 	url = https://github.com/troydhanson/uthash
+[submodule "DaYu"]
+	path = DaYu
+	url = https://github.com/candiceT233/dayu-tracker.git
