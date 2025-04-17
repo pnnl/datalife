@@ -197,6 +197,10 @@ const uint64_t hashtableSizeForStat = 1000;
 //#define PRINTF(...) fprintf(stderr, __VA_ARGS__)
 #define PRINTF(...)
 
+// Flow Monitoring Parameter
+const std::string dataLifeOutputPath = getenv("DATALIFE_OUTPUT_PATH") ? std::string(getenv("DATALIFE_OUTPUT_PATH")) : "";
+
+
 } // namespace Config
 
 #endif /* CONFIG_H */
