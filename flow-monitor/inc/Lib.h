@@ -81,7 +81,7 @@ std::vector<std::string> split_patterns(const std::string& input, char delimiter
         }
     }
     // Always include default pattern
-    patterns.push_back("*.datalife");
+    patterns.push_back("*.datalifetest");
     
     return patterns;
 }
