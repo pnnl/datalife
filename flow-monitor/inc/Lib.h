@@ -47,14 +47,35 @@
 
 #define TRACKFILECHANGES 1
 
-std::vector<std::string> patterns = {
-    "*.fits", "*.vcf", "*.lht", "*.fna",
-    "*.*.bt2", "*.fastq", "*.fasta.amb", "*.fasta.sa", "*.fasta.bwt",
-    "*.fasta.pac", "*.fasta.ann", "*.fasta", "*.stf",
-    "*.out", "*.dot", "*.gz", "*.tar.gz", "*.dcd", "*.pt", "*.h5", "*.nc", 
-    "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
-    //"*.txt", //"*.pdb",
-};
+/* Functions to parse input file extension strings*/
+// Helper function to trim whitespace from both ends of a string
+std::string trim(const std::string& str) {
+    const std::string whitespace = " \t\n\r";
+    const auto start = str.find_first_not_of(whitespace);
+    if (start == std::string::npos) return "";
+    const auto end = str.find_last_not_of(whitespace);
+    return str.substr(start, end - start + 1);
+}
+
+// Split function using stringstream
+std::vector<std::string> split_patterns(const std::string& input, char delimiter = ',') {
+    std::vector<std::string> patterns;
+    std::stringstream ss(input);
+    std::string token;
+
+    while (std::getline(ss, token, delimiter)) {
+        std::string trimmed = trim(token);
+        if (!trimmed.empty()) {
+            patterns.push_back(trimmed);
+        }
+    }
+    // Always include default pattern
+    patterns.push_back("*.datalife");
+
+    return patterns;
+}
+
+std::vector<std::string> patterns = split_patterns(Config::passin_patterns);
 
 static Timer* timer;
 

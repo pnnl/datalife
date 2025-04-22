@@ -58,7 +58,17 @@ Using
 DataLife has two main steps.
 
 1. Monitor...
-
+   ```sh
+    # Give your path to collect all datalife statistic files
+    export DATALIFE_OUTPUT_PATH="./datalife_stats"
+    # Give your list of target capture file regular expression patterns
+    export DATALIFE_FILE_PATTERNS="*.gz, *.tar.gz, *.dcd, ior*.bin" 
+    # Run your program with datalife with LD_PRELOAD
+    LD_PRELOAD=/your_datalife_path/build/flow-monitor/src/libmonitor.so ./your_program
+    # or Run your program with datalife-run
+    export PATH="/your_datalife_path/build/bin:$PATH"
+    datalife-run ./your_program
+    ```
 
 2. Analysis and diagnostics:
 
