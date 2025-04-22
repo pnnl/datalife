@@ -47,6 +47,17 @@
 
 #define TRACKFILECHANGES 1
 
+// std::vector<std::string> patterns = {
+//     "*.fits", "*.vcf", "*.lht", "*.fna",
+//     "*.*.bt2", "*.fastq", "*.fasta.amb", "*.fasta.sa", "*.fasta.bwt",
+//     "*.fasta.pac", "*.fasta.ann", "*.fasta", "*.stf",
+//     "*.out", "*.dot", "*.gz", "*.tar.gz", "*.dcd", "*.pt", "*.h5", "*.nc", 
+//     "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
+//     "*.datalifetest",
+//     //"*.txt", //"*.pdb",
+// };
+
+
 /* Functions to parse input file extension strings*/
 // Helper function to trim whitespace from both ends of a string
 std::string trim(const std::string& str) {
@@ -71,7 +82,7 @@ std::vector<std::string> split_patterns(const std::string& input, char delimiter
     }
     // Always include default pattern
     patterns.push_back("*.datalife");
-
+    
     return patterns;
 }
 
