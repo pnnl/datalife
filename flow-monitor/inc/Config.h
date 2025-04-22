@@ -199,6 +199,7 @@ const uint64_t hashtableSizeForStat = 1000;
 
 // Flow Monitoring Parameter
 const std::string dataLifeOutputPath = getenv("DATALIFE_OUTPUT_PATH") ? std::string(getenv("DATALIFE_OUTPUT_PATH")) : "";
+const std::string passin_patterns = getenv("DATALIFE_FILE_PATTERNS") ? std::string(getenv("DATALIFE_FILE_PATTERNS")) : "*.datalifetest";
 
 
 } // namespace Config

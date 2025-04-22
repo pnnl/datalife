@@ -4,6 +4,7 @@
 # Usage: `LD_PRELOAD=path-to-lib.so <application> <app-args>`
 
 export DATALIFE_OUTPUT_PATH="./datalife_stats"
+export DATALIFE_FILE_PATTERNS="*.h5" # default
 DATALIFE_LIB_PATH=../../build/flow-monitor/src/libmonitor.so
 #/qfs/people/tang584/install/datalife/lib/libmonitor.so
 # python: /qfs/projects/ops/rh7_gpu/python/miniconda3.9/bin/../lib/libstdc++.so.6: version `GLIBCXX_3.4.29' not found (required by /qfs/people/tang584/install/datalife/lib/libmonitor.so)
