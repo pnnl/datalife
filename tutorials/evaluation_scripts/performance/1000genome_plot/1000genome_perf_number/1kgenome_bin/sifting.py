@@ -40,9 +40,15 @@ def sifting(inputfile, c):
     #         data_temp.append(str(lineno)+':'+content)
     #     print('{}/{}'.format(lineno, init_size), end='\r')
 
+    # siftfile = 'SIFT.chr{}.vcf'.format(c)
+    # with open(siftfile, 'w') as f:
+    #     subprocess.run(["grep -n \"deleterious\|tolerated\" {}".format(inputfile)], shell=True, stdout=f)
+
+    results = subprocess.run(["grep -n \"deleterious\|tolerated\" {}".format(inputfile)], 
+                             capture_output=True, text=True, shell=True, check=True)
     siftfile = 'SIFT.chr{}.vcf'.format(c)
     with open(siftfile, 'w') as f:
-        subprocess.run(["grep -n \"deleterious\|tolerated\" {}".format(inputfile)], shell=True, stdout=f)
+        f.write(results.stdout)
 
     data_temp = readfile(siftfile)
 
