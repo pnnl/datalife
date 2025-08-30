@@ -81,7 +81,6 @@ and resource assignment.
   - Lenny Guo ([www](https://www.pnnl.gov/people/luanzheng-guo))
   - Jesun Firoz ([www](https://www.pnnl.gov/people/jesun-firoz))
   - Nathan R. Tallent (PNNL) ([www](https://hpc.pnnl.gov/people/tallent)), ([www](https://www.pnnl.gov/people/nathan-tallent))
-
   - Hyungro Lee ([www](https://lee212.github.io/))
 
 
