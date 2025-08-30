@@ -88,3 +88,6 @@ DataLife has two main steps.
                             write a graph output to a file
     ```
 
+   <!-- export PYTHONPATH+="<install>/libexec/flow-analysis"  -->
+
+
