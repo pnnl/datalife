@@ -549,7 +549,13 @@ int innerStat(int version, const char *filename, struct stat64 *buf) { return wh
 
 template <typename T>
 int monitorStat(std::string name, std::string metaName, MonitorFile::Type type, int version, const char *filename, T *buf) {
-  auto ret = innerStat(_STAT_VER, metaName.c_str(), buf);
+//   auto ret = innerStat(_STAT_VER, metaName.c_str(), buf);
+  #ifdef _STAT_VER
+    auto ret = innerStat(_STAT_VER, metaName.c_str(), buf);
+  #else
+    auto ret = innerStat(version, metaName.c_str(), buf);
+  #endif
+
   MonitorFile *file = MonitorFile::lookUpMonitorFile(filename);
   if (file)
     buf->st_size = (off_t)file->fileSize();
