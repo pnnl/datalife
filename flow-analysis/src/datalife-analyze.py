@@ -48,7 +48,8 @@ def read_stats(dirpath):
 
 
 def write_graph(dirpath):
-
+    
+    dlife.get_graph()
     dlife.write_graph(dirpath)
 
 
