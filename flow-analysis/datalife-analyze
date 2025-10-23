@@ -24,7 +24,7 @@ ClrEnd=$'\e[0m'
 #-----------------------------------------------------------
 
 # Canonical ${scriptDir} is ${DATALIFE_ROOT}/bin
-DATALIFE_ROOT="${DATALIFE_ROOT:-${scriptDir}/../}"
+DATALIFE_ROOT="${DATALIFE_ROOT:-${scriptDir}/../flow-analysis}"
 
 #-----------------------------------------------------------
 
