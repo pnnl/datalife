@@ -193,6 +193,9 @@ void __attribute__((destructor)) monitorCleanup(void) {
             }
         }
         delete track_files;
+        delete ConnectionPool::useCnt;
+        delete ConnectionPool::consecCnt;
+        delete ConnectionPool::stats;
     }
 
     timer->end(Timer::MetricType::monitor, Timer::Metric::destructor);
