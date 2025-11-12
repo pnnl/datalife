@@ -25,7 +25,7 @@
 #define TIMEON(...)
 // #define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
 #define DPRINTF(...)
-#define MYPRINTF(...) fprintf(stderr, __VA_ARGS__)
+#define MYDPRINTF(...) fprintf(stderr, __VA_ARGS__)
 #define TRACKFILECHANGES 1
 
 extern int removeStr(char *s, const char *r);
@@ -43,54 +43,12 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
     _active(false),
     _fd(fd)
      {
-// #ifdef TRACKFILECHANGES
-//   char pattern[] = "*.h5";
-//   auto ret_val = fnmatch(pattern, name.c_str(), 0);
-//   char pattern_2[] = "*.fits";
-//   auto ret_val_2 = fnmatch(pattern_2, name.c_str(), 0);
-//   char pattern_3[] = "*.vcf";
-//   auto ret_val_3 = fnmatch(pattern_3, name.c_str(), 0);
-//   char pattern_4[] = "*.tar.gz";
-//   auto ret_val_4 = fnmatch(pattern_4, name.c_str(), 0);
-//   char pattern_5[] = "*.txt";
-//   auto ret_val_5 = fnmatch(pattern_5, name.c_str(), 0);
-//   char pattern_6[] = "*.lht";
-//   auto ret_val_6 = fnmatch(pattern_6, name.c_str(), 0);
-//   char pattern_7[] = "*.fna";
-//   auto ret_val_7 = fnmatch(pattern_7, name.c_str(), 0);
-//   char pattern_8[] = "*.*.bt2";
-//   auto ret_val_8 = fnmatch(pattern_8, name.c_str(), 0);
-//   char pattern_9[] = "*.fastq";
-//   auto ret_val_9 = fnmatch(pattern_9, name.c_str(), 0);
-//   char pattern_10[] = "*.fasta.amb";
-//   auto ret_val_10 = fnmatch(pattern_10, name.c_str(), 0);
-//   char pattern_11[] = "*.fasta.sa";
-//   auto ret_val_11 = fnmatch(pattern_11, name.c_str(), 0);
-//   char pattern_12[] = "*.fasta.bwt";
-//   auto ret_val_12 = fnmatch(pattern_12, name.c_str(), 0);
-//   char pattern_13[] = "*.fasta.pac";
-//   auto ret_val_13 = fnmatch(pattern_13, name.c_str(), 0);
-//   char pattern_14[] = "*.fasta.ann";
-//   auto ret_val_14 = fnmatch(pattern_14, name.c_str(), 0);
-//   char pattern_15[] = "*.fasta";
-//   auto ret_val_15 = fnmatch(pattern_15, name.c_str(), 0);
-//   char pattern_16[] = "*.nc";
-//   auto ret_val_16 = fnmatch(pattern_16, name.c_str(), 0);
-//   //  std::string hdf_file_name(name);
-//     // auto found = hdf_file_name.find("residue");
-//     //if (hdf_file_name.find("residue") == std::string::npos) {
-//   if (ret_val !=0 && ret_val_2 != 0 && ret_val_3 != 0 
-//       && ret_val_4 != 0 && ret_val_5 != 0 && ret_val_6 !=0
-//       && ret_val_7 !=0 && ret_val_8 !=0 && ret_val_9 !=0
-//       && ret_val_10 !=0 && ret_val_11 !=0 && ret_val_12 !=0 
-//       && ret_val_13 !=0 && ret_val_14 !=0 && ret_val_15 !=0 
-//       && ret_val_16 !=0 ) {
-
 
 #ifdef TRACKFILECHANGES
 
     bool matched = true;
     for (const auto& pattern : patterns) {
+        DPRINTF("Checking file: %s against pattern: %s\n", name.c_str(), pattern.c_str());
         if (fnmatch(pattern.c_str(), name.c_str(), 0) != 0) {
             matched = false;
             break;
@@ -98,7 +56,10 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
     }
 
     if (matched) {
+        DPRINTF("File %s matched pattern. Reading metadata...\n", name.c_str());
         readMetaInfo();
+    } else {
+        DPRINTF("File %s did not match any patterns.\n", name.c_str());
     }
 
 #endif
@@ -117,7 +78,7 @@ MonitorFile::~MonitorFile() {
 //port=
 //file=
 bool MonitorFile::readMetaInfo() {
-    MYPRINTF("Trying to read meta info for file %s\n", _name.c_str());
+    MYDPRINTF("Trying to read meta info for file %s\n", _name.c_str());
     TIMEON(uint64_t t1 = Timer::getCurrentTime());
     auto start = Timer::getCurrentTime();
     unixread_t unixRead = (unixread_t)dlsym(RTLD_NEXT, "read");
@@ -133,7 +94,7 @@ bool MonitorFile::readMetaInfo() {
     char *meta = new char[fileSize + 1];
     int ret = (*unixRead)(_fd, (void *)meta, fileSize);
     if (ret < 0) {
-        std::cout << "ERROR: Failed to read local metafile: " << strerror(errno) << std::endl;
+        // std::cout << "ERROR: Failed to read local metafile: " << strerror(errno) << std::endl;
         raise(SIGSEGV);
         return 0;
     }
@@ -205,7 +166,7 @@ bool MonitorFile::readMetaInfo() {
             //make sure the host port and file name were given
             if(hostAddr == "\0" || port == 0 || fileName == "\0") {
                 log(this) << "0:improperly formatted meta file" << std::endl;
-		std::cout << "0:improperly formatted meta file" << std::endl;
+		// std::cout << "0:improperly formatted meta file" << std::endl;
                 return 0;
             }
             //after collecting info for a server
@@ -296,10 +257,27 @@ void MonitorFile::setFilePos(uint32_t index, uint64_t pos) {
 
 //fileName is the metafile
 MonitorFile *MonitorFile::addNewMonitorFile(MonitorFile::Type type, std::string fileName, std::string metaName, int fd, bool open) {
+    // // Print debug information
+    // DPRINTF("MonitorFile::addNewMonitorFile called with:\n");
+    // DPRINTF("  Type: %d\n", type);
+    // DPRINTF("  File Name: %s\n", fileName.c_str());
+    // DPRINTF("  Meta Name: %s\n", metaName.c_str());
+    // DPRINTF("  File Descriptor: %d\n", fd);
+    // DPRINTF("  Open: %s\n", open ? "true" : "false");
+
+    // Print debug information
+    // std::cout << "MonitorFile::addNewMonitorFile called with:" << std::endl;
+    // std::cout << "  Type: " << static_cast<int>(type) << std::endl;  // Convert enum to int for better readability
+    // std::cout << "  File Name: " << fileName << std::endl;
+    // std::cout << "  Meta Name: " << metaName << std::endl;
+    // std::cout << "  File Descriptor: " << fd << std::endl;
+    // std::cout << "  Open: " << (open ? "true" : "false") << std::endl;
+
+
    /* if (type == MonitorFile::Input) {
         return Trackable<std::string, MonitorFile *>::AddTrackable(
             metaName, [=]() -> MonitorFile * {
-                std::cout << "new input " <<fileName<<" "<<metaName<<" "<<std::endl;
+                // std::cout << "new input " <<fileName<<" "<<metaName<<" "<<std::endl;
                 MonitorFile *temp = new InputFile(fileName, metaName, fd, open);
                 if (open && temp && temp->active() == 0) {
                     delete temp;
@@ -312,8 +290,8 @@ MonitorFile *MonitorFile::addNewMonitorFile(MonitorFile::Type type, std::string 
         bool dontcare;
         return Trackable<std::string, MonitorFile *>::AddTrackable(
             metaName, [=]() -> MonitorFile * {
-                std::cout << "new output " <<fileName<<" "<<metaName<<" "<<std::endl;
-                std::cout << "Create new" << std::endl;
+                // std::cout << "new output " <<fileName<<" "<<metaName<<" "<<std::endl;
+                // std::cout << "Create new" << std::endl;
                 MonitorFile *temp = new OutputFile(fileName, metaName, fd);
                 if (temp) {
                     OutputFile* out = dynamic_cast<OutputFile*>(temp);
@@ -328,7 +306,7 @@ MonitorFile *MonitorFile::addNewMonitorFile(MonitorFile::Type type, std::string 
             [=](MonitorFile* monitorFile) -> void {
                 OutputFile* out = dynamic_cast<OutputFile*>(monitorFile);
                 out->setThreadFileDescriptor(fd);
-                //std::cout << "Reuse old" << std::endl;
+                //// std::cout << "Reuse old" << std::endl;
                 out->addFileDescriptor(fd);
             }, dontcare);
     }
@@ -342,7 +320,9 @@ MonitorFile *MonitorFile::addNewMonitorFile(MonitorFile::Type type, std::string 
                 }
                 return temp;
             });
-    } else*/ if (type == MonitorFile::TrackLocal) {
+    } else */ 
+     
+    if (type == MonitorFile::TrackLocal) {
       DPRINTF("Trackfile going to be added to the Trackable \n");
         return Trackable<std::string, MonitorFile *>::AddTrackable(
             fileName, [=]() -> MonitorFile * {

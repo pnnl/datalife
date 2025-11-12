@@ -33,6 +33,36 @@ else()
     set(INPUT_DIR_PATH ".")
 endif()
 
+# Compiling Mode
+# Set a default build type if none was specified
+set(default_build_type "Release")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("IN DEBUG MODE")
+    add_compile_options(-g -O0)
+    add_compile_definitions(LIBDEBUG)
+else()
+    message("IN RELEASE MODE")
+    add_compile_options(-g -O3)
+endif()
+
+# Datalife Options
+option(GATHERSTAT "Gather statistics" OFF)
+if(GATHERSTAT)
+    add_compile_definitions(GATHERSTAT)
+endif()
+option(BLK_IDX "Block Index" OFF)
+if(BLK_IDX)
+    add_compile_definitions(BLK_IDX)
+endif()
+option(INT_DOT "Intercept .dot files" OFF)
+if(INT_DOT)
+    add_compile_definitions(INT_DOT)
+endif()
+
+option(TIMER_JSON "Log timer data in JSON format (default to stdout)" OFF)
+if(TIMER_JSON)
+    add_compile_definitions(TIMER_JSON)
+endif()
 
 #****************************************************************************
 # 

@@ -18,6 +18,13 @@ extern std::vector<std::string> patterns;
 extern std::map<std::string, std::vector<int> > trace_read_blk_seq;
 extern std::map<std::string, std::vector<int> > trace_write_blk_seq;
 
+// For JOSN tracing
+using TraceData = std::vector<int>;
+extern std::unordered_map<std::string, TraceData> trace_read_blk_order;
+extern std::unordered_map<std::string, TraceData> trace_write_blk_order;
+extern int first_access_block;
+extern int largest_access_block;
+
 class TrackFile : public MonitorFile {
 public:
   TrackFile(std::string name, int fd, bool openFile = true);
@@ -50,6 +57,11 @@ private:
   std::chrono::high_resolution_clock::time_point close_file_end_time;
   std::chrono::seconds total_time_spent_read;
   std::chrono::seconds total_time_spent_write;
+
+  // For JSON Tracing: keep track of previous blocks
+  int prev_start_block = -1;
+  int prev_end_block = -1;
+  bool has_been_random = false;
 };
 
 

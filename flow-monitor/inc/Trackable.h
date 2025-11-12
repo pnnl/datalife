@@ -55,7 +55,7 @@ class Trackable {
             if (reuseOld)
                 reuseOld(ret);
             // if (ret){
-            //     printf("reusing %s\n",typeid(ret).name());
+            //     DPRINTF("reusing %s\n",typeid(ret).name());
             // }
         }
 
@@ -76,13 +76,13 @@ class Trackable {
     }
 
     static bool RemoveTrackable(Key k, unsigned int dec = 1) {
-        // printf("in remove trackable %d\n",_active.count(k));
+        // DPRINTF("in remove trackable %d\n",_active.count(k));
         bool ret = false;
         _activeMutex.writerLock();
         if (_active.count(k)) {
             Value toDelete = _active[k];
             if (toDelete->decUsers(dec)) {
-                // fprintf(stderr,"trackable delete %s\n",typeid(toDelete).name());
+                // fDPRINTF(stderr,"trackable delete %s\n",typeid(toDelete).name());
                 //std::cout<<"[MONITOR] " << "Deleting Trackable!!! " <<typeid(toDelete).name()<< std::endl;
                 _active.erase(k);
                 delete toDelete;
