@@ -937,6 +937,7 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
     void *result = unixmmap(addr, length, prot, flags, fd, offset);
 
     // Look up file path from fd
+    std::lock_guard<std::mutex> lock(fdToFileMapMutex);
     auto it = fdToFileMap.find(fd);
     if (it != fdToFileMap.end()) {
         const std::string &filePath = it->second;
