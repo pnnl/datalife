@@ -8,6 +8,7 @@
 #include <string.h>
 #include <thread>
 #include <unistd.h>
+#include <vector>
 
 #define TIMEON(...) __VA_ARGS__
 //#define TIMEON(...)
@@ -18,14 +19,8 @@ thread_local int _tlSocketsClosed = 0;
 thread_local uint64_t _tlSocketTime = 0;
 thread_local uint64_t _tlSocketBytes = 0;
 
-thread_local char *_buffer = new char[Config::defaultBufferSize];
+thread_local std::vector<char> _buffer(Config::defaultBufferSize);
 thread_local size_t _bufferSize = Config::defaultBufferSize;
-
-static thread_local struct TlsCleaner {
-    ~TlsCleaner() {
-        delete[] _buffer;
-    }
-} tls_cleaner;
 
 Connection::Connection(std::string hostAddr, int port) : //Client
                                                          Loggable(Config::ClientConLog, "ClientConLog"),
@@ -452,42 +447,33 @@ int64_t Connection::recvMsg(char **dataPtr) {
     log(this) << "__buffer: " << _bufferSize << " sizeof: " << sizeof(msgHeader) << std::endl;
     //Read header only
     int64_t recSize = 0;
-    int64_t temp = recvMsg(_buffer, (int64_t)sizeof(msgHeader));
+    int64_t temp = recvMsg(_buffer.data(), (int64_t)sizeof(msgHeader));
     if (temp == -1)
         return -1;
     recSize += temp;
 
     if (recSize > 0) {
         //Lets check to see if the buffer is big enough
-        msgHeader *header = (msgHeader *)_buffer;
+        msgHeader *header = (msgHeader *)_buffer.data();
         log(this) << "Message size ----------- " << header->size << " " << header->type << " " << header->fileNameSize << " " << header->magic << std::endl;
         if (header->size > _bufferSize) {
-            //Create new buffer and copy header
-            char *newBuffer = new char[header->size];
-            if (newBuffer) {
-                log(this) << _addr << " Allocated bigger buffer size: " << header->size << " " << header->type << std::endl;
-                char *toDelete = _buffer;
-                memcpy(newBuffer, _buffer, sizeof(msgHeader));
-                _buffer = newBuffer;
-                _bufferSize = header->size;
-                delete[] toDelete;
-                header = (msgHeader *)_buffer;
-            }
-            else {
-                log(this) << _addr << " ERROR: Failed to create new buffer size: " << header->size << std::endl;
-                return -1;
-            }
+            //Resize the vector to the needed size
+            log(this) << _addr << " Resizing buffer to: " << header->size << " " << header->type << std::endl;
+            _buffer.resize(header->size);
+            _bufferSize = header->size;
+
+            header = (msgHeader *)_buffer.data();
         }
         //Receive the rest of the message
-        temp = recvMsg(_buffer + sizeof(msgHeader), header->size - sizeof(msgHeader));
+        temp = recvMsg(_buffer.data() + sizeof(msgHeader), header->size - sizeof(msgHeader));
         if (temp == -1)
             return -1;
         recSize += temp;
 
-        if (checkMsg(_buffer, recSize)) {
+        if (checkMsg(_buffer.data(), recSize)) {
             //Copy the data into a new buffer and return to caller
             *dataPtr = new char[header->size];
-            memcpy(*dataPtr, _buffer, header->size);
+            memcpy(*dataPtr, _buffer.data(), header->size);
         }
         else {
             log(this) << _addr << " Bad message" << std::endl;
