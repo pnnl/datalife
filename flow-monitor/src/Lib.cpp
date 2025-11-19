@@ -302,7 +302,7 @@ int open(const char *pathname, int flags, ...) {
 
     // Check if the file matches any pattern
     for (auto pattern : patterns) {
-        if (fnmatch(pattern.c_str(), pathname, 0) == 0) {
+        if (fnmatch(pattern.c_str(), get_basename(pathname), 0) == 0) {
             DPRINTF("Lib.cpp: open() Firing off trackFileOpen for %s\n", pathname);
             int fd = outerWrapper("open", pathname, metric, trackFileOpen, unixopen, pathname, flags, mode);
 
@@ -347,7 +347,7 @@ int open64(const char *pathname, int flags, ...) {
     // Check if the file matches any pattern
     for (auto pattern : patterns) {
         // // std::cout << "Lib.cpp: open64() checking pattern: " << pattern << " of pathname: " << pathname << std::endl;
-        if (fnmatch(pattern.c_str(), pathname, 0) == 0) {
+        if (fnmatch(pattern.c_str(), get_basename(pathname), 0) == 0) {
             // std::cout << "Lib.cpp: open64() Firing off trackFileOpen for " << pathname << std::endl;
             
             int fd = outerWrapper("open64", pathname, metric, trackFileOpen, unixopen64, pathname, flags, mode);
@@ -413,7 +413,7 @@ int openat(int dirfd, const char *pathname, int flags, ...) {
 
   DPRINTF("Lib.cpp: Openat %s: \n", pathname);
   for (auto pattern: patterns) {
-    auto ret_val = fnmatch(pattern.c_str(), pathname, 0);
+    auto ret_val = fnmatch(pattern.c_str(), get_basename(pathname), 0);
     if (ret_val == 0) {
       DPRINTF("Lib.cpp: Firing off trackfileopen for %s \n ", pathname);
 
@@ -430,7 +430,7 @@ int monitorClose(MonitorFile *file, unsigned int fp, int fd) {
     DPRINTF("Lib.cpp: In monitor close for fd %d\n", fd);
 #ifdef TRACKFILECHANGES
     for (auto pattern : patterns) {
-        if (fnmatch(pattern.c_str(), file->name().c_str(), 0) == 0) {
+        if (fnmatch(pattern.c_str(), get_basename(file->name().c_str()), 0) == 0) {
             file->close();
             DPRINTF("Lib.cpp: Successfully closed a file with fd %d\n", fd);
             break;
@@ -696,7 +696,7 @@ FILE *fopen(const char *__restrict fileName, const char *__restrict modes) {
   Timer::Metric metric = (modes[0] == 'r') ? Timer::Metric::in_fopen : Timer::Metric::out_fopen;
 
   for (auto pattern: patterns) {
-    auto ret_val = fnmatch(pattern.c_str(), fileName, 0);
+    auto ret_val = fnmatch(pattern.c_str(), get_basename(fileName), 0);
     if (ret_val == 0) {
 
       return outerWrapper("fopen", fileName, metric, trackFileFopen, unixfopen, 
@@ -712,7 +712,7 @@ FILE *fopen64(const char *__restrict fileName, const char *__restrict modes) {
   Timer::Metric metric = (modes[0] == 'r') ? Timer::Metric::in_fopen : Timer::Metric::out_fopen;
 
   for (auto pattern: patterns) {
-    auto ret_val = fnmatch(pattern.c_str(), fileName, 0);
+    auto ret_val = fnmatch(pattern.c_str(), get_basename(fileName), 0);
     if (ret_val == 0 
     // && (strstr(fileName, "_r_stat") || strstr(fileName, "_w_stat") || strstr(fileName, "_trace_stat"))
     ) {
@@ -729,7 +729,7 @@ int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
   DPRINTF("Lib.cpp: In monitor fclose \n");
 #ifdef TRACKFILECHANGES
   for (auto pattern: patterns) {
-    auto ret_val = fnmatch(pattern.c_str(), file->name().c_str(), 0);
+    auto ret_val = fnmatch(pattern.c_str(), get_basename(file->name().c_str()), 0);
     if (ret_val == 0) {
       file->close();
       DPRINTF("Lib.cpp: Successfully closed a file with fd %d\n", fd);

@@ -28,6 +28,13 @@
 #define MYDPRINTF(...) fprintf(stderr, __VA_ARGS__)
 #define TRACKFILECHANGES 1
 
+// Helper function to extract basename from a pathname without modifying the input
+inline const char* get_basename(const char* pathname) {
+    if (!pathname) return pathname;
+    const char* base = strrchr(pathname, '/');
+    return base ? base + 1 : pathname;
+}
+
 extern int removeStr(char *s, const char *r);
 MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string metaName, int fd) : 
     Loggable(Config::MonitorFileLog, "MonitorFile"),
@@ -49,7 +56,7 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
     bool matched = true;
     for (const auto& pattern : patterns) {
         DPRINTF("Checking file: %s against pattern: %s\n", name.c_str(), pattern.c_str());
-        if (fnmatch(pattern.c_str(), name.c_str(), 0) != 0) {
+        if (fnmatch(pattern.c_str(), get_basename(name.c_str()), 0) != 0) {
             matched = false;
             break;
         }

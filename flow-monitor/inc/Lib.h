@@ -79,6 +79,13 @@ std::vector<std::string> split_patterns(const std::string& input, char delimiter
 
 std::vector<std::string> patterns = split_patterns(Config::passin_patterns);
 
+// Helper function to extract basename from a pathname without modifying the input
+inline const char* get_basename(const char* pathname) {
+    if (!pathname) return pathname;
+    const char* base = strrchr(pathname, '/');
+    return base ? base + 1 : pathname;
+}
+
 static Timer* timer;
 
 std::once_flag log_flag;
@@ -318,7 +325,7 @@ inline auto innerWrapper(const char *pathname, bool &isMonitorFile, Func monitor
   }
 
   for (auto pattern: patterns) {
-    auto ret_val = fnmatch(pattern.c_str(), pathname, 0);
+    auto ret_val = fnmatch(pattern.c_str(), get_basename(pathname), 0);
     if (ret_val == 0) {
         DPRINTF("PATTERN: %s PATHNAME: %s \n", pattern.c_str(), pathname);
         isMonitorFile = true;
