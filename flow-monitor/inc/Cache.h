@@ -14,6 +14,7 @@
 #include <future>
 #include <memory>
 #include <unordered_set>
+#include <condition_variable>
 
 #define BASECACHENAME "base"
 
@@ -130,6 +131,8 @@ class Cache : public Loggable, public Trackable<std::string, Cache *> {
     std::unordered_map<uint32_t, FileEntry> _fileMap;
     bool _shared;
     std::atomic<std::uint64_t> _outstandingWrites;
+    std::mutex _writeMutex;
+    std::condition_variable _writeCV;
     bool _terminating;
 
 

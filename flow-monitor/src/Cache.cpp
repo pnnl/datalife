@@ -128,8 +128,11 @@ Cache::~Cache() {
     }
     //RF end of hack
 
-    while (_outstandingWrites.load()) {
-        std::this_thread::yield();
+    // while (_outstandingWrites.load()) {
+    //     std::this_thread::yield();
+    {
+        std::unique_lock<std::mutex> lock(_writeMutex);
+        _writeCV.wait(lock, [this] { return _outstandingWrites.load() == 0; });
     }
     void* ptr = ((uint8_t*)_curIoTime) - sizeof(uint32_t);
     free(ptr);
@@ -140,8 +143,11 @@ Cache::~Cache() {
         log(this) << std::endl;
 
         _prefetchPool->terminate();
-        while (_outstandingWrites.load()) {
-            std::this_thread::yield();
+        // while (_outstandingWrites.load()) {
+        //     std::this_thread::yield();
+        {
+            std::unique_lock<std::mutex> lock(_writeMutex);
+            _writeCV.wait(lock, [this] { return _outstandingWrites.load() == 0; });
         }
         _writePool->terminate();
         delete _prefetchPool;
@@ -282,7 +288,12 @@ bool Cache::bufferWrite(Request *req) {
             if (!writeBlock(req)) {
                 DPRINTF("BASE FAILED WRITE... %s\n",req->originating->name());
             }
-            _outstandingWrites.fetch_sub(1);
+            // _outstandingWrites.fetch_sub(1);
+            if (_outstandingWrites.fetch_sub(1) == 1) {
+                // Notify destructor that all writes are complete
+                std::lock_guard<std::mutex> lock(_writeMutex);
+                _writeCV.notify_all();
+            }
         });
         return false;
     }
