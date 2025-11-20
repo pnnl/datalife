@@ -5,7 +5,7 @@ This document outlines several potential bugs, performance issues, and code smel
 ## Updated Region
 This part documents the region of code Candice made changes to in the fork repo and could have potential issues. Below implementation is not applied to the code yet.
 
-### 1. Memory Leak in Global Destructor (`monitorCleanup`)
+### 1. Memory Leak in Global Destructor (`monitorCleanup`) -- Resolved
 
 *   **Location:** `flow-monitor/src/Lib.cpp`
 *   **Description:** In the `monitorInit` function, several global `std::unordered_map` pointers are allocated with `new`:
@@ -57,7 +57,7 @@ void __attribute__((destructor)) monitorCleanup(void) {
 }
 ```
 
-### 2. Race Condition in `mmap` Interception
+### 2. Race Condition in `mmap` Interception -- Resolved
 
 *   **Location:** `flow-monitor/src/Lib.cpp`
 *   **Description:** The intercepted `mmap` function reads from the global `fdToFileMap` to find the file path associated with a file descriptor. This read operation is not protected by a mutex.
@@ -134,14 +134,14 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
 ## Original Code Region
 This part of the bugs are in the region of code Candice did not make modification in this fork repo, thus implementation should be same as the master branch.
 
-### 1. Memory Leak in Thread-Local Buffer Resizing
+### 1. Memory Leak in Thread-Local Buffer Resizing -- Resolved
 
 *   **Location:** `flow-monitor/src/Connection.cpp`
 *   **Description:** The `Connection::recvMsg(char **dataPtr)` function uses a `thread_local` buffer (`_buffer`). If a received message is larger than the buffer, it allocates a new one and replaces the `_buffer` pointer. The old buffer is deleted, but the `TlsCleaner` struct responsible for cleanup on thread exit is not updated with the new buffer's address.
 *   **Impact:** The *last* buffer allocated by `recvMsg` on any given thread will be leaked when that thread terminates, as the `TlsCleaner` will try to delete the original, now-stale, pointer.
 *   **Recommendation:** Refactor this mechanism to use `std::vector<char>` or `std::unique_ptr<char[]>`. These smart containers manage their own memory automatically, handling resizing and cleanup correctly without manual intervention, which would eliminate this bug and simplify the code.
 
-### 2. Inefficient Spin-Lock in `Cache` Destructor
+### 2. Inefficient Spin-Lock in `Cache` Destructor -- Resolved
 
 *   **Location:** `flow-monitor/src/Cache.cpp`
 *   **Description:** The `Cache::~Cache()` destructor uses a `while` loop with `std::this_thread::yield()` to wait for outstanding writes to complete.
