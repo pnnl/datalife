@@ -153,7 +153,7 @@ This part of the bugs are in the region of code Candice did not make modificatio
 *   **Impact:** This is a spin-lock that consumes 100% of a CPU core while waiting, which is highly inefficient, especially during application shutdown. The presence of a `//RF: this is a hack...` comment nearby suggests this is a workaround for a deeper shutdown/deadlock issue.
 *   **Recommendation:** This should be re-implemented using a `std::condition_variable`. The worker threads would signal the condition variable when they complete their writes, and the destructor would wait on it, consuming no CPU while idle.
 
-### 3. Risk of Recursive Interception in `Histogram.h`
+### 3. Risk of Recursive Interception in `Histogram.h` -- Resolved
 
 *   **Location:** `flow-monitor/inc/Histogram.h`
 *   **Description:** The `Histogram::printLog` function calls `dlsym` to get `unixopen` and `unixwrite` pointers directly to log its own statistics.
