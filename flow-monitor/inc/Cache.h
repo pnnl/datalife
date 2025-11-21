@@ -139,10 +139,13 @@ class Cache : public Loggable, public Trackable<std::string, Cache *> {
     friend class Request;
   private:
     
-    ThreadPool<std::function<void()>> *_writePool;
-
+    // ThreadPool<std::function<void()>> *_writePool;
+    // Singleton accessors for thread pools - ensures thread-safe lazy initialization
+    static ThreadPool<std::function<void()>>& getWritePool();
+    static PriorityThreadPool<std::function<void()>>& getPrefetchPool();
+    
     std::mutex _pMutex;
-    PriorityThreadPool<std::function<void()>> *_prefetchPool;
+    // PriorityThreadPool<std::function<void()>> *_prefetchPool;
     std::unordered_set<std::string> _prefetches;
     //void prefetch(uint32_t index, uint64_t startBlk, uint64_t endBlk, uint64_t numBlocks, uint64_t fileSize, uint64_t blkSize, uint64_t regFileIndex);
     void prefetch(uint32_t index, std::vector<uint64_t> blocks, uint64_t fileSize, uint64_t blkSize, uint64_t regFileIndex);

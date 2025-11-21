@@ -160,7 +160,7 @@ This part of the bugs are in the region of code Candice did not make modificatio
 *   **Impact:** This bypasses the library's own interception-prevention logic (`outerWrapper`/`innerWrapper`). If the file being logged to is also being monitored (e.g., via a wildcard pattern), it could trigger an infinite recursive loop of `open`/`write` calls, leading to a stack overflow.
 *   **Recommendation:** All internal I/O operations should exclusively use the original POSIX function pointers that were resolved once at startup in `Lib.cpp` and stored globally.
 
-### 4. Fragile Static Initialization of Thread Pools
+### 4. Fragile Static Initialization of Thread Pools -- Resolved
 
 *   **Location:** `flow-monitor/src/Cache.cpp`
 *   **Description:** The static `_writePool` and `_prefetchPool` pointers are initialized in the `Cache` constructor, but only if the cache's name is exactly `"base"`.
