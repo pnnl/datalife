@@ -739,11 +739,11 @@ int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
     MonitorFile::removeMonitorFile(file);
     MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
     
-#ifdef TRACKFILECHANGES
-    return 0;
-#else
+// #ifdef TRACKFILECHANGES
+//     return 0;
+// #else
     return (*unixfclose)(fp);
-#endif
+// #endif
 }
 
 int fclose(FILE *fp) {
@@ -753,13 +753,23 @@ int fclose(FILE *fp) {
 
 size_t monitorFread(MonitorFile *file, unsigned int pos, int fd, void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
   DPRINTF("Lib.cpp: In monitor fread \n");
-    auto read_bytes = (size_t)file->read(ptr, size * n, pos);
+    // auto read_bytes = (size_t)file->read(ptr, size * n, pos);
+
+    // // Update the timer with the number of bytes read
+    // timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, read_bytes);
+
+    // if (read_bytes >= size){return n;}
+    // else return (size_t) (size / n) ;
+
+    ssize_t read_bytes = file->read(ptr, size * n, pos);
 
     // Update the timer with the number of bytes read
-    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, read_bytes);
+    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, read_bytes > 0 ? read_bytes : 0);
 
-    if (read_bytes >= size){return n;}
-    else return (size_t) (size / n) ;
+    if (read_bytes <= 0) {
+        return 0;
+    }
+    return (size_t)(read_bytes / size);
 }
 
 size_t fread(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
@@ -772,13 +782,23 @@ size_t fread(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
 
 size_t monitorFwrite(MonitorFile *file, unsigned int pos, int fd, const void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
     DPRINTF("Lib.cpp: In monitor fwrite \n");
-    // auto written_bytes = (size_t)file->write(ptr, size * n, pos);
-    auto written_bytes = file->write(ptr, size * n, pos, -1);
-    // Update the timer with the number of bytes written
-    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, written_bytes);
+    // // auto written_bytes = (size_t)file->write(ptr, size * n, pos);
+    // auto written_bytes = file->write(ptr, size * n, pos, -1);
+    // // Update the timer with the number of bytes written
+    // timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, written_bytes);
 
-    if (written_bytes >= size) return n;
-    else return (size_t) (size / n);
+    // if (written_bytes >= size) return n;
+    // else return (size_t) (size / n);
+
+    ssize_t written_bytes = file->write(ptr, size * n, pos, -1);
+
+    // Update the timer with the number of bytes written
+    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, written_bytes > 0 ? written_bytes : 0);
+
+    if (written_bytes <= 0) {
+        return 0;
+    }
+    return (size_t)(written_bytes / size);
 }
 
 size_t fwrite(const void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
