@@ -140,7 +140,7 @@ void __attribute__((constructor)) monitorInit(void) {
         unixrewind = (unixrewind_t)dlsym(RTLD_NEXT, "rewind");
         unixfgetc = (unixfgetc_t)dlsym(RTLD_NEXT, "fgetc");
         unixfgets = (unixfgets_t)dlsym(RTLD_NEXT, "fgets");
-        unixfputc = (unixfputc_t)dlsym(RTLD_NEXT, "fputs");
+        unixfputc = (unixfputc_t)dlsym(RTLD_NEXT, "fputc");
         unixfputs = (unixfputs_t)dlsym(RTLD_NEXT, "fputs");
         unixflockfile = (unixflockfile_t)dlsym(RTLD_NEXT, "flockfile");
         unixftrylockfile = (unixftrylockfile_t)dlsym(RTLD_NEXT, "ftrylockfile");
@@ -739,11 +739,11 @@ int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
     MonitorFile::removeMonitorFile(file);
     MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
     
-#ifdef TRACKFILECHANGES
-    return 0;
-#else
+// #ifdef TRACKFILECHANGES
+//     return 0;
+// #else
     return (*unixfclose)(fp);
-#endif
+// #endif
 }
 
 int fclose(FILE *fp) {
@@ -753,13 +753,26 @@ int fclose(FILE *fp) {
 
 size_t monitorFread(MonitorFile *file, unsigned int pos, int fd, void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
   DPRINTF("Lib.cpp: In monitor fread \n");
-    auto read_bytes = (size_t)file->read(ptr, size * n, pos);
+    // auto read_bytes = (size_t)file->read(ptr, size * n, pos);
+    auto items_read = (*unixfread)(ptr, size, n, fp);
+    auto read_bytes = items_read * size;
+
+    // // Update the timer with the number of bytes read
+    // timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, read_bytes);
+
+    // if (read_bytes >= size){return n;}
+    // else return (size_t) (size / n) ;
 
     // Update the timer with the number of bytes read
-    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, read_bytes);
+    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, read_bytes);
 
-    if (read_bytes >= size){return n;}
-    else return (size_t) (size / n) ;
+    long new_pos = (*unixftell)(fp);
+    if (new_pos >= 0) {
+        file->setFilePos(pos, new_pos);
+
+    }
+
+    return items_read;
 }
 
 size_t fread(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
@@ -773,12 +786,27 @@ size_t fread(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
 size_t monitorFwrite(MonitorFile *file, unsigned int pos, int fd, const void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
     DPRINTF("Lib.cpp: In monitor fwrite \n");
     // auto written_bytes = (size_t)file->write(ptr, size * n, pos);
-    auto written_bytes = file->write(ptr, size * n, pos, -1);
+    // auto written_bytes = file->write(ptr, size * n, pos, -1);
+    auto items_written = (*unixfwrite)(ptr, size, n, fp);
+    auto written_bytes = items_written * size;
+
     // Update the timer with the number of bytes written
     timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, written_bytes);
 
-    if (written_bytes >= size) return n;
-    else return (size_t) (size / n);
+    // if (written_bytes >= size) return n;
+    // else return (size_t) (size / n);
+
+    // if (written_bytes >= (ssize_t)(size * n)) {
+    //     return n;
+    // }
+    // return (size > 0 && written_bytes > 0) ? (size_t)(written_bytes / size) : 0;
+
+    long new_pos = (*unixftell)(fp);
+    if (new_pos >= 0) {
+        file->setFilePos(pos, new_pos);
+    }
+
+    return items_written;
 }
 
 size_t fwrite(const void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
@@ -801,7 +829,8 @@ int vfprintf(FILE * stream, const char * format, va_list arg ) {
 }
 
 long int monitorFtell(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
-    return (long int)lseek(fd, 0, SEEK_CUR);
+    // return (long int)lseek(fd, 0, SEEK_CUR);
+    return (*unixftell)(fp);
 }
 
 long int ftell(FILE *fp) {
@@ -809,7 +838,16 @@ long int ftell(FILE *fp) {
 }
 
 int monitorFseek(MonitorFile *file, unsigned int pos, int fd, FILE *fp, long int off, int whence) {
-    return lseek(fd, off, whence);
+    // return lseek(fd, off, whence);
+    int result = (*unixfseek)(fp, off, whence);
+
+    if (result == 0) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+        }
+    }
+    return result;
 }
 
 int fseek(FILE *fp, long int off, int whence) {
@@ -817,12 +855,24 @@ int fseek(FILE *fp, long int off, int whence) {
 }
 
 int monitorFgetc(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
-    if (!file->eof(pos)) {
-        unsigned char buffer;
-        read(fd, &buffer, 1);
-        return (int)buffer;
+    // if (!file->eof(pos)) {
+    //     unsigned char buffer;
+    //     read(fd, &buffer, 1);
+    //     return (int)buffer;
+    // }
+    // return EOF;
+
+    int result = (*unixfgetc)(fp);
+
+    // Sync internal position tracking with actual FILE* position
+    if (result != EOF) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+        }
     }
-    return EOF;
+
+    return result;
 }
 
 int fgetc(FILE *fp) {
@@ -830,28 +880,40 @@ int fgetc(FILE *fp) {
 }
 
 char *monitorFgets(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, int n, FILE *__restrict fp) {
-    char *ret = NULL;
-    if (!file->eof(pos)) {
-        int prior = file->filePos(pos);
-        size_t res = read(fd, s, n - 1);
-        if (res) {
-            unsigned int index;
-            for (index = 0; index < res; index++) {
-                if (s[index] == '\n') {
-                    index++;
-                    break;
-                }
-            }
+    // char *ret = NULL;
+    // if (!file->eof(pos)) {
+    //     int prior = file->filePos(pos);
+    //     size_t res = read(fd, s, n - 1);
+    //     if (res) {
+    //         unsigned int index;
+    //         for (index = 0; index < res; index++) {
+    //             if (s[index] == '\n') {
+    //                 index++;
+    //                 break;
+    //             }
+    //         }
 
-            if (index < res) {
-                file->seek(prior + index, SEEK_SET, pos);
-            }
+    //         if (index < res) {
+    //             file->seek(prior + index, SEEK_SET, pos);
+    //         }
 
-            s[index] = '\0';
-            ret = s;
+    //         s[index] = '\0';
+    //         ret = s;
+    //     }
+    // }
+    // return ret;
+
+    char *result = (*unixfgets)(s, n, fp);
+
+    if (result != NULL) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+
         }
     }
-    return ret;
+
+    return result;
 }
 
 char *fgets(char *__restrict s, int n, FILE *__restrict fp) {
@@ -859,8 +921,19 @@ char *fgets(char *__restrict s, int n, FILE *__restrict fp) {
 }
 
 int monitorFputc(MonitorFile *file, unsigned int pos, int fd, int c, FILE *fp) {
-    write(fd, (void *)&c, 1);
-    return c;
+    // write(fd, (void *)&c, 1);
+    // return c;
+
+    int result = (*unixfputc)(c, fp);
+
+    if (result != EOF) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+        }
+    }
+
+    return result;
 }
 
 int fputc(int c, FILE *fp) {
@@ -868,20 +941,31 @@ int fputc(int c, FILE *fp) {
 }
 
 int monitorFputs(MonitorFile *file, unsigned int pos, int fd, const char *__restrict s, FILE *__restrict fp) {
-    unsigned int index = 0;
-    while (1) {
-        if (s[index] == '\0')
-            break;
-        index++;
+    // unsigned int index = 0;
+    // while (1) {
+    //     if (s[index] == '\0')
+    //         break;
+    //     index++;
+    // }
+
+    // int res = -1;
+    // if (index)
+    //     res = write(fd, s, index);
+
+    // if (res == -1)
+    //     return EOF;
+    // return res;
+
+    int result = (*unixfputs)(s, fp);
+
+    if (result != EOF) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+        }
     }
 
-    int res = -1;
-    if (index)
-        res = write(fd, s, index);
-
-    if (res == -1)
-        return EOF;
-    return res;
+    return result;
 }
 
 int fputs(const char *__restrict s, FILE *__restrict fp) {
@@ -889,7 +973,9 @@ int fputs(const char *__restrict s, FILE *__restrict fp) {
 }
 
 int monitorFeof(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
-    return file->eof(pos);
+    // return file->eof(pos);
+
+    return (*unixfeof)(fp);
 }
 
 int feof(FILE *fp) ADD_THROW {
