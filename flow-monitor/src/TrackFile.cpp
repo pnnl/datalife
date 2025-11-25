@@ -452,31 +452,40 @@ uint64_t TrackFile::fileSize() {
 }
 
 off_t TrackFile::seek(off_t offset, int whence, uint32_t index) {
-  struct stat sb;
-  fstat(_fd_orig, &sb);
-  auto _fileSize = sb.st_size;
+//   struct stat sb;
+//   fstat(_fd_orig, &sb);
+//   auto _fileSize = sb.st_size;
 
-  switch (whence) {
-  case SEEK_SET:
-    _filePos[index] = offset;
-    break;
-  case SEEK_CUR:
-    _filePos[index] += offset;
-    if (_filePos[index] > _fileSize) {
-      _filePos[index] = _fileSize;
-    }
-    break;
-  case SEEK_END:
-    _filePos[index] = _fileSize + offset;
-    break;
-  }
-  // _eof[index] = false;
+//   switch (whence) {
+//   case SEEK_SET:
+//     _filePos[index] = offset;
+//     break;
+//   case SEEK_CUR:
+//     _filePos[index] += offset;
+//     if (_filePos[index] > _fileSize) {
+//       _filePos[index] = _fileSize;
+//     }
+//     break;
+//   case SEEK_END:
+//     _filePos[index] = _fileSize + offset;
+//     break;
+//   }
+//   // _eof[index] = false;
 
 
   DPRINTF("Calling Seek in Trackfile\n");
   unixlseek_t unixLseek = (unixlseek_t)dlsym(RTLD_NEXT, "lseek");
-  auto offset_loc = (*unixLseek)(_fd_orig, offset, whence);
-  return  offset_loc;
+
+//   auto offset_loc = (*unixLseek)(_fd_orig, offset, whence);
+//   return  offset_loc;
+
+  auto actual_pos = (*unixLseek)(_fd_orig, offset, whence);
+
+  if (actual_pos != (off_t)-1) {
+    _filePos[index] = actual_pos;
+  }
+
+  return actual_pos;
 }
 
 // Helper function for JSON trace output
