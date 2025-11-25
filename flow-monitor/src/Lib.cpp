@@ -140,7 +140,7 @@ void __attribute__((constructor)) monitorInit(void) {
         unixrewind = (unixrewind_t)dlsym(RTLD_NEXT, "rewind");
         unixfgetc = (unixfgetc_t)dlsym(RTLD_NEXT, "fgetc");
         unixfgets = (unixfgets_t)dlsym(RTLD_NEXT, "fgets");
-        unixfputc = (unixfputc_t)dlsym(RTLD_NEXT, "fputs");
+        unixfputc = (unixfputc_t)dlsym(RTLD_NEXT, "fputc");
         unixfputs = (unixfputs_t)dlsym(RTLD_NEXT, "fputs");
         unixflockfile = (unixflockfile_t)dlsym(RTLD_NEXT, "flockfile");
         unixftrylockfile = (unixftrylockfile_t)dlsym(RTLD_NEXT, "ftrylockfile");
