@@ -53,11 +53,11 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
 
 #ifdef TRACKFILECHANGES
 
-    bool matched = true;
+    bool matched = false;
     for (const auto& pattern : patterns) {
         DPRINTF("Checking file: %s against pattern: %s\n", name.c_str(), pattern.c_str());
-        if (fnmatch(pattern.c_str(), get_basename(name.c_str()), 0) != 0) {
-            matched = false;
+        if (fnmatch(pattern.c_str(), get_basename(name.c_str()), 0) == 0) {
+            matched = true;
             break;
         }
     }
