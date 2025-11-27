@@ -100,9 +100,17 @@ bool MonitorFile::readMetaInfo() {
     (*unixlseek)(_fd, 0L, SEEK_SET);
     char *meta = new char[fileSize + 1];
     int ret = (*unixRead)(_fd, (void *)meta, fileSize);
+
+    // Restore file position to beginning so subsequent reads work correctly
+    (*unixlseek)(_fd, 0L, SEEK_SET);
+
     if (ret < 0) {
         // std::cout << "ERROR: Failed to read local metafile: " << strerror(errno) << std::endl;
-        raise(SIGSEGV);
+        // raise(SIGSEGV);
+
+        log(this) << "ERROR: Failed to read local metafile: " << strerror(errno) << std::endl;
+        delete[] meta;
+
         return 0;
     }
     meta[fileSize] = '\0';
@@ -174,6 +182,7 @@ bool MonitorFile::readMetaInfo() {
             if(hostAddr == "\0" || port == 0 || fileName == "\0") {
                 log(this) << "0:improperly formatted meta file" << std::endl;
 		// std::cout << "0:improperly formatted meta file" << std::endl;
+                delete[] meta;
                 return 0;
             }
             //after collecting info for a server
