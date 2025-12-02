@@ -50,6 +50,11 @@ using namespace std::chrono;
 // #define ENABLE_TRACE 1
 // #define WRITE_STAT_EACH 0
 
+// Helper function to extract basename from a path
+inline std::string get_basename_str(const std::string& path) {
+    size_t pos = path.rfind('/');
+    return (pos != std::string::npos) ? path.substr(pos + 1) : path;
+}
 
 TrackFile::TrackFile(std::string name, int fd, bool openFile) : 
   MonitorFile(MonitorFile::Type::TrackLocal, name, name, fd),
@@ -576,7 +581,7 @@ void TrackFile::close() {
         // Write read block access stats
         DPRINTF("Writing r blk access stat\n");
     std::fstream current_file_stat_r;
-    std::string file_name_r = Config::dataLifeOutputPath + "/" + _filename + "_" + pid + "_r_stat";
+    std::string file_name_r = Config::dataLifeOutputPath + "/" + get_basename_str(_filename) + "_" + pid + "_r_stat";
 
     bool write_header_r = !std::ifstream(file_name_r); // Check if the file exists
     current_file_stat_r.open(file_name_r, std::ios::out | std::ios::app);
@@ -605,7 +610,7 @@ void TrackFile::close() {
     // Write write block access stats
     DPRINTF("Writing w blk access stat\n");
     std::fstream current_file_stat_w;
-    std::string file_name_w = Config::dataLifeOutputPath + "/" + _filename + "_" + pid + "_w_stat";
+    std::string file_name_w = Config::dataLifeOutputPath + "/" + get_basename_str(_filename) + "_" + pid + "_w_stat";
 
     bool write_header_w = !std::ifstream(file_name_w); // Check if the file exists
     current_file_stat_w.open(file_name_w, std::ios::out | std::ios::app);
@@ -634,7 +639,7 @@ void TrackFile::close() {
     // Write read block access order stats
     DPRINTF("Writing r blk access order stat\n");
     std::fstream current_file_trace_r;
-    std::string file_name_trace_r = Config::dataLifeOutputPath + "/" + _filename + "_" + pid + "_r_trace_stat";
+    std::string file_name_trace_r = Config::dataLifeOutputPath + "/" + get_basename_str(_filename) + "_" + pid + "_r_trace_stat";
     current_file_trace_r.open(file_name_trace_r, std::ios::out | std::ios::app);
     if (!current_file_trace_r) {
         DPRINTF("File for read trace stat collection not created!");
@@ -647,7 +652,7 @@ void TrackFile::close() {
     // Write write block access order stats
     DPRINTF("Writing w blk access order stat\n");
     std::fstream current_file_trace_w;
-    std::string file_name_trace_w = Config::dataLifeOutputPath + "/" + _filename + "_" + pid + "_w_trace_stat";
+    std::string file_name_trace_w = Config::dataLifeOutputPath + "/" + get_basename_str(_filename) + "_" + pid + "_w_trace_stat";
     current_file_trace_w.open(file_name_trace_w, std::ios::out | std::ios::app);
     if (!current_file_trace_w) {
         DPRINTF("File for write trace stat collection not created!");
