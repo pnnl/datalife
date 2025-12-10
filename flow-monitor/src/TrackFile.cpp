@@ -137,6 +137,7 @@ void TrackFile::open() {
 
 ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
     DPRINTF("In trackfile read count %u\n", count);
+    std::cerr << "DEBUG: TrackFile::read() called for " << _name << " count=" << count << std::endl;
 
     auto start_time = high_resolution_clock::now();
     unixread_t unixRead = (unixread_t)dlsym(RTLD_NEXT, offset == -1 ? "read" : "pread");
@@ -152,13 +153,16 @@ ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
 
     // JSON mode: track block access patterns
     if (Config::enableJsonOutput) {
+    std::cerr << "DEBUG read(): enableJsonOutput=true, _name=" << _name << std::endl;
 #ifdef BLK_IDX
+    std::cerr << "DEBUG read(): BLK_IDX is defined" << std::endl;
         auto start_block = _filePos[index] / BLK_SIZE;
         auto end_block = (_filePos[index] + count) / BLK_SIZE;
         auto& trace_vector = trace_read_blk_order[_name];
         trace_vector.push_back(start_block);
         trace_vector.push_back(end_block);
 #else
+    std::cerr << "DEBUG read(): BLK_IDX is NOT defined" << std::endl;
         // Determine the start and end blocks based on the file position
         auto start_block = _filePos[index] / BLK_SIZE;
         auto end_block = (_filePos[index] + count) / BLK_SIZE;
