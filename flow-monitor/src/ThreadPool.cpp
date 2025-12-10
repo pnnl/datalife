@@ -23,18 +23,18 @@ ThreadPool<T>::ThreadPool(unsigned int maxThreads,std::string name) : _maxThread
 
 template <class T>
 ThreadPool<T>::~ThreadPool() {
-   std::cout << "[MONITOR] "
+   std::cerr << "[MONITOR] "
               << "deleting thread pool before: "<<_name<<" " << _users << " " << _currentThreads << " " << std::endl;
     terminate(true);
-    std::cout << "[MONITOR] "
+    std::cerr << "[MONITOR] "
               << "deleting thread pool: "<<_name<<" " << _users << " " << _currentThreads << " " << std::endl;
 
     std::unordered_map<std::thread::id, uint64_t>::iterator itor;
 
     for(itor = _activeTime.begin(); itor != _activeTime.end(); ++itor){
-        std::cout << "[MONITOR] threadPool "<<_name<<" thread "<<(*itor).first << std::endl;
-        std::cout << "[MONITOR] "<<_name<<" activeTime "<<(double)(*itor).second/1000000000.0<<std::endl;
-        std::cout << "[MONITOR] "<<_name<<" idleTime "<<(double)_idleTime[(*itor).first]/1000000000.0<<std::endl;
+        std::cerr << "[MONITOR] threadPool "<<_name<<" thread "<<(*itor).first << std::endl;
+        std::cerr << "[MONITOR] "<<_name<<" activeTime "<<(double)(*itor).second/1000000000.0<<std::endl;
+        std::cerr << "[MONITOR] "<<_name<<" idleTime "<<(double)_idleTime[(*itor).first]/1000000000.0<<std::endl;
     }
     
 }
@@ -150,7 +150,7 @@ void ThreadPool<T>::workLoop() {
     //This is the end counter we need to decrement
     _currentThreads.fetch_sub(1);
     if (_q.size() > _currentThreads){
-        std::cout<<"[MONITOR DEBUG] "<<_name<<" not empty while closing!!!! remaining threads: "<<_currentThreads<<" remaining tasks: "<<_q.size()<<std::endl;
+        std::cerr<<"[MONITOR DEBUG] "<<_name<<" not empty while closing!!!! remaining threads: "<<_currentThreads<<" remaining tasks: "<<_q.size()<<std::endl;
     }
 }
 

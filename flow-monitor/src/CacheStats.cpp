@@ -77,9 +77,9 @@ void CacheStats::print(std::string cacheName) {
         std::cout << std::fixed;
         for (int i = 0; i < lastMetric; i++) {
             for (int j = 0; j < last; j++) {
-                std::cout << "[MONITOR] " << cacheName << " " << metricTypeName_cs[i] << " " << metricName_cs[j] << " " << _time[i][j] / billion << " " << _cnt[i][j] << " " << _amt[i][j] << std::endl;
+                std::cerr << "[MONITOR] " << cacheName << " " << metricTypeName_cs[i] << " " << metricName_cs[j] << " " << _time[i][j] / billion << " " << _cnt[i][j] << " " << _amt[i][j] << std::endl;
             }
-            std::cout << "[MONITOR] " << cacheName << " "
+            std::cerr << "[MONITOR] " << cacheName << " "
                       << "BW: " << (_amt[i][0] / 1000000.0) / ((_time[i][0] + _time[i][3] + _time[i][4]) / billion) << " effective BW: " << (_amt[i][7] / 1000000.0) / (_time[i][7] / billion) << std::endl;
         }
         std::cout << std::endl;
@@ -89,13 +89,13 @@ void CacheStats::print(std::string cacheName) {
             //uint64_t thread_count = 0;
             for(itor = _thread_stats->begin(); itor != _thread_stats->end(); itor++) {
                 //thread_count++;
-                std::cout << "[MONITOR] " << cacheName << " thread " << (*itor).first << std::endl;
+                std::cerr << "[MONITOR] " << cacheName << " thread " << (*itor).first << std::endl;
                 for (int i = 0; i < lastMetric; i++) {
                     for (int j = 0; j < last; j++) {
-                        std::cout << "[MONITOR] " << cacheName << " " << metricTypeName_cs[i] << " " << metricName_cs[j] << " " << itor->second->time[i][j]->load() / billion 
+                        std::cerr << "[MONITOR] " << cacheName << " " << metricTypeName_cs[i] << " " << metricName_cs[j] << " " << itor->second->time[i][j]->load() / billion 
                         << " " << itor->second->cnt[i][j]->load() << " " << itor->second->amt[i][j]->load() << std::endl;
                     }
-                    std::cout << "[MONITOR] " << cacheName << " "
+                    std::cerr << "[MONITOR] " << cacheName << " "
                             << "BW: " << (itor->second->amt[i][0]->load() / 1000000.0) /
                             ((itor->second->time[i][0]->load() + itor->second->time[i][3]->load() + itor->second->time[i][4]->load()) / billion)
                             << " effective BW: " << (itor->second->amt[i][7]->load() / 1000000.0) / (itor->second->time[i][7]->load() / billion) << std::endl;

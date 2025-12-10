@@ -186,10 +186,10 @@ void __attribute__((destructor)) monitorCleanup(void) {
     curlDestroy;
 
     if (Config::printStats) {
-        std::cout << "[MONITOR] " << "Exiting Client" << std::endl;
+        std::cerr << "[MONITOR] " << "Exiting Client" << std::endl;
         if (ConnectionPool::useCnt->size() > 0) {
             for (auto conUse : *ConnectionPool::useCnt) {
-                std::cout << "[MONITOR] connection: " << conUse.first << " num_tx: " << conUse.second << " amount: " << (*ConnectionPool::stats)[conUse.first].first << " B time: " << (*ConnectionPool::stats)[conUse.first].second << " s avg BW: " << ((*ConnectionPool::stats)[conUse.first].first / (*ConnectionPool::stats)[conUse.first].second) / 1000000 << "MB/s" << std::endl;
+                std::cerr << "[MONITOR] connection: " << conUse.first << " num_tx: " << conUse.second << " amount: " << (*ConnectionPool::stats)[conUse.first].first << " B time: " << (*ConnectionPool::stats)[conUse.first].second << " s avg BW: " << ((*ConnectionPool::stats)[conUse.first].first / (*ConnectionPool::stats)[conUse.first].second) / 1000000 << "MB/s" << std::endl;
             }
         }
         delete track_files;

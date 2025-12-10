@@ -23,10 +23,10 @@ PriorityThreadPool<T>::PriorityThreadPool(uint32_t maxThreads, std::string name)
 
 template <class T>
 PriorityThreadPool<T>::~PriorityThreadPool() {
-    std::cout << "[MONITOR] "
+    std::cerr << "[MONITOR] "
               << "deleting priority pool before: "<<_name<<" " << _users << " " << _q.size() << " " << std::endl;
     terminate(true);
-    std::cout << "[MONITOR] "
+    std::cerr << "[MONITOR] "
               << "deleting priority pool: "<<_name<<" " << _users << " " << _q.size() << " " << std::endl;
 }
 
@@ -132,7 +132,7 @@ void PriorityThreadPool<T>::workLoop() {
     //This is the end counter we need to decrement
     _currentThreads.fetch_sub(1);
     if (_q.size() > _currentThreads) {
-        std::cout << "[MONITOR DEBUG] " << _name << " not empty while closing!!!! remaining threads: " << _currentThreads << " remaining tasks: " << _q.size() << std::endl;
+        std::cerr << "[MONITOR DEBUG] " << _name << " not empty while closing!!!! remaining threads: " << _currentThreads << " remaining tasks: " << _q.size() << std::endl;
     }
 }
 
