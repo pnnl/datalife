@@ -766,10 +766,22 @@ size_t monitorFread(MonitorFile *file, unsigned int pos, int fd, void *__restric
     // Update the timer with the number of bytes read
     timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, read_bytes);
 
-    long new_pos = (*unixftell)(fp);
-    if (new_pos >= 0) {
-        file->setFilePos(pos, new_pos);
+    // long new_pos = (*unixftell)(fp);
+    // if (new_pos >= 0) {
+    //     file->setFilePos(pos, new_pos);
 
+    // }
+
+    // Track for JSON tracing (if file is TrackFile)
+    if (read_bytes > 0) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackRead(read_bytes, pos, new_pos);
+            }
+        }
     }
 
     return items_read;
@@ -801,9 +813,21 @@ size_t monitorFwrite(MonitorFile *file, unsigned int pos, int fd, const void *__
     // }
     // return (size > 0 && written_bytes > 0) ? (size_t)(written_bytes / size) : 0;
 
-    long new_pos = (*unixftell)(fp);
-    if (new_pos >= 0) {
-        file->setFilePos(pos, new_pos);
+    // long new_pos = (*unixftell)(fp);
+    // if (new_pos >= 0) {
+    //     file->setFilePos(pos, new_pos);
+    // }
+
+    // Track for JSON tracing (if file is TrackFile)
+    if (written_bytes > 0) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackWrite(written_bytes, pos, new_pos);
+            }
+        }
     }
 
     return items_written;
@@ -869,6 +893,10 @@ int monitorFgetc(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
         long new_pos = (*unixftell)(fp);
         if (new_pos >= 0) {
             file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackRead(1, pos, new_pos);
+            }
         }
     }
 
@@ -908,7 +936,12 @@ char *monitorFgets(MonitorFile *file, unsigned int pos, int fd, char *__restrict
     if (result != NULL) {
         long new_pos = (*unixftell)(fp);
         if (new_pos >= 0) {
+            long prev_pos = file->filePos(pos);
             file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackRead(new_pos - prev_pos, pos, new_pos);
+            }
 
         }
     }
@@ -930,6 +963,10 @@ int monitorFputc(MonitorFile *file, unsigned int pos, int fd, int c, FILE *fp) {
         long new_pos = (*unixftell)(fp);
         if (new_pos >= 0) {
             file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackWrite(1, pos, new_pos);
+            }
         }
     }
 
@@ -961,7 +998,12 @@ int monitorFputs(MonitorFile *file, unsigned int pos, int fd, const char *__rest
     if (result != EOF) {
         long new_pos = (*unixftell)(fp);
         if (new_pos >= 0) {
+            long prev_pos = file->filePos(pos);
             file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackWrite(new_pos - prev_pos, pos, new_pos);
+            }
         }
     }
 

@@ -137,7 +137,7 @@ void TrackFile::open() {
 
 ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
     DPRINTF("In trackfile read count %u\n", count);
-    std::cerr << "DEBUG: TrackFile::read() called for " << _name << " count=" << count << std::endl;
+    // std::cerr << "DEBUG: TrackFile::read() called for " << _name << " count=" << count << std::endl;
 
     auto start_time = high_resolution_clock::now();
     unixread_t unixRead = (unixread_t)dlsym(RTLD_NEXT, offset == -1 ? "read" : "pread");
@@ -153,16 +153,16 @@ ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
 
     // JSON mode: track block access patterns
     if (Config::enableJsonOutput) {
-    std::cerr << "DEBUG read(): enableJsonOutput=true, _name=" << _name << std::endl;
+    // std::cerr << "DEBUG read(): enableJsonOutput=true, _name=" << _name << std::endl;
 #ifdef BLK_IDX
-    std::cerr << "DEBUG read(): BLK_IDX is defined" << std::endl;
+    // std::cerr << "DEBUG read(): BLK_IDX is defined" << std::endl;
         auto start_block = _filePos[index] / BLK_SIZE;
         auto end_block = (_filePos[index] + count) / BLK_SIZE;
         auto& trace_vector = trace_read_blk_order[_name];
         trace_vector.push_back(start_block);
         trace_vector.push_back(end_block);
 #else
-    std::cerr << "DEBUG read(): BLK_IDX is NOT defined" << std::endl;
+    // std::cerr << "DEBUG read(): BLK_IDX is NOT defined" << std::endl;
         // Determine the start and end blocks based on the file position
         auto start_block = _filePos[index] / BLK_SIZE;
         auto end_block = (_filePos[index] + count) / BLK_SIZE;
@@ -592,9 +592,9 @@ void TrackFile::close() {
     // JSON mode: write JSON trace files
     if (Config::enableJsonOutput) {
 
-        std::cerr << "DEBUG close(): _name=" << _name << " _filename=" << _filename << std::endl;
-        std::cerr << "DEBUG: trace_read_blk_order[_name].size()=" << trace_read_blk_order[_name].size() << std::endl;
-        std::cerr << "DEBUG: trace_read_blk_order[_filename].size()=" << trace_read_blk_order[_filename].size() << std::endl;
+        // std::cerr << "DEBUG close(): _name=" << _name << " _filename=" << _filename << std::endl;
+        // std::cerr << "DEBUG: trace_read_blk_order[_name].size()=" << trace_read_blk_order[_name].size() << std::endl;
+        // std::cerr << "DEBUG: trace_read_blk_order[_filename].size()=" << trace_read_blk_order[_filename].size() << std::endl;
 
         char hostname[256]; // Buffer to store the host name
         std::string host_name = (gethostname(hostname, sizeof(hostname)) == 0) ? hostname : "unknown_host";
@@ -602,7 +602,7 @@ void TrackFile::close() {
         DPRINTF("Writing r blk access order stat with prefix %s\n", _filename.c_str());
         std::string file_name_trace_r = _filename + "." + pid + "-" + host_name + ".r_blk_trace.json";
 
-        auto& blk_trace_info_r = trace_read_blk_order[_name];
+        auto& blk_trace_info_r = trace_read_blk_order[_filename];
         auto future_r = std::async(std::launch::async,
                                    write_trace_data,
                                    file_name_trace_r,
@@ -615,7 +615,7 @@ void TrackFile::close() {
         DPRINTF("Writing w blk access order stat with prefix %s\n", _filename.c_str());
         std::string file_name_trace_w = _filename + "." + pid + "-" + host_name + ".w_blk_trace.json";
 
-        auto& blk_trace_info_w = trace_write_blk_order[_name];
+        auto& blk_trace_info_w = trace_write_blk_order[_filename];
         auto future_w = std::async(std::launch::async,
                                    write_trace_data,
                                    file_name_trace_w,
@@ -717,5 +717,184 @@ void TrackFile::close() {
         current_file_trace_w << blk_ << std::endl;
     }
     } // end if (!Config::enableJsonOutput)
+#endif
+}
+
+
+// Tracking-only method for FILE* operations (no actual I/O to avoid buffering corruption)
+void TrackFile::trackRead(size_t count, uint32_t index, off_t filePos) {
+    if (count == 0) return;
+
+    // Update file position
+    _filePos[index] = filePos;
+
+    // JSON mode: track block access patterns
+    if (Config::enableJsonOutput) {
+#ifdef BLK_IDX
+        auto start_block = (filePos - count) / BLK_SIZE;
+        auto end_block = filePos / BLK_SIZE;
+        auto& trace_vector = trace_read_blk_order[_name];
+        trace_vector.push_back(start_block);
+        trace_vector.push_back(end_block);
+#else
+        // Determine the start and end blocks based on the file position
+        auto start_block = (filePos - count) / BLK_SIZE;
+        auto end_block = filePos / BLK_SIZE;
+
+        // Initialize first_access_block if not already set
+        if (first_access_block == -1) {
+            first_access_block = start_block;
+        }
+
+        // Update largest_access_block
+        if (largest_access_block < end_block) {
+            largest_access_block = end_block;
+        }
+
+        // Retrieve the trace vector for the current file
+        auto& trace_vector = trace_read_blk_order[_name];
+
+        // Ensure trace_vector has at least 4 elements
+        if (trace_vector.size() < 4) {
+            trace_vector.resize(4, -2);
+        }
+
+        // Update the first and second values in trace_vector
+        trace_vector[0] = start_block;
+        trace_vector[1] = end_block;
+        trace_vector[2] = largest_access_block;
+
+        // Determine the sequential/random status
+        if (prev_start_block != -1 && prev_end_block != -1 && !has_been_random) {
+            if (start_block >= prev_end_block) {
+                trace_vector[3] = -1; // Sequential
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                trace_vector[3] = -2; // Random
+                has_been_random = true;
+            }
+        } else {
+            if (prev_start_block == -1 && prev_end_block == -1) {
+                trace_vector[3] = -1;
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                trace_vector[3] = -2;
+            }
+        }
+#endif
+    }
+
+#ifdef GATHERSTAT
+    auto blockSize = Config::blockSizeForStat;
+    auto file_pos_start = filePos - count;
+    uint32_t start_block = file_pos_start / blockSize;
+    uint32_t end_block = filePos / blockSize;
+
+    for (uint32_t block = start_block; block <= end_block; ++block) {
+#ifdef USE_HASH
+        auto sample = hashed(block) % Config::hashtableSizeForStat;
+        if (sample >= Config::hashtableSizeForStat / 2) continue;
+#endif
+        auto &block_stat = track_file_blk_r_stat[_name];
+        auto &block_stat_size = track_file_blk_r_stat_size[_name];
+
+        if (block_stat.find(block) == block_stat.end()) {
+            block_stat[block] = 1;
+            block_stat_size[block] = std::min((size_t)(count - (block * blockSize)), (size_t)blockSize);
+        } else {
+            block_stat[block]++;
+        }
+        trace_read_blk_seq[_name].push_back(block);
+    }
+#endif
+}
+
+// Tracking-only method for FILE* write operations
+void TrackFile::trackWrite(size_t count, uint32_t index, off_t filePos) {
+    if (count == 0) return;
+
+    // Update file position
+    _filePos[index] = filePos;
+
+    // JSON mode: track block access patterns
+    if (Config::enableJsonOutput) {
+#ifdef BLK_IDX
+        auto start_block = (filePos - count) / BLK_SIZE;
+        auto end_block = filePos / BLK_SIZE;
+        auto& trace_vector = trace_write_blk_order[_name];
+        trace_vector.push_back(start_block);
+        trace_vector.push_back(end_block);
+#else
+        // Determine the start and end blocks based on the file position
+        auto start_block = (filePos - count) / BLK_SIZE;
+        auto end_block = filePos / BLK_SIZE;
+
+        // Initialize first_access_block if not already set
+        if (first_access_block == -1) {
+            first_access_block = start_block;
+        }
+
+        // Update largest_access_block
+        if (largest_access_block < end_block) {
+            largest_access_block = end_block;
+        }
+
+        // Retrieve the trace vector for the current file
+        auto& trace_vector = trace_write_blk_order[_name];
+
+        // Ensure trace_vector has at least 4 elements
+        if (trace_vector.size() < 4) {
+            trace_vector.resize(4, -2);
+        }
+
+        // Update the first and second values in trace_vector
+        trace_vector[0] = start_block;
+        trace_vector[1] = end_block;
+        trace_vector[2] = largest_access_block;
+
+        // Determine the sequential/random status
+        if (prev_start_block != -1 && prev_end_block != -1 && !has_been_random) {
+            if (start_block >= prev_end_block) {
+                trace_vector[3] = -1; // Sequential
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                trace_vector[3] = -2; // Random
+                has_been_random = true;
+            }
+        } else {
+            if (prev_start_block == -1 && prev_end_block == -1) {
+                trace_vector[3] = -1;
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                trace_vector[3] = -2;
+            }
+        }
+#endif
+    }
+
+#ifdef GATHERSTAT
+    auto file_pos_start = filePos - count;
+    uint32_t start_block = file_pos_start / _blkSize;
+    uint32_t end_block = filePos / _blkSize;
+
+    for (uint32_t block_index = start_block; block_index <= end_block; ++block_index) {
+#ifdef USE_HASH
+        auto sample = hashed(block_index) % Config::hashtableSizeForStat;
+        if (sample >= Config::hashtableSizeForStat / 2) continue;
+#endif
+
+        if (track_file_blk_w_stat[_name].find(block_index) == track_file_blk_w_stat[_name].end()) {
+            track_file_blk_w_stat[_name][block_index] = 1;
+            track_file_blk_w_stat_size[_name][block_index] = 
+                std::min((size_t)(count - (block_index * _blkSize)), (size_t)_blkSize);
+        } else {
+            track_file_blk_w_stat[_name][block_index]++;
+        }
+        trace_write_blk_seq[_name].push_back(block_index);
+    }
 #endif
 }
