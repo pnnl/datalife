@@ -88,6 +88,12 @@ void TrackFile::open() {
   // trace_write_blk_order.emplace(_name, std::vector<TraceData>());
   trace_read_blk_order.emplace(_name, TraceData());
   trace_write_blk_order.emplace(_name, TraceData());
+#else
+  // Initialize trace maps for JSON output mode when BLK_IDX is not defined
+  if (Config::enableJsonOutput) {
+    trace_read_blk_order.emplace(_name, TraceData());
+    trace_write_blk_order.emplace(_name, TraceData());
+  }
 #endif
 
 #ifdef GATHERSTAT
@@ -581,13 +587,18 @@ void TrackFile::close() {
 
     // JSON mode: write JSON trace files
     if (Config::enableJsonOutput) {
+
+        std::cerr << "DEBUG close(): _name=" << _name << " _filename=" << _filename << std::endl;
+        std::cerr << "DEBUG: trace_read_blk_order[_name].size()=" << trace_read_blk_order[_name].size() << std::endl;
+        std::cerr << "DEBUG: trace_read_blk_order[_filename].size()=" << trace_read_blk_order[_filename].size() << std::endl;
+
         char hostname[256]; // Buffer to store the host name
         std::string host_name = (gethostname(hostname, sizeof(hostname)) == 0) ? hostname : "unknown_host";
 
         DPRINTF("Writing r blk access order stat with prefix %s\n", _filename.c_str());
         std::string file_name_trace_r = _filename + "." + pid + "-" + host_name + ".r_blk_trace.json";
 
-        auto& blk_trace_info_r = trace_read_blk_order[_filename];
+        auto& blk_trace_info_r = trace_read_blk_order[_name];
         auto future_r = std::async(std::launch::async,
                                    write_trace_data,
                                    file_name_trace_r,
@@ -600,7 +611,7 @@ void TrackFile::close() {
         DPRINTF("Writing w blk access order stat with prefix %s\n", _filename.c_str());
         std::string file_name_trace_w = _filename + "." + pid + "-" + host_name + ".w_blk_trace.json";
 
-        auto& blk_trace_info_w = trace_write_blk_order[_filename];
+        auto& blk_trace_info_w = trace_write_blk_order[_name];
         auto future_w = std::async(std::launch::async,
                                    write_trace_data,
                                    file_name_trace_w,
@@ -704,4 +715,3 @@ void TrackFile::close() {
     } // end if (!Config::enableJsonOutput)
 #endif
 }
-
