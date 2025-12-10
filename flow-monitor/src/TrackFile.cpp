@@ -561,13 +561,13 @@ void TrackFile::close() {
         DPRINTF("Writing r blk access order stat with prefix %s\n", _filename.c_str());
         std::string file_name_trace_r = _filename + "." + pid + "-" + host_name + ".r_blk_trace.json";
 
-        auto& blk_trace_info_r = trace_read_blk_order[_filename];
+        auto& blk_trace_info_r = trace_read_blk_order[_name];
         auto future_r = std::async(std::launch::async, write_trace_data, file_name_trace_r, std::ref(blk_trace_info_r), pid);
 
         DPRINTF("Writing w blk access order stat with prefix %s\n", _filename.c_str());
         std::string file_name_trace_w = _filename + "." + pid + "-" + host_name + ".w_blk_trace.json";
 
-        auto& blk_trace_info_w = trace_write_blk_order[_filename];
+        auto& blk_trace_info_w = trace_write_blk_order[_name];
         auto future_w = std::async(std::launch::async, write_trace_data, file_name_trace_w, std::ref(blk_trace_info_w), pid);
 
         // Wait for both async tasks to complete
