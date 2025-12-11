@@ -117,8 +117,8 @@ std::map<std::string, std::vector<int> > trace_write_blk_seq;
 // For JOSN tracing
 std::unordered_map<std::string, TraceData> trace_read_blk_order;
 std::unordered_map<std::string, TraceData> trace_write_blk_order;
-int first_access_block;
-int largest_access_block;
+int first_access_block = -1;
+int largest_access_block = -1;
 
 unixopen_t unixopen = NULL;
 unixopen_t unixopen64 = NULL;
