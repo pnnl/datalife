@@ -20,10 +20,10 @@ project(DataLife-FlowAnalysis)
 
 if (NOT DEFINED DATALIFE_ROOT)
     set(DATALIFE_ROOT ${CMAKE_BINARY_DIR})
-    set(_pypkg ${DATALIFE_ROOT}/../)
+    set(_pypkg ${CMAKE_CURRENT_SOURCE_DIR})
     set(_pypkg_libexec ${DATALIFE_ROOT}/libexec/flow-analysis)
 else()
-    set(_pypkg ${DATALIFE_ROOT}/../flow-analysis)
+    set(_pypkg ${CMAKE_CURRENT_SOURCE_DIR})
     set(_pypkg_libexec ${DATALIFE_ROOT}/flow-analysis/libexec/flow-analysis)
 endif()
 
