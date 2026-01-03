@@ -91,11 +91,24 @@ References
 
 * M. Tang, J. Cernuda, J. Ye, L. Guo, N. R. Tallent, A. Kougkas, and X.-H. Sun, “DaYu: Optimizing distributed scientific workflows by decoding dataflow semantics and dynamics,” in Proc. of the 2024 IEEE Conf. on Cluster Computing, pp. 357–369, IEEE, September 2024. ([doi](https://doi.org/10.1109/CLUSTER59578.2024.00038))
 
-* L. Guo, H. Lee, J. Firoz, M. Tang, and N. R. Tallent, “Improving I/O-aware workflow scheduling via data flow characterization and trade-off analysis,” in Seventh IEEE Intl. Workshop on Benchmarking, Performance Tuning and Optimization for Big Data Applications (Proc. of the IEEE Intl. Conf. on Big Data), IEEE Computer Society, December 2024.  ([doi](https://doi.org/10.1109/BigData62323.2024.10825855))
+* L. Guo, H. Lee, J. Firoz, M. Tang, and N. R. Tallent, “Improving I/O-aware workflow scheduling via data flow characterization and trade-off analysis,” in Seventh IEEE Intl. Workshop on Benchmarking, Performance Tuning and Optimization for Big Data Applications (Proc. of the IEEE Intl. Conf. on Big Data), IEEE Computer Society, December 2024. ([doi](https://doi.org/10.1109/BigData62323.2024.10825855))
 
 * H. Lee, J. Firoz, N. R. Tallent, L. Guo, and M. Halappanavar, “FlowForecaster: Automatically inferring detailed & interpretable workflow scaling models for forecasts,” in Proc. of the 39th IEEE Intl. Parallel and Distributed Processing Symp., IEEE Computer Society, June 2025. ([doi](https://doi.org/10.1109/IPDPS64566.2025.00045))
 
 * J. Firoz, H. Lee, L. Guo, M. Tang, N. R. Tallent, and Z. Peng, “FastFlow: Rapid workflow response by prioritizing critical data flows and their interactions,” in Proc. of the 37th Intl. Conf. on Scalable Scientific Data Management, ACM, June 2025. ([doi](https://doi.org/10.1145/3733723.3733735))
+
+* M. Tang, Z. Zhu, L. Guo, J. G. Bandy, T. Carlson, S. Neuwirth, A. Kougkas, X.-H. Sun, and N. R. Tallent, “Quantifying AWS S3 I/O performance boundaries using the roofline model,” in Proc. of the SC ’25 Workshops of the Intl. Conf. for High Performance Computing, Networking, Storage and Analysis (10th Intl Parallel Data Systems Workshop), (New York, NY, USA), pp. 1415–1423, Association for Computing Machinery, 11 2025.
+
+* M. Tang, L. Guo, A. Kougkas, X.-H. Sun, and N. R. Tallent, “Characterization and implications of dataflow in HPC workflows,” in Proc. of the 40th IEEE Intl. Parallel and Distributed Processing Symp., IEEE Computer Society, May 2026.
+
+<!-- M. H. Rashid, J. Firoz, N. R. Tallent, L. Guo, M. Tang, and D. Dai, “QoSFlow: Ensuring QoS of distributed workflows using interpretable sensitivity models,” in Proc. of the 40th IEEE Intl. Parallel and Distributed Processing Symp., IEEE Computer Society, May 2026. -->
+
+
+## Related
+  
+* C. Egersdoerfer, M. H. Rashid, D. Dai, B. Fang, and N. R. Tallent, “Understanding and predicting cross-application I/O interference in HPC storage systems,” in Proc. of the Workshops of the Intl. Conf. for High Performance Computing, Networking, Storage and Analysis (9th Intl. Parallel Data Systems Workshop), Nov. 2024. ([doi](https://doi.org/10.1109/SCW63240.2024.00174))
+
+* M. H. Rashid, N. R. Tallent, F. S. Bao, and D. Dai, “CARAT: Client-side adaptive RPC and cache co-tuning for parallel file systems,” in Proc. of the 40th IEEE Intl. Parallel and Distributed Processing Symp., IEEE Computer Society, May 2026.
 
 
 
