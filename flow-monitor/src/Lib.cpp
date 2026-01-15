@@ -568,9 +568,19 @@ int innerStat(int version, const char *filename, struct stat64 *buf) { return wh
 // thread_local unixlstat_t whichLstat = NULL;
 // thread_local unixfstat_t whichFstat = NULL;
 
+static inline int monitorStatImpl(const std::string& metaName, struct stat* buf) {
+    return ::stat(metaName.c_str(), buf);
+}
+
+static inline int monitorStatImpl(const std::string& metaName, struct stat64* buf) {
+    return ::stat64(metaName.c_str(), buf);
+}
+
 template <typename T>
 int monitorStat(std::string name, std::string metaName, MonitorFile::Type type, int version, const char *filename, T *buf) {
-  auto ret = innerStat(_STAT_VER, metaName.c_str(), buf);
+//   auto ret = innerStat(_STAT_VER, metaName.c_str(), buf);
+  int ret = monitorStatImpl(metaName, buf);
+
   MonitorFile *file = MonitorFile::lookUpMonitorFile(filename);
   if (file)
     buf->st_size = (off_t)file->fileSize();
