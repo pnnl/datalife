@@ -6,12 +6,10 @@ DataLife
 =============================================================================
 
 **Home**:
-  - https://github.com/pnnl/DataLife
+  - [DataLife](https://github.com/pnnl/DataLife),
+    part of [DataFlowDrs](https://github.com/pnnl/DataFlowDrs)
   
-  - [Performance Lab for EXtreme Computing and daTa](https://github.com/perflab-exact)
-
-  - Related: 
-  [DataFlowDrs](https://github.com/pnnl/DataFlowDrs)
+  - [Performance Lab for EXtreme Computing and daTa](https://github.com/PerfLab-EXaCT)
 
 
 **About (Technical)**: 
@@ -65,7 +63,6 @@ and resource assignment.
 
 
 **Contacts**: (_firstname_._lastname_@pnnl.gov)
-
   - Nathan R. Tallent ([www](https://nathantallent.github.io))
   - Lenny Guo ([www](https://www.pnnl.gov/people/luanzheng-guo))
   - Jesun Firoz ([www](https://www.pnnl.gov/people/jesun-firoz))
