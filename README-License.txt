@@ -1,5 +1,5 @@
                                DataLife
-                       github.com/pnnl/datalife
+                       github.com/pnnl/DataLife
 
           Copyright ((c)) 2023, Battelle Memorial Institute
 
