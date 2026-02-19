@@ -98,7 +98,9 @@ References
 
 * M. Tang, L. Guo, A. Kougkas, X.-H. Sun, and N. R. Tallent, “Characterization and implications of dataflow in HPC workflows,” in Proc. of the 40th IEEE Intl. Parallel and Distributed Processing Symp., IEEE Computer Society, May 2026.
 
-* M. H. Rashid, J. Firoz, N. R. Tallent, L. Guo, M. Tang, and D. Dai, “QoSFlow: Ensuring QoS of distributed workflows using interpretable sensitivity models,” in Proc. of the 40th IEEE Intl. Parallel and Distributed Processing Symp., IEEE Computer Society, May 2026.
+* M. H. Rashid, J. Firoz, N. R. Tallent, L. Guo, M. Tang, and D. Dai, “QoSFlow: Ensuring Service Quality of Distributed Workflows Using Interpretable Sensitivity Models,” in Proc. of the 40th IEEE Intl. Parallel and Distributed Processing Symp., IEEE Computer Society, May 2026.
+
+
 
 
 ## Related
