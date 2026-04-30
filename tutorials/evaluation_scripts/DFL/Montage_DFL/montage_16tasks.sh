@@ -460,6 +460,26 @@ $MONTAGE_PATH/bin/mConcatFit 3-stat.tbl 3-fits.tbl .
 $MONTAGE_PATH/bin/mBgModel -i 100000 1-images.tbl 1-fits.tbl 1-corrections.tbl 
 $MONTAGE_PATH/bin/mBgModel -i 100000 2-images.tbl 2-fits.tbl 2-corrections.tbl 
 $MONTAGE_PATH/bin/mBgModel -i 100000 3-images.tbl 3-fits.tbl 3-corrections.tbl 
+
+#####################################################################
+# mBackground was missing in DataLife's Montage scripts. Now add it.
+#####################################################################
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_blue_001_001.fits cposs2ukstu_blue_001_001.fits 1-projected.tbl 1-corrections.tbl
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_blue_001_002.fits cposs2ukstu_blue_001_002.fits 1-projected.tbl 1-corrections.tbl
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_blue_002_001.fits cposs2ukstu_blue_002_001.fits 1-projected.tbl 1-corrections.tbl
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_blue_002_002.fits cposs2ukstu_blue_002_002.fits 1-projected.tbl 1-corrections.tbl
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_red_001_001.fits cposs2ukstu_red_001_001.fits 2-projected.tbl 2-corrections.tbl
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_red_001_002.fits cposs2ukstu_red_001_002.fits 2-projected.tbl 2-corrections.tbl
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_red_002_001.fits cposs2ukstu_red_002_001.fits 2-projected.tbl 2-corrections.tbl
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_red_002_002.fits cposs2ukstu_red_002_002.fits 2-projected.tbl 2-corrections.tbl
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_ir_001_001.fits cposs2ukstu_ir_001_001.fits 3-projected.tbl 3-corrections.tbl
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_ir_001_002.fits cposs2ukstu_ir_001_002.fits 3-projected.tbl 3-corrections.tbl
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_ir_002_001.fits cposs2ukstu_ir_002_001.fits 3-projected.tbl 3-corrections.tbl
+$MONTAGE_PATH/bin/mBackground -t pposs2ukstu_ir_002_002.fits cposs2ukstu_ir_002_002.fits 3-projected.tbl 3-corrections.tbl
+##################
+# End mBackground
+##################
+
 $MONTAGE_PATH/bin/mImgtbl . -t 1-corrected.tbl 1-updated-corrected.tbl 
 $MONTAGE_PATH/bin/mImgtbl . -t 2-corrected.tbl 2-updated-corrected.tbl 
 $MONTAGE_PATH/bin/mImgtbl . -t 3-corrected.tbl 3-updated-corrected.tbl 

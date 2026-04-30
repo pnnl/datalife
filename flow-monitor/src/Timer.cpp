@@ -9,6 +9,9 @@
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
+#ifdef TIMER_JSON
+#include <json.hpp> // for logging json file
+#endif
 
 extern char *__progname;
 
@@ -63,6 +66,83 @@ Timer::Timer() {
 }
 
 Timer::~Timer() {
+
+#ifdef TIMER_JSON
+    std::unordered_map<std::thread::id, Timer::ThreadMetric*>::iterator itor;
+    if (Config::printStats) {
+        nlohmann::json jsonOutput;
+        jsonOutput[myprogname] = nlohmann::json::object();
+
+        // Add main metrics to JSON
+        for (int i = 0; i < lastMetric; i++) {
+            for (int j = 0; j < last; j++) {
+                jsonOutput[myprogname][metricTypeName[i]][metricName[j]] = 
+                    { _time[i][j] / billion, _cnt[i][j], _amt[i][j] };
+            }
+        }
+
+        // Add thread metrics to JSON
+        for (itor = _thread_timers->begin(); itor != _thread_timers->end(); itor++) {
+            // std::string threadId = std::to_string(itor->first);
+            std::stringstream ss;
+            ss << itor->first;
+            std::string threadId = ss.str();
+            jsonOutput[myprogname]["threads"][threadId] = nlohmann::json::object();
+
+            for (int i = 0; i < lastMetric; i++) {
+                for (int j = 0; j < last; j++) {
+                    jsonOutput[myprogname]["threads"][threadId][metricTypeName[i]][metricName[j]] = 
+                        { itor->second->time[i][j]->load(std::memory_order_relaxed) / billion,
+                          itor->second->cnt[i][j]->load(std::memory_order_relaxed),
+                          itor->second->amt[i][j]->load(std::memory_order_relaxed) };
+                }
+            }
+        }
+        // Get the current host name
+        char hostname[256]; // Buffer to store the host name
+        std::string host_name = (gethostname(hostname, sizeof(hostname)) == 0) ? hostname : "unknown_host";
+        // Ensure dataLifeOutputPath is not empty
+        if (Config::dataLifeOutputPath.empty()) {
+            std::cerr << "Error: DATALIFE_OUTPUT_PATH is not set!" << std::endl;
+            return;
+        }        
+
+        // Add task PID to file name 
+        std::string jsonOutputFileName = "monitor_timer." + std::to_string(getpid()) + "-" + host_name + ".datalife.json";
+        std::string fullPath = Config::dataLifeOutputPath + "/" + jsonOutputFileName;
+        std::cerr << "write_trace_data(): writing to " << fullPath << std::endl;
+        
+        // // Ensure the output directory exists
+        // std::filesystem::create_directories(Config::dataLifeOutputPath);
+        
+        // Open the file at the correct location (append mode)
+        std::ofstream log_file(fullPath, std::ios::out | std::ios::app); 
+        if (!log_file) {
+            std::cerr << "Failed to open " << fullPath << std::endl;
+        } else {
+            log_file << jsonOutput.dump(4); // Pretty print with an indent of 4 spaces
+            log_file.close();
+        }
+
+    //     std::ofstream log_file(jsonOutputFileName, std::ios::out | std::ios::app); // append
+    //     // std::ofstream log_file("monitor_timer.datalife.json", std::ios::out | std::ios::trunc); // overwrite
+    //     if (!log_file) {
+    //         std::cerr << "Failed to open " << jsonOutputFileName << std::endl;
+    //     } else {
+    //         log_file << jsonOutput.dump(4); // Pretty print with an indent of 4 spaces
+    //         // Add a "," to the end of the monitor_timer.datalife.json file
+    //         // log_file << ","; // not needed when files are seperated into task PID
+    //         log_file.close();
+    //     }
+    }
+
+    for (itor = _thread_timers->begin(); itor != _thread_timers->end(); itor++) {
+        delete itor->second;
+    }
+    delete _thread_timers;
+
+#else
+
     std::unordered_map<std::thread::id, Timer::ThreadMetric*>::iterator itor;
     if (Config::printStats) {
         std::stringstream ss;
@@ -90,6 +170,8 @@ Timer::~Timer() {
         delete itor->second;
     }
     delete _thread_timers;
+
+#endif
 }
 
 uint64_t Timer::getCurrentTime() {
@@ -153,6 +235,11 @@ void Timer::end(MetricType type, Metric metric) {
         (*_thread_timers)[id]->depth->fetch_sub(1, std::memory_order_relaxed);
         _lock.readerUnlock();
     }
+
+    
+#ifdef TIMER_JSON
+    // TODO: Remove the last comma from the monitor_timer.datalife.json file
+#endif
 }
 
 void Timer::addAmt(MetricType type, Metric metric, uint64_t amt) {

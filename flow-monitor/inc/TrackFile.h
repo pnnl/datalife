@@ -18,6 +18,13 @@ extern std::vector<std::string> patterns;
 extern std::map<std::string, std::vector<int> > trace_read_blk_seq;
 extern std::map<std::string, std::vector<int> > trace_write_blk_seq;
 
+// For JOSN tracing
+using TraceData = std::vector<int>;
+extern std::unordered_map<std::string, TraceData> trace_read_blk_order;
+extern std::unordered_map<std::string, TraceData> trace_write_blk_order;
+extern int first_access_block;
+extern int largest_access_block;
+
 class TrackFile : public MonitorFile {
 public:
   TrackFile(std::string name, int fd, bool openFile = true);
@@ -34,6 +41,10 @@ public:
   off_t seek(off_t offset, int whence, uint32_t index = 0);
   int vfprintf(unsigned int pos, int count);
 
+  // Tracking-only methods (no I/O) for FILE* operations to avoid buffering corruption
+  void trackRead(size_t count, uint32_t index, off_t filePos);
+  void trackWrite(size_t count, uint32_t index, off_t filePos);
+  
 private:
 // bool trackRead(size_t count, uint32_t index, uint32_t startBlock, uint32_t endBlock);
 //    uint64_t copyBlock(char *buf, char *blkBuf, uint32_t blk, uint32_t startBlock, uint32_t endBlock, uint32_t fpIndex, uint64_t count);
@@ -50,6 +61,11 @@ private:
   std::chrono::high_resolution_clock::time_point close_file_end_time;
   std::chrono::seconds total_time_spent_read;
   std::chrono::seconds total_time_spent_write;
+
+  // For JSON Tracing: keep track of previous blocks
+  int prev_start_block = -1;
+  int prev_end_block = -1;
+  bool has_been_random = false;
 };
 
 

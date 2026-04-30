@@ -29,20 +29,32 @@
 #include <cassert>
 #include <functional>
 #include <chrono>
+#include <json.hpp> // for logging json file
+#include <limits.h> // for HOST_NAME_MAX
 
 using namespace std::chrono;
-//#define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
 #ifdef LIBDEBUG
 #define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
 #else
 #define DPRINTF(...)
 #endif
 
+// BLK_SIZE is defined in json_version but not in main
+// If undefined, json mode should still work correctly
+#ifndef BLK_SIZE
+#define BLK_SIZE 4096 // 4KB default for JSON mode
+#endif
+
 #define GATHERSTAT 1
-// #define USE_HASH 1
+#define USE_HASH 1
 // #define ENABLE_TRACE 1
 // #define WRITE_STAT_EACH 0
 
+// Helper function to extract basename from a path
+inline std::string get_basename_str(const std::string& path) {
+    size_t pos = path.rfind('/');
+    return (pos != std::string::npos) ? path.substr(pos + 1) : path;
+}
 
 TrackFile::TrackFile(std::string name, int fd, bool openFile) : 
   MonitorFile(MonitorFile::Type::TrackLocal, name, name, fd),
@@ -52,8 +64,10 @@ TrackFile::TrackFile(std::string name, int fd, bool openFile) :
   _filename(name),
   total_time_spent_read(0),
   total_time_spent_write(0)
+
 { 
-  DPRINTF("In Trackfile constructor openfile bool: %d\n", openFile);
+  // DPRINTF("In Trackfile constructor openfile bool: %d\n", openFile);
+  // std::cout << "TrackFile.cpp: constructor openfile bool: " << openFile << std::endl;
   _blkSize = Config::blockSizeForStat;
   open();
   _active.store(true);
@@ -68,6 +82,21 @@ void TrackFile::open() {
   DPRINTF("[MONITOR] TrackFile open: %s\n", _name.c_str()) ;
   // #if 0
   // _closed = false;
+
+#ifdef BLK_IDX
+  // trace_read_blk_order.emplace(_name, std::vector<TraceData>());
+  // trace_write_blk_order.emplace(_name, std::vector<TraceData>());
+  trace_read_blk_order.emplace(_name, TraceData());
+  trace_write_blk_order.emplace(_name, TraceData());
+#else
+  // Initialize trace maps for JSON output mode when BLK_IDX is not defined
+  if (Config::enableJsonOutput) {
+    trace_read_blk_order.emplace(_name, TraceData());
+    trace_write_blk_order.emplace(_name, TraceData());
+  }
+#endif
+
+#ifdef GATHERSTAT
   if (track_file_blk_r_stat.find(_name) == track_file_blk_r_stat.end()) {
     track_file_blk_r_stat.insert(std::make_pair(_name, 
 						std::map<int, 
@@ -97,6 +126,7 @@ void TrackFile::open() {
   if (trace_write_blk_seq.find(_name) == trace_write_blk_seq.end()) {
     trace_write_blk_seq.insert(std::make_pair(_name, std::vector<int>()));
   }
+#endif
 
   open_file_start_time = high_resolution_clock::now();
 
@@ -107,6 +137,7 @@ void TrackFile::open() {
 
 ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
     DPRINTF("In trackfile read count %u\n", count);
+    // std::cerr << "DEBUG: TrackFile::read() called for " << _name << " count=" << count << std::endl;
 
     auto start_time = high_resolution_clock::now();
     unixread_t unixRead = (unixread_t)dlsym(RTLD_NEXT, offset == -1 ? "read" : "pread");
@@ -119,6 +150,82 @@ ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
     total_time_spent_read += duration_cast<seconds>(high_resolution_clock::now() - start_time);
 
     DPRINTF("bytes_read: %ld _fd_orig: %d _name: %s\n", bytes_read, _fd_orig, _name.c_str());
+
+    // JSON mode: track block access patterns
+    if (Config::enableJsonOutput) {
+    // std::cerr << "DEBUG read(): enableJsonOutput=true, _name=" << _name << std::endl;
+#ifdef BLK_IDX
+    // std::cerr << "DEBUG read(): BLK_IDX is defined" << std::endl;
+        auto start_block = _filePos[index] / BLK_SIZE;
+        auto end_block = (_filePos[index] + count) / BLK_SIZE;
+        auto& trace_vector = trace_read_blk_order[_name];
+        trace_vector.push_back(start_block);
+        trace_vector.push_back(end_block);
+#else
+    // std::cerr << "DEBUG read(): BLK_IDX is NOT defined" << std::endl;
+        // Determine the start and end blocks based on the file position
+        auto start_block = _filePos[index] / BLK_SIZE;
+        auto end_block = (_filePos[index] + count) / BLK_SIZE;
+
+        // Initialize first_access_block if not already set
+        if (first_access_block == -1) {
+            first_access_block = start_block;
+        }
+
+        // Update largest_access_block
+        if (largest_access_block < end_block) {
+            largest_access_block = end_block;
+        }
+
+        // Retrieve the trace vector for the current file
+        auto& trace_vector = trace_read_blk_order[_name];
+
+        // Ensure trace_vector has at least 4 elements
+        if (trace_vector.size() < 4) {
+            // Initialize vector if it does not have enough elements
+            trace_vector.resize(4, -2); // Default to -2
+        }
+
+        // Update the first and second values in trace_vector
+        trace_vector[0] = start_block;
+        trace_vector[1] = end_block;
+
+        // Store largest_access_block in trace_vector[2]
+        trace_vector[2] = largest_access_block;
+
+        DPRINTF("TrackFile::read() recording start_block[%d] end_block[%d] largest_access_block[%d]",
+                start_block, end_block, largest_access_block);
+
+        // Determine the sequential/random status and store it in trace_vector[3]
+        if (prev_start_block != -1 && prev_end_block != -1 && !has_been_random) {
+            if (start_block >= prev_end_block) {
+                // Sequential: store -1 in trace_vector[3]
+                trace_vector[3] = -1;
+                // Update previous blocks
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                // Random: store -2 in trace_vector[3] and flag to stop further checks
+                trace_vector[3] = -2;
+                has_been_random = true;
+            }
+        } else {
+            // No previous blocks to compare or already flagged as random
+            if (prev_start_block == -1 && prev_end_block == -1) {
+                // First block
+                trace_vector[3] = -1;
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                // No valid previous blocks for comparison
+                trace_vector[3] = -2;
+            }
+        }
+
+        DPRINTF("TrackFile::read() updated trace_vector: start_block[%d], end_block[%d], largest_access_block[%d], status[%d]",
+                trace_vector[0], trace_vector[1], trace_vector[2], trace_vector[3]);
+#endif
+    }
 
 #ifdef GATHERSTAT
     if (bytes_read > -1) {
@@ -137,6 +244,8 @@ ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
 #endif
             auto &block_stat = track_file_blk_r_stat[_name];
             auto &block_stat_size = track_file_blk_r_stat_size[_name];
+
+
 
             if (block_stat.find(block) == block_stat.end()) {
                 block_stat[block] = 1;
@@ -182,7 +291,6 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t filePosIndex) {
     return bytes_written;
 }
 
-
 ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index, off_t offset) {
     DPRINTF("In TrackFile::write with count: %u\n", count);
 
@@ -211,6 +319,79 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index, off_t of
 
     DPRINTF("Bytes written: %ld, FD: %d, File: %s\n", bytes_written, _fd_orig, _name.c_str());
 
+    // JSON mode: track block access patterns
+    if (Config::enableJsonOutput) {
+#ifdef BLK_IDX
+        auto start_block = _filePos[index] / BLK_SIZE;
+        auto end_block = (_filePos[index] + count) / BLK_SIZE;
+        auto& trace_vector = trace_write_blk_order[_name];
+        trace_vector.push_back(start_block);
+        trace_vector.push_back(end_block);
+#else
+        // Determine the start and end blocks based on the file position
+        auto start_block = _filePos[index] / BLK_SIZE;
+        auto end_block = (_filePos[index] + count) / BLK_SIZE;
+
+        // Initialize first_access_block if not already set
+        if (first_access_block == -1) {
+            first_access_block = start_block;
+        }
+
+        // Update largest_access_block
+        if (largest_access_block < end_block) {
+            largest_access_block = end_block;
+        }
+
+        // Retrieve the trace vector for the current file
+        auto& trace_vector = trace_write_blk_order[_name];
+
+        // Ensure trace_vector has at least 4 elements
+        if (trace_vector.size() < 4) {
+            // Initialize vector if it does not have enough elements
+            trace_vector.resize(4, -2); // Default to -2
+        }
+
+        // Update the first and second values in trace_vector
+        trace_vector[0] = start_block;
+        trace_vector[1] = end_block;
+
+        // Store largest_access_block in trace_vector[2]
+        trace_vector[2] = largest_access_block;
+
+        DPRINTF("TrackFile::write() recording start_block[%d] end_block[%d] largest_access_block[%d]",
+                start_block, end_block, largest_access_block);
+
+        // Determine the sequential/random status and store it in trace_vector[3]
+        if (prev_start_block != -1 && prev_end_block != -1 && !has_been_random) {
+            if (start_block >= prev_end_block) {
+                // Sequential: store -1 in trace_vector[3]
+                trace_vector[3] = -1;
+                // Update previous blocks
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                // Random: store -2 in trace_vector[3] and flag to stop further checks
+                trace_vector[3] = -2;
+                has_been_random = true;
+            }
+        } else {
+            // No previous blocks to compare or already flagged as random
+            if (prev_start_block == -1 && prev_end_block == -1) {
+                // First block
+                trace_vector[3] = -1;
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                // No valid previous blocks for comparison
+                trace_vector[3] = -2;
+            }
+        }
+
+        DPRINTF("TrackFile::write() updated trace_vector: start_block[%d], end_block[%d], largest_access_block[%d], status[%d]",
+                trace_vector[0], trace_vector[1], trace_vector[2], trace_vector[3]);
+#endif
+    }
+
 #ifdef GATHERSTAT
     if (bytes_written > 0) {
         // Determine the file position
@@ -224,6 +405,8 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index, off_t of
             auto sample = hashed(block_index) % Config::hashtableSizeForStat;
             if (sample >= Config::hashtableSizeForStat / 2) continue;
 #endif
+
+
             if (track_file_blk_w_stat[_name].find(block_index) == track_file_blk_w_stat[_name].end()) {
                 track_file_blk_w_stat[_name][block_index] = 1;
                 track_file_blk_w_stat_size[_name][block_index] = 
@@ -244,9 +427,10 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index, off_t of
     return bytes_written;
 }
 
+/*POSIX ends */
 
 int TrackFile::vfprintf(unsigned int pos, int count) {
-  // DPRINTF("In trackfile vfprintf\n");
+  DPRINTF("In trackfile vfprintf\n");
 #ifdef GATHERSTAT
   if (count > -1) {
     auto diff = _filePos[pos]; //  - _filePos[0];
@@ -287,45 +471,176 @@ uint64_t TrackFile::fileSize() {
 }
 
 off_t TrackFile::seek(off_t offset, int whence, uint32_t index) {
-  struct stat sb;
-  fstat(_fd_orig, &sb);
-  auto _fileSize = sb.st_size;
+//   struct stat sb;
+//   fstat(_fd_orig, &sb);
+//   auto _fileSize = sb.st_size;
 
-  switch (whence) {
-  case SEEK_SET:
-    _filePos[index] = offset;
-    break;
-  case SEEK_CUR:
-    _filePos[index] += offset;
-    if (_filePos[index] > _fileSize) {
-      _filePos[index] = _fileSize;
-    }
-    break;
-  case SEEK_END:
-    _filePos[index] = _fileSize + offset;
-    break;
-  }
-  // _eof[index] = false;
+//   switch (whence) {
+//   case SEEK_SET:
+//     _filePos[index] = offset;
+//     break;
+//   case SEEK_CUR:
+//     _filePos[index] += offset;
+//     if (_filePos[index] > _fileSize) {
+//       _filePos[index] = _fileSize;
+//     }
+//     break;
+//   case SEEK_END:
+//     _filePos[index] = _fileSize + offset;
+//     break;
+//   }
+//   // _eof[index] = false;
 
 
   DPRINTF("Calling Seek in Trackfile\n");
   unixlseek_t unixLseek = (unixlseek_t)dlsym(RTLD_NEXT, "lseek");
-  auto offset_loc = (*unixLseek)(_fd_orig, offset, whence);
-  return  offset_loc; 
+
+//   auto offset_loc = (*unixLseek)(_fd_orig, offset, whence);
+//   return  offset_loc;
+
+  auto actual_pos = (*unixLseek)(_fd_orig, offset, whence);
+
+  if (actual_pos != (off_t)-1) {
+    _filePos[index] = actual_pos;
+  }
+
+  return actual_pos;
+}
+
+// Helper function for JSON trace output
+void write_trace_data(const std::string& filename, const std::string &data_name, TraceData& blk_trace_info, const std::string &pid, const std::string &_name, bool is_read) {
+  // Ensure dataLifeOutputPath is not empty
+  if (Config::dataLifeOutputPath.empty()) {
+      std::cerr << "Error: DATALIFE_OUTPUT_PATH is not set!" << std::endl;
+      return;
+  }
+
+  // Manually extract the filename from the full path using string splitting
+  std::string actualFilename = filename;
+  size_t lastSlash = filename.find_last_of("/\\"); // Works for both Linux (/) and Windows (\)
+  if (lastSlash != std::string::npos) {
+      actualFilename = filename.substr(lastSlash + 1); // Get only the filename
+  }
+
+  std::string actualDataName = data_name;
+  lastSlash = data_name.find_last_of("/\\"); // Works for both Linux (/) and Windows (\)
+  if (lastSlash != std::string::npos) {
+      actualDataName = data_name.substr(lastSlash + 1); // Get only the filename
+  }
+
+  // Construct new full path in the DATALIFE_OUTPUT_PATH directory
+  std::string fullPath = Config::dataLifeOutputPath + "/" + actualFilename;
+
+  DPRINTF("write_trace_data(): writing to %s", fullPath.c_str());
+
+  if (blk_trace_info.empty()) {
+      DPRINTF("write_trace_data(): blk_trace_info is empty");
+      return;  // Do nothing if blk_trace_info is empty
+  }
+
+  // Create JSON object
+  nlohmann::json jsonOutput;
+  jsonOutput["file_name"] = actualDataName;
+  jsonOutput["task_name"] = getenv("DATALIFE_TASK_NAME") ? std::string(getenv("DATALIFE_TASK_NAME")) : "task_name";
+  jsonOutput["pid"] = pid;
+
+  /// Calculate statistical values
+  uint64_t accumu_access_frequency = 0;
+  uint64_t accumu_data_volume = 0;  /// data_volume = access_frequency * access_size
+  if (is_read) {
+    for (auto& blk_info  : track_file_blk_r_stat[_name]) {
+      accumu_access_frequency += blk_info.second;
+      accumu_data_volume += blk_info.second * track_file_blk_r_stat_size[_name][blk_info.first];
+    }
+  } else { /// is write
+    for (auto& blk_info : track_file_blk_w_stat[_name]) {
+        accumu_access_frequency += blk_info.second;
+        accumu_data_volume += blk_info.second * track_file_blk_w_stat_size[_name][blk_info.first];
+    }
+  }
+  jsonOutput["access_frequency"] = accumu_access_frequency;
+  jsonOutput["data_volume"] = accumu_data_volume;
+
+#ifdef BLK_IDX
+  jsonOutput["io_blk_range"] = blk_trace_info;
+#else
+  // Ensure blk_trace_info has at least one element before modifying
+  if (!blk_trace_info.empty()) {
+      blk_trace_info[0] = first_access_block;
+  }
+  jsonOutput["io_blk_range"] = blk_trace_info;
+#endif
+
+  // Clear the vector after creating JSON object
+  blk_trace_info.clear();
+
+  // Write the JSON object to the new file location
+  std::ofstream file(fullPath, std::ios::out | std::ios::trunc); // Overwrite file
+  if (!file) {
+      std::cerr << "Error: Could not create file at " << fullPath << std::endl;
+      return;
+  }
+
+  file << jsonOutput.dump(4); // Pretty print with an indent of 4 spaces
+  DPRINTF("write_trace_data(): blk_trace_info written to file %s", fullPath.c_str());
+  file.close();
 }
 
 void TrackFile::close() {
-    DPRINTF("Calling TrackFile close : %s\n", _name.c_str());
+    DPRINTF("Calling TrackFile close: %s\n", _name.c_str());
 
     auto pid = std::to_string(getpid());
     close_file_end_time = high_resolution_clock::now();
     auto elapsed_time = duration_cast<seconds>(close_file_end_time - open_file_start_time);
 
+    // JSON mode: write JSON trace files
+    if (Config::enableJsonOutput) {
+
+        // std::cerr << "DEBUG close(): _name=" << _name << " _filename=" << _filename << std::endl;
+        // std::cerr << "DEBUG: trace_read_blk_order[_name].size()=" << trace_read_blk_order[_name].size() << std::endl;
+        // std::cerr << "DEBUG: trace_read_blk_order[_filename].size()=" << trace_read_blk_order[_filename].size() << std::endl;
+
+        char hostname[256]; // Buffer to store the host name
+        std::string host_name = (gethostname(hostname, sizeof(hostname)) == 0) ? hostname : "unknown_host";
+
+        DPRINTF("Writing r blk access order stat with prefix %s\n", _filename.c_str());
+        std::string file_name_trace_r = _filename + "." + pid + "-" + host_name + ".r_blk_trace.json";
+
+        auto& blk_trace_info_r = trace_read_blk_order[_filename];
+        auto future_r = std::async(std::launch::async,
+                                   write_trace_data,
+                                   file_name_trace_r,
+                                   _filename,
+                                   std::ref(blk_trace_info_r),
+                                   pid,
+                                   _name,
+                                   /*is_read=*/true);
+
+        DPRINTF("Writing w blk access order stat with prefix %s\n", _filename.c_str());
+        std::string file_name_trace_w = _filename + "." + pid + "-" + host_name + ".w_blk_trace.json";
+
+        auto& blk_trace_info_w = trace_write_blk_order[_filename];
+        auto future_w = std::async(std::launch::async,
+                                   write_trace_data,
+                                   file_name_trace_w,
+                                   _filename,
+                                   std::ref(blk_trace_info_w),
+                                   pid,
+                                   _name,
+                                   /*is_read=*/false);
+                                   
+        // Wait for both async tasks to complete
+        future_r.get();
+        future_w.get();
+    }
+
 #ifdef GATHERSTAT
-    // Write read block access stats
-    DPRINTF("Writing r blk access stat\n");
+    // Original stat output mode (non-JSON)
+    if (!Config::enableJsonOutput) {
+        // Write read block access stats
+        DPRINTF("Writing r blk access stat\n");
     std::fstream current_file_stat_r;
-    std::string file_name_r = Config::dataLifeOutputPath + "/" + _filename + "_" + pid + "_r_stat";
+    std::string file_name_r = Config::dataLifeOutputPath + "/" + get_basename_str(_filename) + "_" + pid + "_r_stat";
 
     bool write_header_r = !std::ifstream(file_name_r); // Check if the file exists
     current_file_stat_r.open(file_name_r, std::ios::out | std::ios::app);
@@ -354,7 +669,7 @@ void TrackFile::close() {
     // Write write block access stats
     DPRINTF("Writing w blk access stat\n");
     std::fstream current_file_stat_w;
-    std::string file_name_w = Config::dataLifeOutputPath + "/" + _filename + "_" + pid + "_w_stat";
+    std::string file_name_w = Config::dataLifeOutputPath + "/" + get_basename_str(_filename) + "_" + pid + "_w_stat";
 
     bool write_header_w = !std::ifstream(file_name_w); // Check if the file exists
     current_file_stat_w.open(file_name_w, std::ios::out | std::ios::app);
@@ -383,7 +698,7 @@ void TrackFile::close() {
     // Write read block access order stats
     DPRINTF("Writing r blk access order stat\n");
     std::fstream current_file_trace_r;
-    std::string file_name_trace_r = Config::dataLifeOutputPath + "/" + _filename + "_" + pid + "_r_trace_stat";
+    std::string file_name_trace_r = Config::dataLifeOutputPath + "/" + get_basename_str(_filename) + "_" + pid + "_r_trace_stat";
     current_file_trace_r.open(file_name_trace_r, std::ios::out | std::ios::app);
     if (!current_file_trace_r) {
         DPRINTF("File for read trace stat collection not created!");
@@ -396,7 +711,7 @@ void TrackFile::close() {
     // Write write block access order stats
     DPRINTF("Writing w blk access order stat\n");
     std::fstream current_file_trace_w;
-    std::string file_name_trace_w = Config::dataLifeOutputPath + "/" + _filename + "_" + pid + "_w_trace_stat";
+    std::string file_name_trace_w = Config::dataLifeOutputPath + "/" + get_basename_str(_filename) + "_" + pid + "_w_trace_stat";
     current_file_trace_w.open(file_name_trace_w, std::ios::out | std::ios::app);
     if (!current_file_trace_w) {
         DPRINTF("File for write trace stat collection not created!");
@@ -405,6 +720,185 @@ void TrackFile::close() {
     for (auto const& blk_ : blk_trace_info_w) {
         current_file_trace_w << blk_ << std::endl;
     }
+    } // end if (!Config::enableJsonOutput)
 #endif
 }
 
+
+// Tracking-only method for FILE* operations (no actual I/O to avoid buffering corruption)
+void TrackFile::trackRead(size_t count, uint32_t index, off_t filePos) {
+    if (count == 0) return;
+
+    // Update file position
+    _filePos[index] = filePos;
+
+    // JSON mode: track block access patterns
+    if (Config::enableJsonOutput) {
+#ifdef BLK_IDX
+        auto start_block = (filePos - count) / BLK_SIZE;
+        auto end_block = filePos / BLK_SIZE;
+        auto& trace_vector = trace_read_blk_order[_name];
+        trace_vector.push_back(start_block);
+        trace_vector.push_back(end_block);
+#else
+        // Determine the start and end blocks based on the file position
+        auto start_block = (filePos - count) / BLK_SIZE;
+        auto end_block = filePos / BLK_SIZE;
+
+        // Initialize first_access_block if not already set
+        if (first_access_block == -1) {
+            first_access_block = start_block;
+        }
+
+        // Update largest_access_block
+        if (largest_access_block < end_block) {
+            largest_access_block = end_block;
+        }
+
+        // Retrieve the trace vector for the current file
+        auto& trace_vector = trace_read_blk_order[_name];
+
+        // Ensure trace_vector has at least 4 elements
+        if (trace_vector.size() < 4) {
+            trace_vector.resize(4, -2);
+        }
+
+        // Update the first and second values in trace_vector
+        trace_vector[0] = start_block;
+        trace_vector[1] = end_block;
+        trace_vector[2] = largest_access_block;
+
+        // Determine the sequential/random status
+        if (prev_start_block != -1 && prev_end_block != -1 && !has_been_random) {
+            if (start_block >= prev_end_block) {
+                trace_vector[3] = -1; // Sequential
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                trace_vector[3] = -2; // Random
+                has_been_random = true;
+            }
+        } else {
+            if (prev_start_block == -1 && prev_end_block == -1) {
+                trace_vector[3] = -1;
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                trace_vector[3] = -2;
+            }
+        }
+#endif
+    }
+
+#ifdef GATHERSTAT
+    auto blockSize = Config::blockSizeForStat;
+    auto file_pos_start = filePos - count;
+    uint32_t start_block = file_pos_start / blockSize;
+    uint32_t end_block = filePos / blockSize;
+
+    for (uint32_t block = start_block; block <= end_block; ++block) {
+#ifdef USE_HASH
+        auto sample = hashed(block) % Config::hashtableSizeForStat;
+        if (sample >= Config::hashtableSizeForStat / 2) continue;
+#endif
+        auto &block_stat = track_file_blk_r_stat[_name];
+        auto &block_stat_size = track_file_blk_r_stat_size[_name];
+
+        if (block_stat.find(block) == block_stat.end()) {
+            block_stat[block] = 1;
+            block_stat_size[block] = std::min((size_t)(count - (block * blockSize)), (size_t)blockSize);
+        } else {
+            block_stat[block]++;
+        }
+        trace_read_blk_seq[_name].push_back(block);
+    }
+#endif
+}
+
+// Tracking-only method for FILE* write operations
+void TrackFile::trackWrite(size_t count, uint32_t index, off_t filePos) {
+    if (count == 0) return;
+
+    // Update file position
+    _filePos[index] = filePos;
+
+    // JSON mode: track block access patterns
+    if (Config::enableJsonOutput) {
+#ifdef BLK_IDX
+        auto start_block = (filePos - count) / BLK_SIZE;
+        auto end_block = filePos / BLK_SIZE;
+        auto& trace_vector = trace_write_blk_order[_name];
+        trace_vector.push_back(start_block);
+        trace_vector.push_back(end_block);
+#else
+        // Determine the start and end blocks based on the file position
+        auto start_block = (filePos - count) / BLK_SIZE;
+        auto end_block = filePos / BLK_SIZE;
+
+        // Initialize first_access_block if not already set
+        if (first_access_block == -1) {
+            first_access_block = start_block;
+        }
+
+        // Update largest_access_block
+        if (largest_access_block < end_block) {
+            largest_access_block = end_block;
+        }
+
+        // Retrieve the trace vector for the current file
+        auto& trace_vector = trace_write_blk_order[_name];
+
+        // Ensure trace_vector has at least 4 elements
+        if (trace_vector.size() < 4) {
+            trace_vector.resize(4, -2);
+        }
+
+        // Update the first and second values in trace_vector
+        trace_vector[0] = start_block;
+        trace_vector[1] = end_block;
+        trace_vector[2] = largest_access_block;
+
+        // Determine the sequential/random status
+        if (prev_start_block != -1 && prev_end_block != -1 && !has_been_random) {
+            if (start_block >= prev_end_block) {
+                trace_vector[3] = -1; // Sequential
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                trace_vector[3] = -2; // Random
+                has_been_random = true;
+            }
+        } else {
+            if (prev_start_block == -1 && prev_end_block == -1) {
+                trace_vector[3] = -1;
+                prev_start_block = start_block;
+                prev_end_block = end_block;
+            } else {
+                trace_vector[3] = -2;
+            }
+        }
+#endif
+    }
+
+#ifdef GATHERSTAT
+    auto file_pos_start = filePos - count;
+    uint32_t start_block = file_pos_start / _blkSize;
+    uint32_t end_block = filePos / _blkSize;
+
+    for (uint32_t block_index = start_block; block_index <= end_block; ++block_index) {
+#ifdef USE_HASH
+        auto sample = hashed(block_index) % Config::hashtableSizeForStat;
+        if (sample >= Config::hashtableSizeForStat / 2) continue;
+#endif
+
+        if (track_file_blk_w_stat[_name].find(block_index) == track_file_blk_w_stat[_name].end()) {
+            track_file_blk_w_stat[_name][block_index] = 1;
+            track_file_blk_w_stat_size[_name][block_index] = 
+                std::min((size_t)(count - (block_index * _blkSize)), (size_t)_blkSize);
+        } else {
+            track_file_blk_w_stat[_name][block_index]++;
+        }
+        trace_write_blk_seq[_name].push_back(block_index);
+    }
+#endif
+}

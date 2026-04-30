@@ -23,6 +23,27 @@
 // std::mutex Cache::_pMutex;
 // std::unordered_set<std::string> Cache::_prefetches;
 
+// Singleton pattern with function-local static - thread-safe in C++11+
+ThreadPool<std::function<void()>>& Cache::getWritePool() {
+    static ThreadPool<std::function<void()>> writePool(Config::numWriteBufferThreads, "cache write pool");
+    static bool initiated = false;
+    if (!initiated) {
+        writePool.initiate();
+        initiated = true;
+    }
+    return writePool;
+}
+
+PriorityThreadPool<std::function<void()>>& Cache::getPrefetchPool() {
+    static PriorityThreadPool<std::function<void()>> prefetchPool(Config::numPrefetchThreads, "cache prefetch pool");
+    static bool initiated = false;
+    if (!initiated) {
+        prefetchPool.initiate();
+        initiated = true;
+    }
+    return prefetchPool;
+}
+
 Cache::Cache(std::string name,  CacheType type) : Loggable(Config::CacheLog, name),
                                  _ioTime(0),
                                  _ioAmt(0),
@@ -42,10 +63,10 @@ Cache::Cache(std::string name,  CacheType type) : Loggable(Config::CacheLog, nam
     //           << "Constructing " << _name << " in cache" << std::endl;
     if (_name == BASECACHENAME) {
         // _fm_lock = new ReaderWriterLock();
-        _writePool = new ThreadPool<std::function<void()>>(Config::numWriteBufferThreads, "cache write pool");
-        _writePool->initiate();
-        _prefetchPool = new PriorityThreadPool<std::function<void()>>(Config::numPrefetchThreads, "cache prefetch pool");
-        _prefetchPool->initiate();
+        // _writePool = new ThreadPool<std::function<void()>>(Config::numWriteBufferThreads, "cache write pool");
+        // _writePool->initiate();
+        // _prefetchPool = new PriorityThreadPool<std::function<void()>>(Config::numPrefetchThreads, "cache prefetch pool");
+        // _prefetchPool->initiate();
         _base = this;
         _lastLevel = this;
     }
@@ -128,8 +149,11 @@ Cache::~Cache() {
     }
     //RF end of hack
 
-    while (_outstandingWrites.load()) {
-        std::this_thread::yield();
+    // while (_outstandingWrites.load()) {
+    //     std::this_thread::yield();
+    {
+        std::unique_lock<std::mutex> lock(_writeMutex);
+        _writeCV.wait(lock, [this] { return _outstandingWrites.load() == 0; });
     }
     void* ptr = ((uint8_t*)_curIoTime) - sizeof(uint32_t);
     free(ptr);
@@ -139,13 +163,20 @@ Cache::~Cache() {
     if (_name == BASECACHENAME) {
         log(this) << std::endl;
 
-        _prefetchPool->terminate();
-        while (_outstandingWrites.load()) {
-            std::this_thread::yield();
+        // _prefetchPool->terminate();
+        // Terminate the singleton thread pools
+        // Note: We don't delete them as they're static singletons with program lifetime
+        getPrefetchPool().terminate();
+        // while (_outstandingWrites.load()) {
+        //     std::this_thread::yield();
+        {
+            std::unique_lock<std::mutex> lock(_writeMutex);
+            _writeCV.wait(lock, [this] { return _outstandingWrites.load() == 0; });
         }
-        _writePool->terminate();
-        delete _prefetchPool;
-        delete _writePool;
+        // _writePool->terminate();
+        // delete _prefetchPool;
+        // delete _writePool;
+        getWritePool().terminate();
         // delete _fm_lock;
         stats.end(false, CacheStats::Metric::destructor);
         stats.print(_name);
@@ -277,12 +308,18 @@ bool Cache::bufferWrite(Request *req) {
     // debug() << "buffered write req id:" << req->id <<" ow: "<<_outstandingWrites.load()<< std::endl;
     if (Config::bufferFileCacheWrites) { // && !_terminating) {
         _outstandingWrites.fetch_add(1);
-        _writePool->addTask([this, req] {
+        // _writePool->addTask([this, req] {
+        getWritePool().addTask([this, req] {
             //std::cout<<"[MONITOR] " << "buffered write: " << (void *)originating << std::endl;
             if (!writeBlock(req)) {
                 DPRINTF("BASE FAILED WRITE... %s\n",req->originating->name());
             }
-            _outstandingWrites.fetch_sub(1);
+            // _outstandingWrites.fetch_sub(1);
+            if (_outstandingWrites.fetch_sub(1) == 1) {
+                // Notify destructor that all writes are complete
+                std::lock_guard<std::mutex> lock(_writeMutex);
+                _writeCV.notify_all();
+            }
         });
         return false;
     }
@@ -321,7 +358,7 @@ double Cache::getRequestTime() {
 }
 
 void Cache::addFile(uint32_t index, std::string filename, uint64_t blockSize, std::uint64_t fileSize) {
-    std::cout<<"[MONITOR] " << "adding file: " << filename << " " << index << " " << (void *)this << " " << (void *)_nextLevel << std::endl;
+    std::cerr<<"[MONITOR] " << "adding file: " << filename << " " << index << " " << (void *)this << " " << (void *)_nextLevel << std::endl;
     log(this) << "adding" << _name << " " << filename << " " << fileSize << " " << blockSize << std::endl;
     if (_nextLevel) {
         _nextLevel->addFile(index, filename, blockSize, fileSize);
@@ -329,7 +366,8 @@ void Cache::addFile(uint32_t index, std::string filename, uint64_t blockSize, st
 }
 
 void Cache::prefetchBlocks(uint32_t index, std::vector<uint64_t> blocks, uint64_t fileSize, uint64_t blkSize, uint64_t regFileIndex) {
-    _prefetchPool->addTask(0, [this, index, blocks, fileSize, blkSize, regFileIndex] {
+    // _prefetchPool->addTask(0, [this, index, blocks, fileSize, blkSize, regFileIndex] {
+    getPrefetchPool().addTask(0, [this, index, blocks, fileSize, blkSize, regFileIndex] {
         prefetch(index, blocks, fileSize, blkSize, regFileIndex);
     });
 }

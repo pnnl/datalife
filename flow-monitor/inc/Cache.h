@@ -14,6 +14,7 @@
 #include <future>
 #include <memory>
 #include <unordered_set>
+#include <condition_variable>
 
 #define BASECACHENAME "base"
 
@@ -130,16 +131,21 @@ class Cache : public Loggable, public Trackable<std::string, Cache *> {
     std::unordered_map<uint32_t, FileEntry> _fileMap;
     bool _shared;
     std::atomic<std::uint64_t> _outstandingWrites;
+    std::mutex _writeMutex;
+    std::condition_variable _writeCV;
     bool _terminating;
 
 
     friend class Request;
   private:
     
-    ThreadPool<std::function<void()>> *_writePool;
-
+    // ThreadPool<std::function<void()>> *_writePool;
+    // Singleton accessors for thread pools - ensures thread-safe lazy initialization
+    static ThreadPool<std::function<void()>>& getWritePool();
+    static PriorityThreadPool<std::function<void()>>& getPrefetchPool();
+    
     std::mutex _pMutex;
-    PriorityThreadPool<std::function<void()>> *_prefetchPool;
+    // PriorityThreadPool<std::function<void()>> *_prefetchPool;
     std::unordered_set<std::string> _prefetches;
     //void prefetch(uint32_t index, uint64_t startBlk, uint64_t endBlk, uint64_t numBlocks, uint64_t fileSize, uint64_t blkSize, uint64_t regFileIndex);
     void prefetch(uint32_t index, std::vector<uint64_t> blocks, uint64_t fileSize, uint64_t blkSize, uint64_t regFileIndex);

@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 #include <string>
+#include <cstdint>
 
 namespace Config {
 
@@ -200,6 +201,8 @@ const uint64_t hashtableSizeForStat = 1000;
 // Flow Monitoring Parameter
 const std::string dataLifeOutputPath = getenv("DATALIFE_OUTPUT_PATH") ? std::string(getenv("DATALIFE_OUTPUT_PATH")) : "";
 const std::string passin_patterns = getenv("DATALIFE_FILE_PATTERNS") ? std::string(getenv("DATALIFE_FILE_PATTERNS")) : "*.datalifetest";
+const bool enableJsonOutput = getenv("DATALIFE_JSON_OUTPUT") ? atoi(getenv("DATALIFE_JSON_OUTPUT")) : 0;
+const std::string task_name_env = getenv("DATALIFE_TASK_NAME") ? std::string(getenv("DATALIFE_TASK_NAME")) : "task_name";
 
 
 } // namespace Config

@@ -19,7 +19,7 @@ setup(
     package_dir = { "datalife": "src" },
     packages = ["datalife"],
     install_requires=[
-        "networkx",
+        "networkx<=2.8.8",
         "numpy",
         "pandas",
         "plotly",

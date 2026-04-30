@@ -80,6 +80,10 @@ public:
 };
 
 void __attribute__((constructor)) monitorInit(void) {
+    // // std::cout << "Lip.cpp: " << "monitorInit(void)" << std::endl;
+    DPRINTF("Lip.cpp: monitorInit(void)\n");
+    // std::cout << "Lib.cpp: monitorInit(void) start" << std::endl;
+
     std::call_once(log_flag, []() {
         timer = new Timer();
 
@@ -136,7 +140,7 @@ void __attribute__((constructor)) monitorInit(void) {
         unixrewind = (unixrewind_t)dlsym(RTLD_NEXT, "rewind");
         unixfgetc = (unixfgetc_t)dlsym(RTLD_NEXT, "fgetc");
         unixfgets = (unixfgets_t)dlsym(RTLD_NEXT, "fgets");
-        unixfputc = (unixfputc_t)dlsym(RTLD_NEXT, "fputs");
+        unixfputc = (unixfputc_t)dlsym(RTLD_NEXT, "fputc");
         unixfputs = (unixfputs_t)dlsym(RTLD_NEXT, "fputs");
         unixflockfile = (unixflockfile_t)dlsym(RTLD_NEXT, "flockfile");
         unixftrylockfile = (unixftrylockfile_t)dlsym(RTLD_NEXT, "ftrylockfile");
@@ -150,7 +154,7 @@ void __attribute__((constructor)) monitorInit(void) {
         unix_Exit = (unix_Exit_t)dlsym(RTLD_NEXT, "_Exit");
         unix_exit_group = (unix_exit_group_t)dlsym(RTLD_NEXT, "exit_group");
         unix_vfprintf = (unix_vfprintf_t)dlsym(RTLD_NEXT, "vfprintf");
-        // unixmmap = (mmap_t)dlsym(RTLD_NEXT, "mmap");
+        unixmmap = (mmap_t)dlsym(RTLD_NEXT, "mmap");
         // // Below added for HDF5 POSIX I/O
         unixpread = (pread_t)dlsym(RTLD_NEXT, "pread");
         unixpwrite = (pwrite_t)dlsym(RTLD_NEXT, "pwrite");
@@ -160,9 +164,10 @@ void __attribute__((constructor)) monitorInit(void) {
         //enable if running into issues with an application that launches child shells
         bool unsetLib = getenv("MONITOR_UNSET_LIB") ? atoi(getenv("MONITOR_UNSET_LIB")) : 0;
         if (unsetLib){
-            unsetenv("LD_PRELOAD"); 
+            unsetenv("LD_PRELOAD");
         }
-    
+
+
         timer->end(Timer::MetricType::monitor, Timer::Metric::constructor);
         //*InputFile::_time_of_last_read = std::chrono::high_resolution_clock::now();
     });
@@ -171,7 +176,9 @@ void __attribute__((constructor)) monitorInit(void) {
 
 void __attribute__((destructor)) monitorCleanup(void) {
     // Removed the manual destructor call.
-    // static CleanupTrackFile cleanup; // added for seismology temporarily
+    // static CleanupTrackFile cleanup;
+
+    DPRINTF("Lib.cpp: monitorCleanup(void)\n");
 
     timer->start();
     init = false; //set to false because we can't ensure our static members have not already been deleted.
@@ -180,13 +187,16 @@ void __attribute__((destructor)) monitorCleanup(void) {
     curlDestroy;
 
     if (Config::printStats) {
-        std::cout << "[MONITOR] " << "Exiting Client" << std::endl;
+        std::cerr << "[MONITOR] " << "Exiting Client" << std::endl;
         if (ConnectionPool::useCnt->size() > 0) {
             for (auto conUse : *ConnectionPool::useCnt) {
-                std::cout << "[MONITOR] connection: " << conUse.first << " num_tx: " << conUse.second << " amount: " << (*ConnectionPool::stats)[conUse.first].first << " B time: " << (*ConnectionPool::stats)[conUse.first].second << " s avg BW: " << ((*ConnectionPool::stats)[conUse.first].first / (*ConnectionPool::stats)[conUse.first].second) / 1000000 << "MB/s" << std::endl;
+                std::cerr << "[MONITOR] connection: " << conUse.first << " num_tx: " << conUse.second << " amount: " << (*ConnectionPool::stats)[conUse.first].first << " B time: " << (*ConnectionPool::stats)[conUse.first].second << " s avg BW: " << ((*ConnectionPool::stats)[conUse.first].first / (*ConnectionPool::stats)[conUse.first].second) / 1000000 << "MB/s" << std::endl;
             }
         }
         delete track_files;
+        delete ConnectionPool::useCnt;
+        delete ConnectionPool::consecCnt;
+        delete ConnectionPool::stats;
     }
 
     timer->end(Timer::MetricType::monitor, Timer::Metric::destructor);
@@ -220,7 +230,8 @@ int removeStr(char *s, const char *r) {
 
 
 int trackFileOpen(std::string name, std::string metaName, MonitorFile::Type type, const char *pathname, int flags, int mode) {
-  DPRINTF("Lib.cpp: trackfileOpen: %s %s %u\n", name.c_str(), metaName.c_str(), type);
+    DPRINTF("Lib.cpp: trackfileOpen: %s %s %u\n", name.c_str(), metaName.c_str(), type);
+
 
   // Add O_CREAT if file creation is happens
   if (flags & O_RDWR && !(flags & O_CREAT)) {
@@ -281,6 +292,7 @@ int monitorOpen(std::string name, std::string metaName, MonitorFile::Type type, 
 
 int open(const char *pathname, int flags, ...) {
     DPRINTF("Lib.cpp: Open %s: \n", pathname);
+
     int mode = 0;
     va_list arg;
     va_start(arg, flags);
@@ -291,9 +303,10 @@ int open(const char *pathname, int flags, ...) {
 
     // Check if the file matches any pattern
     for (auto pattern : patterns) {
-        if (fnmatch(pattern.c_str(), pathname, 0) == 0) {
+        if (fnmatch(pattern.c_str(), get_basename(pathname), 0) == 0) {
             DPRINTF("Lib.cpp: open() Firing off trackFileOpen for %s\n", pathname);
             int fd = outerWrapper("open", pathname, metric, trackFileOpen, unixopen, pathname, flags, mode);
+
 
             if (fd >= 0) {
                 // Track the fd and pathname
@@ -323,7 +336,6 @@ int open(const char *pathname, int flags, ...) {
 
 int open64(const char *pathname, int flags, ...) {
     DPRINTF("Lib.cpp: Open64 %s: \n", pathname);
-    // // std::cout << "Lib.cpp: Open64(): " << pathname << std::endl;
 
     int mode = 0;
     va_list arg;
@@ -335,12 +347,8 @@ int open64(const char *pathname, int flags, ...) {
 
     // Check if the file matches any pattern
     for (auto pattern : patterns) {
-        // // std::cout << "Lib.cpp: open64() checking pattern: " << pattern << " of pathname: " << pathname << std::endl;
-        if (fnmatch(pattern.c_str(), pathname, 0) == 0) {
-            // std::cout << "Lib.cpp: open64() Firing off trackFileOpen for " << pathname << std::endl;
-            
+        if (fnmatch(pattern.c_str(), get_basename(pathname), 0) == 0) {
             int fd = outerWrapper("open64", pathname, metric, trackFileOpen, unixopen64, pathname, flags, mode);
-            // std::cout << "Lib.cpp: open64() outerWrapper returned fd: " << fd << std::endl;
 
             if (fd >= 0) {
                 // Track the fd and pathname
@@ -348,7 +356,6 @@ int open64(const char *pathname, int flags, ...) {
                 fdToFileMap[fd] = std::string(pathname);
             } else {
                 DPRINTF("Lib.cpp: trackFileOpen failed for %s\n", pathname);
-                // std::cout << "Lib.cpp: trackFileOpen failed for " << pathname << std::endl;
             }
             return fd;
         }
@@ -368,7 +375,9 @@ int open64(const char *pathname, int flags, ...) {
 
     return fd;
 }
-int monitorOpenat(std::string name, std::string metaName, MonitorFile::Type type, 
+
+
+int monitorOpenat(std::string name, std::string metaName, MonitorFile::Type type,
 		int dirfd, const char *pathname, int flags, int mode) {
   return (*unixopenat)(dirfd, name.c_str(), flags);
 }
@@ -401,7 +410,7 @@ int openat(int dirfd, const char *pathname, int flags, ...) {
 
   DPRINTF("Lib.cpp: Openat %s: \n", pathname);
   for (auto pattern: patterns) {
-    auto ret_val = fnmatch(pattern.c_str(), pathname, 0);
+    auto ret_val = fnmatch(pattern.c_str(), get_basename(pathname), 0);
     if (ret_val == 0) {
       DPRINTF("Lib.cpp: Firing off trackfileopen for %s \n ", pathname);
 
@@ -418,13 +427,15 @@ int monitorClose(MonitorFile *file, unsigned int fp, int fd) {
     DPRINTF("Lib.cpp: In monitor close for fd %d\n", fd);
 #ifdef TRACKFILECHANGES
     for (auto pattern : patterns) {
-        if (fnmatch(pattern.c_str(), file->name().c_str(), 0) == 0) {
+        if (fnmatch(pattern.c_str(), get_basename(file->name().c_str()), 0) == 0) {
             file->close();
             DPRINTF("Lib.cpp: Successfully closed a file with fd %d\n", fd);
             break;
         }
     }
 #endif
+    
+
     MonitorFile::removeMonitorFile(file);
     MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
     return (*unixclose)(fd);
@@ -549,7 +560,13 @@ int innerStat(int version, const char *filename, struct stat64 *buf) { return wh
 
 template <typename T>
 int monitorStat(std::string name, std::string metaName, MonitorFile::Type type, int version, const char *filename, T *buf) {
-  auto ret = innerStat(_STAT_VER, metaName.c_str(), buf);
+//   auto ret = innerStat(_STAT_VER, metaName.c_str(), buf);
+  #ifdef _STAT_VER
+    auto ret = innerStat(_STAT_VER, metaName.c_str(), buf);
+  #else
+    auto ret = innerStat(version, metaName.c_str(), buf);
+  #endif
+
   MonitorFile *file = MonitorFile::lookUpMonitorFile(filename);
   if (file)
     buf->st_size = (off_t)file->fileSize();
@@ -676,7 +693,7 @@ FILE *fopen(const char *__restrict fileName, const char *__restrict modes) {
   Timer::Metric metric = (modes[0] == 'r') ? Timer::Metric::in_fopen : Timer::Metric::out_fopen;
 
   for (auto pattern: patterns) {
-    auto ret_val = fnmatch(pattern.c_str(), fileName, 0);
+    auto ret_val = fnmatch(pattern.c_str(), get_basename(fileName), 0);
     if (ret_val == 0) {
 
       return outerWrapper("fopen", fileName, metric, trackFileFopen, unixfopen, 
@@ -692,7 +709,7 @@ FILE *fopen64(const char *__restrict fileName, const char *__restrict modes) {
   Timer::Metric metric = (modes[0] == 'r') ? Timer::Metric::in_fopen : Timer::Metric::out_fopen;
 
   for (auto pattern: patterns) {
-    auto ret_val = fnmatch(pattern.c_str(), fileName, 0);
+    auto ret_val = fnmatch(pattern.c_str(), get_basename(fileName), 0);
     if (ret_val == 0 
     // && (strstr(fileName, "_r_stat") || strstr(fileName, "_w_stat") || strstr(fileName, "_trace_stat"))
     ) {
@@ -709,7 +726,7 @@ int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
   DPRINTF("Lib.cpp: In monitor fclose \n");
 #ifdef TRACKFILECHANGES
   for (auto pattern: patterns) {
-    auto ret_val = fnmatch(pattern.c_str(), file->name().c_str(), 0);
+    auto ret_val = fnmatch(pattern.c_str(), get_basename(file->name().c_str()), 0);
     if (ret_val == 0) {
       file->close();
       DPRINTF("Lib.cpp: Successfully closed a file with fd %d\n", fd);
@@ -719,11 +736,11 @@ int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
     MonitorFile::removeMonitorFile(file);
     MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
     
-#ifdef TRACKFILECHANGES
-    return 0;
-#else
+// #ifdef TRACKFILECHANGES
+//     return 0;
+// #else
     return (*unixfclose)(fp);
-#endif
+// #endif
 }
 
 int fclose(FILE *fp) {
@@ -733,13 +750,26 @@ int fclose(FILE *fp) {
 
 size_t monitorFread(MonitorFile *file, unsigned int pos, int fd, void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
   DPRINTF("Lib.cpp: In monitor fread \n");
-    auto read_bytes = (size_t)file->read(ptr, size * n, pos);
+    // auto read_bytes = (size_t)file->read(ptr, size * n, pos);
+    auto items_read = (*unixfread)(ptr, size, n, fp);
+    auto read_bytes = items_read * size;
 
     // Update the timer with the number of bytes read
-    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, read_bytes);
+    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, read_bytes);
 
-    if (read_bytes >= size){return n;}
-    else return (size_t) (size / n) ;
+    // Track for JSON tracing (if file is TrackFile)
+    if (read_bytes > 0) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackRead(read_bytes, pos, new_pos);
+            }
+        }
+    }
+
+    return items_read;
 }
 
 size_t fread(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
@@ -753,12 +783,26 @@ size_t fread(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
 size_t monitorFwrite(MonitorFile *file, unsigned int pos, int fd, const void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
     DPRINTF("Lib.cpp: In monitor fwrite \n");
     // auto written_bytes = (size_t)file->write(ptr, size * n, pos);
-    auto written_bytes = file->write(ptr, size * n, pos, -1);
+    // auto written_bytes = file->write(ptr, size * n, pos, -1);
+    auto items_written = (*unixfwrite)(ptr, size, n, fp);
+    auto written_bytes = items_written * size;
+
     // Update the timer with the number of bytes written
     timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, written_bytes);
-    
-    if (written_bytes >= size) return n;
-    else return (size_t) (size / n);
+
+    // Track for JSON tracing (if file is TrackFile)
+    if (written_bytes > 0) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackWrite(written_bytes, pos, new_pos);
+            }
+        }
+    }
+
+    return items_written;
 }
 
 size_t fwrite(const void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
@@ -781,7 +825,8 @@ int vfprintf(FILE * stream, const char * format, va_list arg ) {
 }
 
 long int monitorFtell(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
-    return (long int)lseek(fd, 0, SEEK_CUR);
+    // return (long int)lseek(fd, 0, SEEK_CUR);
+    return (*unixftell)(fp);
 }
 
 long int ftell(FILE *fp) {
@@ -789,7 +834,16 @@ long int ftell(FILE *fp) {
 }
 
 int monitorFseek(MonitorFile *file, unsigned int pos, int fd, FILE *fp, long int off, int whence) {
-    return lseek(fd, off, whence);
+    // return lseek(fd, off, whence);
+    int result = (*unixfseek)(fp, off, whence);
+
+    if (result == 0) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+        }
+    }
+    return result;
 }
 
 int fseek(FILE *fp, long int off, int whence) {
@@ -797,12 +851,28 @@ int fseek(FILE *fp, long int off, int whence) {
 }
 
 int monitorFgetc(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
-    if (!file->eof(pos)) {
-        unsigned char buffer;
-        read(fd, &buffer, 1);
-        return (int)buffer;
+    // if (!file->eof(pos)) {
+    //     unsigned char buffer;
+    //     read(fd, &buffer, 1);
+    //     return (int)buffer;
+    // }
+    // return EOF;
+
+    int result = (*unixfgetc)(fp);
+
+    // Sync internal position tracking with actual FILE* position
+    if (result != EOF) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackRead(1, pos, new_pos);
+            }
+        }
     }
-    return EOF;
+
+    return result;
 }
 
 int fgetc(FILE *fp) {
@@ -810,28 +880,45 @@ int fgetc(FILE *fp) {
 }
 
 char *monitorFgets(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, int n, FILE *__restrict fp) {
-    char *ret = NULL;
-    if (!file->eof(pos)) {
-        int prior = file->filePos(pos);
-        size_t res = read(fd, s, n - 1);
-        if (res) {
-            unsigned int index;
-            for (index = 0; index < res; index++) {
-                if (s[index] == '\n') {
-                    index++;
-                    break;
-                }
+    // char *ret = NULL;
+    // if (!file->eof(pos)) {
+    //     int prior = file->filePos(pos);
+    //     size_t res = read(fd, s, n - 1);
+    //     if (res) {
+    //         unsigned int index;
+    //         for (index = 0; index < res; index++) {
+    //             if (s[index] == '\n') {
+    //                 index++;
+    //                 break;
+    //             }
+    //         }
+
+    //         if (index < res) {
+    //             file->seek(prior + index, SEEK_SET, pos);
+    //         }
+
+    //         s[index] = '\0';
+    //         ret = s;
+    //     }
+    // }
+    // return ret;
+
+    char *result = (*unixfgets)(s, n, fp);
+
+    if (result != NULL) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            long prev_pos = file->filePos(pos);
+            file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackRead(new_pos - prev_pos, pos, new_pos);
             }
 
-            if (index < res) {
-                file->seek(prior + index, SEEK_SET, pos);
-            }
-
-            s[index] = '\0';
-            ret = s;
         }
     }
-    return ret;
+
+    return result;
 }
 
 char *fgets(char *__restrict s, int n, FILE *__restrict fp) {
@@ -839,8 +926,23 @@ char *fgets(char *__restrict s, int n, FILE *__restrict fp) {
 }
 
 int monitorFputc(MonitorFile *file, unsigned int pos, int fd, int c, FILE *fp) {
-    write(fd, (void *)&c, 1);
-    return c;
+    // write(fd, (void *)&c, 1);
+    // return c;
+
+    int result = (*unixfputc)(c, fp);
+
+    if (result != EOF) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackWrite(1, pos, new_pos);
+            }
+        }
+    }
+
+    return result;
 }
 
 int fputc(int c, FILE *fp) {
@@ -848,20 +950,36 @@ int fputc(int c, FILE *fp) {
 }
 
 int monitorFputs(MonitorFile *file, unsigned int pos, int fd, const char *__restrict s, FILE *__restrict fp) {
-    unsigned int index = 0;
-    while (1) {
-        if (s[index] == '\0')
-            break;
-        index++;
+    // unsigned int index = 0;
+    // while (1) {
+    //     if (s[index] == '\0')
+    //         break;
+    //     index++;
+    // }
+
+    // int res = -1;
+    // if (index)
+    //     res = write(fd, s, index);
+
+    // if (res == -1)
+    //     return EOF;
+    // return res;
+
+    int result = (*unixfputs)(s, fp);
+
+    if (result != EOF) {
+        long new_pos = (*unixftell)(fp);
+        if (new_pos >= 0) {
+            long prev_pos = file->filePos(pos);
+            file->setFilePos(pos, new_pos);
+            // Call tracking method for trace collection
+            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+                trackFile->trackWrite(new_pos - prev_pos, pos, new_pos);
+            }
+        }
     }
 
-    int res = -1;
-    if (index)
-        res = write(fd, s, index);
-
-    if (res == -1)
-        return EOF;
-    return res;
+    return result;
 }
 
 int fputs(const char *__restrict s, FILE *__restrict fp) {
@@ -869,7 +987,9 @@ int fputs(const char *__restrict s, FILE *__restrict fp) {
 }
 
 int monitorFeof(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
-    return file->eof(pos);
+    // return file->eof(pos);
+
+    return (*unixfeof)(fp);
 }
 
 int feof(FILE *fp) ADD_THROW {
@@ -886,6 +1006,53 @@ void rewind(FILE *fp) {
     // int fd = MonitorFileStream::lookupStream(fp, lock);
     // outerWrapper(fp, Timer::Metric::rewind, monitorRewind, unixlseek, fd, 0L, SEEK_SET);
     fseek(fp, 0L, SEEK_SET);
+}
+
+ssize_t monitorMmapRead(MonitorFile *file, void *addr, size_t length, off_t offset) {
+    DPRINTF("Lib.cpp: monitorMmapRead: addr=%p, length=%zu, offset=%lld\n",
+            addr, length, (long long)offset);
+
+    // Just record the number of bytes into the timer (simulate read)
+    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, length);
+
+    return length;
+}
+
+ssize_t monitorMmapWrite(MonitorFile *file, void *addr, size_t length, off_t offset) {
+    DPRINTF("Lib.cpp: monitorMmapWrite: addr=%p, length=%zu, offset=%lld\n",
+            addr, length, (long long)offset);
+
+    // Just record the number of bytes into the timer (simulate write)
+    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, length);
+
+    return length;
+}
+
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+    if (!unixmmap) unixmmap = (mmap_t)dlsym(RTLD_NEXT, "mmap");
+
+    DPRINTF("Lib.cpp: Intercepting mmap: addr=%p, length=%zu, prot=%d, flags=%d, fd=%d, offset=%ld\n",
+            addr, length, prot, flags, fd, offset);
+
+    void *result = unixmmap(addr, length, prot, flags, fd, offset);
+
+    // Look up file path from fd
+    std::lock_guard<std::mutex> lock(fdToFileMapMutex);
+    auto it = fdToFileMap.find(fd);
+    if (it != fdToFileMap.end()) {
+        const std::string &filePath = it->second;
+        MonitorFile *file = MonitorFile::lookUpMonitorFile(filePath);
+        if (file) {
+            if (prot & PROT_READ) {
+                monitorMmapRead(file, result, length, offset);
+            }
+            if (prot & PROT_WRITE) {
+                monitorMmapWrite(file, result, length, offset);
+            }
+        }
+    }
+
+    return result;
 }
 
 // void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
