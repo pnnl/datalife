@@ -59,6 +59,18 @@ class DataLife(object):
         """Reads stat files through workflow tasks and store in DataFrame
         """
         
+        if not self.wf_tasknames:
+            all_items = os.listdir(self.stat_path)
+            
+            discovered_tasks = [item for item in all_items
+                                if os.path.isdir(os.path.join(self.stat_path, item))]
+            
+            # If no subdirectories found, assume single task at root level
+            if not discovered_tasks:
+                discovered_tasks = ['.']
+            
+            self.set_wf_tasknames(discovered_tasks)
+            
         task_names = self.wf_tasknames
         stat_path = self.stat_path
         dl_name = self.dl_name

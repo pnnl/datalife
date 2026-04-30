@@ -28,6 +28,13 @@
 #define MYDPRINTF(...) fprintf(stderr, __VA_ARGS__)
 #define TRACKFILECHANGES 1
 
+// Helper function to extract basename from a pathname without modifying the input
+inline const char* get_basename(const char* pathname) {
+    if (!pathname) return pathname;
+    const char* base = strrchr(pathname, '/');
+    return base ? base + 1 : pathname;
+}
+
 extern int removeStr(char *s, const char *r);
 MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string metaName, int fd) : 
     Loggable(Config::MonitorFileLog, "MonitorFile"),
@@ -44,26 +51,18 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
     _fd(fd)
      {
 
-        // Debug output
-    // std::cout << "MonitorFile.cpp Constructor Called:" << std::endl;
-    // std::cout << "  Type: " << static_cast<int>(type) << std::endl;  // Convert enum to int
-    // std::cout << "  Name: " << name << std::endl;
-    // std::cout << "  MetaName: " << metaName << std::endl;
-    // std::cout << "  File Descriptor (fd): " << fd << std::endl;
-    
 #ifdef TRACKFILECHANGES
 
-    bool matched = true;
+    bool matched = false;
     for (const auto& pattern : patterns) {
-        // std::cout << "Checking file: " << name << " against pattern: " << pattern << std::endl;
-
         DPRINTF("Checking file: %s against pattern: %s\n", name.c_str(), pattern.c_str());
-        if (fnmatch(pattern.c_str(), name.c_str(), 0) != 0) {
-            matched = false;
+        if (fnmatch(pattern.c_str(), get_basename(name.c_str()), 0) == 0) {
+            matched = true;
             break;
         }
     }
-    
+
+
     if (matched) {
         DPRINTF("File %s matched pattern. Reading metadata...\n", name.c_str());
         readMetaInfo();
@@ -102,9 +101,17 @@ bool MonitorFile::readMetaInfo() {
     (*unixlseek)(_fd, 0L, SEEK_SET);
     char *meta = new char[fileSize + 1];
     int ret = (*unixRead)(_fd, (void *)meta, fileSize);
+
+    // Restore file position to beginning so subsequent reads work correctly
+    (*unixlseek)(_fd, 0L, SEEK_SET);
+
     if (ret < 0) {
         // std::cout << "ERROR: Failed to read local metafile: " << strerror(errno) << std::endl;
-        raise(SIGSEGV);
+        // raise(SIGSEGV);
+
+        log(this) << "ERROR: Failed to read local metafile: " << strerror(errno) << std::endl;
+        delete[] meta;
+
         return 0;
     }
     meta[fileSize] = '\0';
@@ -176,6 +183,7 @@ bool MonitorFile::readMetaInfo() {
             if(hostAddr == "\0" || port == 0 || fileName == "\0") {
                 log(this) << "0:improperly formatted meta file" << std::endl;
 		// std::cout << "0:improperly formatted meta file" << std::endl;
+                delete[] meta;
                 return 0;
             }
             //after collecting info for a server

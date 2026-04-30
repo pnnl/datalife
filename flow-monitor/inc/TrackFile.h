@@ -41,6 +41,10 @@ public:
   off_t seek(off_t offset, int whence, uint32_t index = 0);
   int vfprintf(unsigned int pos, int count);
 
+  // Tracking-only methods (no I/O) for FILE* operations to avoid buffering corruption
+  void trackRead(size_t count, uint32_t index, off_t filePos);
+  void trackWrite(size_t count, uint32_t index, off_t filePos);
+  
 private:
 // bool trackRead(size_t count, uint32_t index, uint32_t startBlock, uint32_t endBlock);
 //    uint64_t copyBlock(char *buf, char *blkBuf, uint32_t blk, uint32_t startBlock, uint32_t endBlock, uint32_t fpIndex, uint64_t count);

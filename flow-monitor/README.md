@@ -45,6 +45,14 @@ The monitor's behavior can be configured through the following environment varia
         export DATALIFE_FILE_PATTERNS="*.dat,*.log"
         ```
 
+*   #### `DATALIFE_JSON_OUTPUT`
+    *   **Purpose**: Enables JSON-only output mode when set to `1`. When enabled, the monitor will generate trace data in JSON format without creating additional stat files.
+    *   **Default**: If not set, defaults to `0` (disabled).
+    *   **Example**: To enable JSON output mode:
+        ```sh
+        export DATALIFE_JSON_OUTPUT=1
+        ```
+
 ## Minimal Example
 
 After building the library, you can run the following commands to trace the I/O of the `dd` command on a test file.

@@ -41,47 +41,15 @@
 
 #define DPRINTF(...)
 // #ifdef LIBDEBUG
-// #define DPRINTF(...) fDPRINTF(stderr, __VA_ARGS__)
+// #define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
 // #else
 // #define DPRINTF(...)
 // #endif
-// #define MYDPRINTF(...) fDPRINTF(stderr, __VA_ARGS__)
+// #define MYPRINTF(...) fprintf(stderr, __VA_ARGS__)
 
 #define TRACKFILECHANGES 1
 
-    // std::vector<std::string> patterns = {
-    //     "*.fits", "*.vcf", "*.fna",
-    //     // "*.*.bt2", "*.fastq", "*.fasta.amb", "*.fasta.sa", "*.fasta.bwt",
-    //     // "*.fasta.pac", "*.fasta.ann", "*.fasta", 
-    //     // "*.out", "*.dot", 
-    //     "*.gz", "*.tar.gz", 
-    //     "*.dcd", "*.pt", "*.nc", 
-    //     //"*.txt","*.*.*.txt", //"*.pdb",
-    //     "SAS", "EAS", "GBR", "AMR", "AFR", "EUR", "ALL",
-        
-
-	// // "*.fits", "*.tbl", "1\-fit\..*", "*.hdr", "*.png"
-    //     // "*.h5", "*.npy", "*.npz",
-    //     // "*.lht","*.stf",
-    //     // "*.tbl", "*.hdr", "*.fits", "*.txt", "*.png"
-    //     // "*.stf", "*.lht", "*decon.out", "*.gz",
-    //     // "*.safetensors", "*.pt",
-    //     // "*.model",
-    //     // "*.pdf", 
-    //     // "*model.bin",
-    //     // "*.arrow", "*model.bin",
-    //     // "*merges.txt", 
-    //     // "*events.out.*", 
-    //     // "*config.json", 
-    //     // "*tokenizer.json", 
-    //     // "*vocab.json", 
-    //     // "*special_tokens_map.json", 
-    //     // "*tokenizer_config.json", 
-    //     // "*generation_config.json"
-
-    // };
-
-    /* Functions to parse input file extension strings*/
+/* Functions to parse input file extension strings*/
 // Helper function to trim whitespace from both ends of a string
 std::string trim(const std::string& str) {
     const std::string whitespace = " \t\n\r";
@@ -110,6 +78,13 @@ std::vector<std::string> split_patterns(const std::string& input, char delimiter
 }
 
 std::vector<std::string> patterns = split_patterns(Config::passin_patterns);
+
+// Helper function to extract basename from a pathname without modifying the input
+inline const char* get_basename(const char* pathname) {
+    if (!pathname) return pathname;
+    const char* base = strrchr(pathname, '/');
+    return base ? base + 1 : pathname;
+}
 
 static Timer* timer;
 
@@ -142,8 +117,8 @@ std::map<std::string, std::vector<int> > trace_write_blk_seq;
 // For JOSN tracing
 std::unordered_map<std::string, TraceData> trace_read_blk_order;
 std::unordered_map<std::string, TraceData> trace_write_blk_order;
-int first_access_block;
-int largest_access_block;
+int first_access_block = -1;
+int largest_access_block = -1;
 
 unixopen_t unixopen = NULL;
 unixopen_t unixopen64 = NULL;
@@ -349,10 +324,8 @@ inline auto innerWrapper(const char *pathname, bool &isMonitorFile, Func monitor
     return posixFun(args...);
   }
 
-
-
   for (auto pattern: patterns) {
-    auto ret_val = fnmatch(pattern.c_str(), pathname, 0);
+    auto ret_val = fnmatch(pattern.c_str(), get_basename(pathname), 0);
     if (ret_val == 0) {
         DPRINTF("PATTERN: %s PATHNAME: %s \n", pattern.c_str(), pathname);
         isMonitorFile = true;

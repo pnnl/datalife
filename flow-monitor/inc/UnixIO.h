@@ -63,4 +63,10 @@ typedef ssize_t (*pwrite_t)(int fd, const void *buf, size_t count, off_t offset)
 typedef ssize_t (*pread64_t)(int fd, void *buf, size_t count, off64_t offset);
 typedef ssize_t (*pwrite64_t)(int fd, const void *buf, size_t count, off64_t offset);
 
+// Global POSIX function pointers (initialized once at startup in Lib.cpp)
+// These should be used by all internal code to avoid recursive interception
+extern unixopen_t unixopen;
+extern unixclose_t unixclose;
+extern unixwrite_t unixwrite;
+
 #endif /* UNIXIO_H_ */

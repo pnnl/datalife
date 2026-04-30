@@ -1,7 +1,7 @@
 numpy
 pandas
 plotly
-networkx
+networkx<=2.8.8
 pyaml
 ipython
 matplotlib

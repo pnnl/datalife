@@ -286,9 +286,10 @@ class Histogram {
         void printLog(int id){
             lock.readerLock();
             if(_trace){
-            unixopen_t unixopen = (unixopen_t)dlsym(RTLD_NEXT, "open");
-            unixclose_t unixclose = (unixclose_t)dlsym(RTLD_NEXT, "close");
-            unixwrite_t unixwrite = (unixwrite_t)dlsym(RTLD_NEXT, "write");
+            // unixopen_t unixopen = (unixopen_t)dlsym(RTLD_NEXT, "open");
+            // unixclose_t unixclose = (unixclose_t)dlsym(RTLD_NEXT, "close");
+            // unixwrite_t unixwrite = (unixwrite_t)dlsym(RTLD_NEXT, "write");
+            // Use global POSIX function pointers to avoid recursive interception
             std::string fname = "histogram_stats_"+ std::to_string(id) +".txt";
             int fd = (*unixopen)(fname.c_str(), O_WRONLY | O_APPEND | O_CREAT, 0660);
             if (fd != -1) {
@@ -296,8 +297,10 @@ class Histogram {
                 ss << "number of histogram queries:" << numGetVals << std::endl;
                 ss << "number of extrapolations:" << numExtrapolation << std::endl;
                 ss << extrapolationInfo.c_str() << std::endl;
-                unixwrite(fd, ss.str().c_str(), ss.str().length());
-                unixclose(fd);
+                // unixwrite(fd, ss.str().c_str(), ss.str().length());
+                // unixclose(fd);
+                (*unixwrite)(fd, ss.str().c_str(), ss.str().length());
+                (*unixclose)(fd);
             }
             }
             lock.readerUnlock();

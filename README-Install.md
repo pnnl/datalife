@@ -1,5 +1,5 @@
 <!-- -*-Mode: markdown;-*- -->
-<!-- $Id: 4098d4ffce45696ec3497ad9e08e712906c9d8fe $ -->
+<!-- $Id$ -->
 
 
 Prerequisites
@@ -58,7 +58,17 @@ Using
 DataLife has two main steps.
 
 1. Monitor...
-
+   ```sh
+    # Give your path to collect all datalife statistic files
+    export DATALIFE_OUTPUT_PATH="./datalife_stats"
+    # Give your list of target capture file regular expression patterns
+    export DATALIFE_FILE_PATTERNS="*.gz, *.tar.gz, *.dcd, ior*.bin" 
+    # Run your program with datalife with LD_PRELOAD
+    LD_PRELOAD=/your_datalife_path/build/flow-monitor/src/libmonitor.so ./your_program
+    # or Run your program with datalife-run
+    export PATH="/your_datalife_path/build/bin:$PATH"
+    datalife-run ./your_program
+    ```
 
 2. Analysis and diagnostics:
 
@@ -77,4 +87,7 @@ DataLife has two main steps.
       -o OUTPUT, --output OUTPUT
                             write a graph output to a file
     ```
+
+   <!-- export PYTHONPATH+="<install>/libexec/flow-analysis"  -->
+
 

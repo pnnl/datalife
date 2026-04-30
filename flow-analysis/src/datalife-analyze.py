@@ -2,7 +2,7 @@
 # -*-Mode: python;-*-
 
 # $HeadURL: https:// $
-# $Id: 51c72ca84a3d22959cff41b0515e1a2f3bd4b6b0 $
+# $Id$
 
 #****************************************************************************
 #
@@ -48,7 +48,8 @@ def read_stats(dirpath):
 
 
 def write_graph(dirpath):
-
+    
+    dlife.get_graph()
     dlife.write_graph(dirpath)
 
 
