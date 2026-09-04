@@ -98,6 +98,11 @@ bool MonitorFile::readMetaInfo() {
 
     int64_t fileSize = (*unixlseek)(_fd, 0L, SEEK_END);
     (*unixlseek)(_fd, 0L, SEEK_SET);
+    // A meta descriptor is a few hundred bytes of key=value text; anything
+    // larger is a tracked data file and must not be slurped into memory.
+    if (fileSize < 0 || fileSize > Config::maxMetaFileSize) {
+        return 0;
+    }
     char *meta = new char[fileSize + 1];
     int ret = (*unixRead)(_fd, (void *)meta, fileSize);
 
