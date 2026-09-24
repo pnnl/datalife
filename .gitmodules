@@ -4,3 +4,6 @@
 [submodule "DaYu"]
 	path = DaYu
 	url = https://github.com/candiceT233/dayu-tracker.git
+[submodule "tools/datalife_histogram_loader"]
+	path = tools/datalife_histogram_loader
+	url = https://github.com/johnpzh/datalife_histogram_loader.git

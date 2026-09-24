@@ -140,8 +140,8 @@ class SankeyData:
             io_type = v['type']
             fname = v['filename']
             tname = v['task_name']
-            fidx = int(self.nodes[self.nodes.label == fname].index.values)
-            tidx = int(self.nodes[self.nodes.label == tname].index.values)
+            fidx = int(self.nodes[self.nodes.label == fname].index.values[0])
+            tidx = int(self.nodes[self.nodes.label == tname].index.values[0])
             if io_type == "r":
                 t2f = {'source': fidx,
                        'target': tidx,
