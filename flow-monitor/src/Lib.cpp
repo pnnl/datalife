@@ -294,10 +294,16 @@ int open(const char *pathname, int flags, ...) {
     DPRINTF("Lib.cpp: Open %s: \n", pathname);
 
     int mode = 0;
-    va_list arg;
-    va_start(arg, flags);
-    mode = va_arg(arg, int);
-    va_end(arg);
+    if ((flags & O_CREAT)
+#ifdef O_TMPFILE
+        || ((flags & O_TMPFILE) == O_TMPFILE)
+#endif
+    ) {
+        va_list arg;
+        va_start(arg, flags);
+        mode = va_arg(arg, int);
+        va_end(arg);
+    }
 
     Timer::Metric metric = (flags & O_WRONLY || flags & O_RDWR) ? Timer::Metric::out_open : Timer::Metric::in_open;
 
@@ -338,10 +344,16 @@ int open64(const char *pathname, int flags, ...) {
     DPRINTF("Lib.cpp: Open64 %s: \n", pathname);
 
     int mode = 0;
-    va_list arg;
-    va_start(arg, flags);
-    mode = va_arg(arg, int);
-    va_end(arg);
+    if ((flags & O_CREAT)
+#ifdef O_TMPFILE
+        || ((flags & O_TMPFILE) == O_TMPFILE)
+#endif
+    ) {
+        va_list arg;
+        va_start(arg, flags);
+        mode = va_arg(arg, int);
+        va_end(arg);
+    }
 
     Timer::Metric metric = (flags & O_WRONLY || flags & O_RDWR) ? Timer::Metric::out_open : Timer::Metric::in_open;
 
@@ -379,13 +391,13 @@ int open64(const char *pathname, int flags, ...) {
 
 int monitorOpenat(std::string name, std::string metaName, MonitorFile::Type type,
 		int dirfd, const char *pathname, int flags, int mode) {
-  return (*unixopenat)(dirfd, name.c_str(), flags);
+  return (*unixopenat)(dirfd, name.c_str(), flags, mode);
 }
 
 int trackFileOpenat(std::string name, std::string metaName, MonitorFile::Type type, 
 		    int dirfd, const char *pathname, int flags, int mode) {
   DPRINTF("Lib.cpp: trackfileOpenat: %s %s %u\n", name.c_str(), metaName.c_str(), type);
-  auto fd = (*unixopenat)(dirfd, name.c_str(), flags);
+  auto fd = (*unixopenat)(dirfd, name.c_str(), flags, mode);
   if (fd > 0) {  
     MonitorFile *file = MonitorFile::addNewMonitorFile(type, name, name, fd, true);
     if (file) {
@@ -400,10 +412,16 @@ int trackFileOpenat(std::string name, std::string metaName, MonitorFile::Type ty
 
 int openat(int dirfd, const char *pathname, int flags, ...) {
   int mode = 0;
-  va_list arg;
-  va_start(arg, flags);
-  mode = va_arg(arg, int);
-  va_end(arg);
+  if ((flags & O_CREAT)
+#ifdef O_TMPFILE
+      || ((flags & O_TMPFILE) == O_TMPFILE)
+#endif
+  ) {
+    va_list arg;
+    va_start(arg, flags);
+    mode = va_arg(arg, int);
+    va_end(arg);
+  }
   
   Timer::Metric metric = (flags & O_WRONLY || flags & O_RDWR) ? 
     Timer::Metric::out_open : Timer::Metric::in_open;
@@ -1138,4 +1156,3 @@ ssize_t pwrite64(int fd, const void *buf, size_t count, off64_t offset) {
                             monitorPwrite64, unixpwrite64, fd, buf, count, offset);
     return ret;
 }
-
