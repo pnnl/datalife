@@ -1,4 +1,5 @@
 #include "Timer.h"
+#include "MonitorPathPolicy.h"
 #include "Config.h"
 #include <atomic>
 #include <fstream>
@@ -116,6 +117,7 @@ Timer::~Timer() {
         // std::filesystem::create_directories(Config::dataLifeOutputPath);
         
         // Open the file at the correct location (append mode)
+        ScopedMonitorInternalIO internal_io;
         std::ofstream log_file(fullPath, std::ios::out | std::ios::app); 
         if (!log_file) {
             std::cerr << "Failed to open " << fullPath << std::endl;

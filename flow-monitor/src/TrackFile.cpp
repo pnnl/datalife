@@ -6,6 +6,7 @@
 #include "ConnectionPool.h"
 #include "FileCacheRegister.h"
 #include "Message.h"
+#include "MonitorPathPolicy.h"
 #include "Request.h"
 #include "Timer.h"
 #include "UnixIO.h"
@@ -509,6 +510,11 @@ off_t TrackFile::seek(off_t offset, int whence, uint32_t index) {
 
 // Helper function for JSON trace output
 void write_trace_data(const std::string& filename, const std::string &data_name, TraceData& blk_trace_info, const std::string &pid, const std::string &_name, bool is_read) {
+  if (isMonitorInternalIO()) {
+      return;
+  }
+  ScopedMonitorInternalIO internal_io;
+
   // Ensure dataLifeOutputPath is not empty
   if (Config::dataLifeOutputPath.empty()) {
       std::cerr << "Error: DATALIFE_OUTPUT_PATH is not set!" << std::endl;
@@ -587,6 +593,11 @@ void write_trace_data(const std::string& filename, const std::string &data_name,
 }
 
 void TrackFile::close() {
+    if (isMonitorInternalIO()) {
+        return;
+    }
+    ScopedMonitorInternalIO internal_io;
+
     DPRINTF("Calling TrackFile close: %s\n", _name.c_str());
 
     auto pid = std::to_string(getpid());

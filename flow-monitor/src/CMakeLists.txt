@@ -13,6 +13,7 @@
 
 SET(MONITOR_INC_DIR ${MONITOR_INC_DIR})
 set(MONITOR_HEADERS
+    ${MONITOR_INC_DIR}/MonitorPathPolicy.h
     ${MONITOR_INC_DIR}/TrackFile.h
     ${MONITOR_INC_DIR}/AtomicHelper.h
     ${MONITOR_INC_DIR}/FcntlReaderWriterLock.h
@@ -59,6 +60,7 @@ set(MONITOR_FILES
     #OutputFile.cpp
     #LocalFile.cpp
     TrackFile.cpp
+    MonitorPathPolicy.cpp
     MonitorFileStream.cpp
     CacheStats.cpp
     Lib.cpp

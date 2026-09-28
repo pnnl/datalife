@@ -29,6 +29,7 @@
 #include "ReaderWriterLock.h"
 #include "MonitorFile.h"
 #include "MonitorFileDescriptor.h"
+#include "MonitorPathPolicy.h"
 #include "MonitorFileStream.h"
 #include "Timer.h"
 #include "Trackable.h"
@@ -451,7 +452,7 @@ template <typename FileId, typename Func, typename FuncPosix, typename... Args>
 auto outerWrapper(const char *name, FileId fileId, Timer::Metric metric, Func monitorFun, FuncPosix posixFun, Args... args) {
     DPRINTF("Lib.h: outerWrapper() for function: %s\n", name);
 
-  if (!init) {
+  if (!init || isMonitorInternalIO()) {
       posixFun = (FuncPosix)dlsym(RTLD_NEXT, name);
       return posixFun(args...);
     }
