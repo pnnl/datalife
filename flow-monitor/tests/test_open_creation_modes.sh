@@ -63,6 +63,10 @@ int main(int argc, char **argv) {
         close(directory);
         return 1;
     }
+    if (close_created(openat(directory, "openat-fallback-created", O_WRONLY | O_CREAT | O_EXCL, 0660), "openat fallback")) {
+        close(directory);
+        return 1;
+    }
     if (close(directory) != 0) {
         perror("close directory");
         return 1;
@@ -95,5 +99,6 @@ check_mode() {
 check_mode "$test_root/output/open-created" 640
 check_mode "$test_root/output/open64-created" 624
 check_mode "$test_root/output/openat-created" 604
+check_mode "$test_root/output/openat-fallback-created" 660
 
 echo "open/open64/openat creation modes preserved"
