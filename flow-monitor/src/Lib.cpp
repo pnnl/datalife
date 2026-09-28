@@ -33,6 +33,7 @@
 #include "MonitorFile.h"
 #include "MonitorFileDescriptor.h"
 #include "MonitorFileStream.h"
+#include "MonitorPathPolicy.h"
 #include "Timer.h"
 #include "Trackable.h"
 #include "UnixIO.h"
@@ -305,6 +306,10 @@ int open(const char *pathname, int flags, ...) {
         va_end(arg);
     }
 
+    if (isMonitorInternalIO() || isMonitorOwnedPath(pathname, Config::dataLifeOutputPath)) {
+        return (*unixopen)(pathname, flags, mode);
+    }
+
     Timer::Metric metric = (flags & O_WRONLY || flags & O_RDWR) ? Timer::Metric::out_open : Timer::Metric::in_open;
 
     // Check if the file matches any pattern
@@ -353,6 +358,10 @@ int open64(const char *pathname, int flags, ...) {
         va_start(arg, flags);
         mode = va_arg(arg, int);
         va_end(arg);
+    }
+
+    if (isMonitorInternalIO() || isMonitorOwnedPath(pathname, Config::dataLifeOutputPath)) {
+        return (*unixopen64)(pathname, flags, mode);
     }
 
     Timer::Metric metric = (flags & O_WRONLY || flags & O_RDWR) ? Timer::Metric::out_open : Timer::Metric::in_open;
@@ -421,6 +430,10 @@ int openat(int dirfd, const char *pathname, int flags, ...) {
     va_start(arg, flags);
     mode = va_arg(arg, int);
     va_end(arg);
+  }
+
+  if (isMonitorInternalIO() || isMonitorOwnedPathAt(dirfd, pathname, Config::dataLifeOutputPath)) {
+    return (*unixopenat)(dirfd, pathname, flags, mode);
   }
   
   Timer::Metric metric = (flags & O_WRONLY || flags & O_RDWR) ? 
@@ -708,6 +721,9 @@ FILE *monitorFopen(std::string name, std::string metaName, MonitorFile::Type typ
 
 FILE *fopen(const char *__restrict fileName, const char *__restrict modes) {
   DPRINTF("Lib.cpp: Calling fopen on %s \n", fileName);  
+  if (isMonitorInternalIO() || isMonitorOwnedPath(fileName, Config::dataLifeOutputPath)) {
+    return (*unixfopen)(fileName, modes);
+  }
   Timer::Metric metric = (modes[0] == 'r') ? Timer::Metric::in_fopen : Timer::Metric::out_fopen;
 
   for (auto pattern: patterns) {
@@ -724,6 +740,9 @@ FILE *fopen(const char *__restrict fileName, const char *__restrict modes) {
 
 FILE *fopen64(const char *__restrict fileName, const char *__restrict modes) {
   DPRINTF("Lib.cpp: Calling fopen64 on %s \n", fileName);  
+  if (isMonitorInternalIO() || isMonitorOwnedPath(fileName, Config::dataLifeOutputPath)) {
+    return (*unixfopen64)(fileName, modes);
+  }
   Timer::Metric metric = (modes[0] == 'r') ? Timer::Metric::in_fopen : Timer::Metric::out_fopen;
 
   for (auto pattern: patterns) {
