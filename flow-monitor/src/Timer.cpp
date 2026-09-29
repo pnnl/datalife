@@ -64,9 +64,32 @@ Timer::Timer() {
     stdoutcp = dup(1);
     myprogname = __progname;
     _thread_timers = new std::unordered_map<std::thread::id, Timer::ThreadMetric*>;
+
+    // Task caliper start: the Timer is created in the library constructor.
+    _task_start_epoch_ns = epochNs();
+    _task_start_steady_ns = steadyNs();
+    _task_start_pid = getpid();
 }
 
 Timer::~Timer() {
+    // Task caliper end: the Timer is deleted in the library destructor.
+    const uint64_t task_end_epoch_ns = epochNs();
+    const double task_wall_s = (steadyNs() - _task_start_steady_ns) / billion;
+    // Total time spent inside intercepted I/O calls, all categories, excluding the
+    // library's own constructor/destructor bookkeeping and the dummy offset entry.
+    double io_time_s = 0.0;
+    uint64_t io_calls = 0;
+    for (int i = 0; i < lastMetric; i++) {
+        for (int j = 0; j < last; j++) {
+            if (j == constructor || j == destructor || j == dummy)
+                continue;
+            io_time_s += _time[i][j] / billion;
+            io_calls += _cnt[i][j];
+        }
+    }
+    char hostname[256];
+    std::string host_name = (gethostname(hostname, sizeof(hostname)) == 0) ? hostname : "unknown_host";
+    const bool task_name_set = !Config::task_name_env.empty() && Config::task_name_env != "task_name";
 
 #ifdef TIMER_JSON
     std::unordered_map<std::thread::id, Timer::ThreadMetric*>::iterator itor;
@@ -99,9 +122,21 @@ Timer::~Timer() {
                 }
             }
         }
-        // Get the current host name
-        char hostname[256]; // Buffer to store the host name
-        std::string host_name = (gethostname(hostname, sizeof(hostname)) == 0) ? hostname : "unknown_host";
+        // Task caliper block: process lifetime and the I/O total to subtract from it.
+        jsonOutput[myprogname]["task"] = {
+            {"pid", (int64_t)getpid()},
+            {"start_pid", (int64_t)_task_start_pid},           // differs from pid in a forked child
+            {"hostname", host_name},
+            {"program", myprogname},
+            {"task_name", task_name_set ? Config::task_name_env : ""},
+            {"start_epoch_ns", _task_start_epoch_ns},
+            {"end_epoch_ns", task_end_epoch_ns},
+            {"wall_time_s", task_wall_s},
+            {"io_time_s", io_time_s},
+            {"io_calls", io_calls},
+            {"compute_time_s", task_wall_s - io_time_s},
+        };
+
         // Ensure dataLifeOutputPath is not empty
         if (Config::dataLifeOutputPath.empty()) {
             std::cerr << "Error: DATALIFE_OUTPUT_PATH is not set!" << std::endl;
@@ -165,6 +200,7 @@ Timer::~Timer() {
                 }
             }
         }
+        ss << "[MONITOR] task pid " << getpid() << " host " << host_name << " wall_time_s " << task_wall_s << " io_time_s " << io_time_s << " compute_time_s " << (task_wall_s - io_time_s) << " start_epoch_ns " << _task_start_epoch_ns << " end_epoch_ns " << task_end_epoch_ns << std::endl;
         dprintf(stdoutcp, "[MONITOR] %s\n%s\n", myprogname.c_str(), ss.str().c_str());
     }
     
@@ -182,6 +218,16 @@ uint64_t Timer::getCurrentTime() {
     auto value = now_ms.time_since_epoch();
     uint64_t ret = value.count();
     return ret + Config::referenceTime;
+}
+
+uint64_t Timer::epochNs() {
+    return (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(
+               std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+uint64_t Timer::steadyNs() {
+    return (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(
+               std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
 char *Timer::printTime() {

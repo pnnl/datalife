@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include <thread>
+#include <unistd.h>
 #include <unordered_map>
 #include <vector>
 
@@ -60,6 +61,10 @@ class Timer {
     static uint64_t getCurrentTime();
     static char *printTime();
     static int64_t getTimestamp();
+    // Wall clock (system_clock) in ns since the epoch: comparable across processes and nodes.
+    static uint64_t epochNs();
+    // Monotonic clock in ns: used for durations, immune to clock adjustments.
+    static uint64_t steadyNs();
 
   private:
     void addThread(std::thread::id id);
@@ -83,6 +88,12 @@ class Timer {
 
     int stdoutcp;
     std::string myprogname;
+
+    // Task caliper: stamps taken when the library initializes (constructor, before
+    // main) and tears down (destructor, at exit), i.e. the traced process lifetime.
+    uint64_t _task_start_epoch_ns;
+    uint64_t _task_start_steady_ns;
+    pid_t _task_start_pid;
 };
 
 #endif /* TIMER_H */

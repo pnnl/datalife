@@ -2,3 +2,7 @@
 tags
 *.swp
 cscope.out
+
+# Python
+__pycache__/
+datalife_analyze.egg-info/
