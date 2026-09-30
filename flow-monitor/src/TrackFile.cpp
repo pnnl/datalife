@@ -509,7 +509,8 @@ off_t TrackFile::seek(off_t offset, int whence, uint32_t index) {
 }
 
 // Helper function for JSON trace output
-void write_trace_data(const std::string& filename, const std::string &data_name, TraceData& blk_trace_info, const std::string &pid, const std::string &_name, bool is_read) {
+void write_trace_data(const std::string& filename, const std::string &data_name, TraceData& blk_trace_info, const std::string &pid, const std::string &_name, bool is_read,
+                      int64_t file_size_bytes, int64_t file_alloc_bytes, const char *file_size_source) {
   if (isMonitorInternalIO()) {
       return;
   }
@@ -566,6 +567,16 @@ void write_trace_data(const std::string& filename, const std::string &data_name,
   }
   jsonOutput["access_frequency"] = accumu_access_frequency;
   jsonOutput["data_volume"] = accumu_data_volume;
+  // Authoritative file size from fstat() at close; separate from data_volume and
+  // io_blk_range, which describe this process's I/O activity, not the file.
+  if (file_size_bytes >= 0) {
+    jsonOutput["file_size_bytes"] = file_size_bytes;
+    jsonOutput["file_alloc_bytes"] = file_alloc_bytes;
+  } else {
+    jsonOutput["file_size_bytes"] = nullptr;
+    jsonOutput["file_alloc_bytes"] = nullptr;
+  }
+  jsonOutput["file_size_source"] = file_size_source;
 
 #ifdef BLK_IDX
   jsonOutput["io_blk_range"] = blk_trace_info;
@@ -604,6 +615,20 @@ void TrackFile::close() {
     close_file_end_time = high_resolution_clock::now();
     auto elapsed_time = duration_cast<seconds>(close_file_end_time - open_file_start_time);
 
+    // Capture the file's size while the descriptor is still open: monitorClose() /
+    // monitorFclose() call this before the real close(). st_size is the logical
+    // size, st_blocks*512 the allocated bytes (differs for sparse files).
+    int64_t file_size_bytes = -1;
+    int64_t file_alloc_bytes = -1;
+    const char *file_size_source = "unavailable";
+    struct stat st;
+    if (_fd_orig >= 0 && ::fstat(_fd_orig, &st) == 0) {
+        file_size_bytes = (int64_t)st.st_size;
+        file_alloc_bytes = (int64_t)st.st_blocks * 512;
+        file_size_source = "posix_fstat_at_close";
+    }
+    Timer::recordFileSize(_name, file_size_bytes, file_alloc_bytes, file_size_source);
+
     // JSON mode: write JSON trace files
     if (Config::enableJsonOutput) {
 
@@ -625,7 +650,8 @@ void TrackFile::close() {
                                    std::ref(blk_trace_info_r),
                                    pid,
                                    _name,
-                                   /*is_read=*/true);
+                                   /*is_read=*/true,
+                                   file_size_bytes, file_alloc_bytes, file_size_source);
 
         DPRINTF("Writing w blk access order stat with prefix %s\n", _filename.c_str());
         std::string file_name_trace_w = _filename + "." + pid + "-" + host_name + ".w_blk_trace.json";
@@ -638,7 +664,8 @@ void TrackFile::close() {
                                    std::ref(blk_trace_info_w),
                                    pid,
                                    _name,
-                                   /*is_read=*/false);
+                                   /*is_read=*/false,
+                                   file_size_bytes, file_alloc_bytes, file_size_source);
                                    
         // Wait for both async tasks to complete
         future_r.get();

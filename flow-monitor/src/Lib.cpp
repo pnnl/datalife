@@ -761,6 +761,11 @@ FILE *fopen64(const char *__restrict fileName, const char *__restrict modes) {
 
 int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
   DPRINTF("Lib.cpp: In monitor fclose \n");
+  // Push buffered stdio data to the descriptor first, so the size captured in
+  // TrackFile::close() (fstat while the fd is open) is the final one.
+  if (fp && unixfflush) {
+    (*unixfflush)(fp);
+  }
 #ifdef TRACKFILECHANGES
   for (auto pattern: patterns) {
     auto ret_val = fnmatch(pattern.c_str(), get_basename(file->name().c_str()), 0);

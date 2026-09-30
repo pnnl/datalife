@@ -4,6 +4,8 @@
 #include <atomic>
 #include <chrono>
 #include <fstream>
+#include <map>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <unistd.h>
@@ -65,6 +67,19 @@ class Timer {
     static uint64_t epochNs();
     // Monotonic clock in ns: used for durations, immune to clock adjustments.
     static uint64_t steadyNs();
+
+    // Authoritative size of a traced file, captured with fstat() while its descriptor
+    // is still open (TrackFile::close() runs before the real close). Kept separate
+    // from data_volume / block coverage, which measure I/O activity, not file size.
+    struct FileSizeRecord {
+        int64_t size_bytes;      // st_size, -1 if fstat failed
+        int64_t alloc_bytes;     // st_blocks * 512, -1 if fstat failed
+        std::string source;      // "posix_fstat_at_close" or "unavailable"
+        uint64_t closed_epoch_ns;
+        uint32_t closes;         // times this process closed the file; last close wins
+    };
+    static void recordFileSize(const std::string &path, int64_t size_bytes, int64_t alloc_bytes, const char *source);
+    static std::map<std::string, FileSizeRecord> fileSizes();
 
   private:
     void addThread(std::thread::id id);

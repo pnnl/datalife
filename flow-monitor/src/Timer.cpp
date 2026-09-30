@@ -137,6 +137,25 @@ Timer::~Timer() {
             {"compute_time_s", task_wall_s - io_time_s},
         };
 
+        // Final sizes of the traced files this process closed (both trace modes).
+        jsonOutput[myprogname]["files"] = nlohmann::json::object();
+        for (const auto &entry : fileSizes()) {
+            const auto &rec = entry.second;
+            nlohmann::json item = {
+                {"file_size_source", rec.source},
+                {"closed_epoch_ns", rec.closed_epoch_ns},
+                {"closes", rec.closes},
+            };
+            if (rec.size_bytes >= 0) {
+                item["file_size_bytes"] = rec.size_bytes;
+                item["file_alloc_bytes"] = rec.alloc_bytes;
+            } else {
+                item["file_size_bytes"] = nullptr;
+                item["file_alloc_bytes"] = nullptr;
+            }
+            jsonOutput[myprogname]["files"][entry.first] = item;
+        }
+
         // Ensure dataLifeOutputPath is not empty
         if (Config::dataLifeOutputPath.empty()) {
             std::cerr << "Error: DATALIFE_OUTPUT_PATH is not set!" << std::endl;
@@ -200,6 +219,8 @@ Timer::~Timer() {
                 }
             }
         }
+        for (const auto &entry : fileSizes())
+            ss << "[MONITOR] file " << entry.first << " file_size_bytes " << entry.second.size_bytes << " file_alloc_bytes " << entry.second.alloc_bytes << " file_size_source " << entry.second.source << " closes " << entry.second.closes << std::endl;
         ss << "[MONITOR] task pid " << getpid() << " host " << host_name << " wall_time_s " << task_wall_s << " io_time_s " << io_time_s << " compute_time_s " << (task_wall_s - io_time_s) << " start_epoch_ns " << _task_start_epoch_ns << " end_epoch_ns " << task_end_epoch_ns << std::endl;
         dprintf(stdoutcp, "[MONITOR] %s\n%s\n", myprogname.c_str(), ss.str().c_str());
     }
@@ -218,6 +239,34 @@ uint64_t Timer::getCurrentTime() {
     auto value = now_ms.time_since_epoch();
     uint64_t ret = value.count();
     return ret + Config::referenceTime;
+}
+
+// Heap-allocated and never freed on purpose: the Timer is destroyed from the
+// library destructor, which runs after ordinary static objects have already been
+// torn down (same reason the rest of the monitor news its global state).
+static std::map<std::string, Timer::FileSizeRecord> &fileSizeRegistry() {
+    static auto *registry = new std::map<std::string, Timer::FileSizeRecord>();
+    return *registry;
+}
+
+static std::mutex &fileSizeLock() {
+    static auto *lock = new std::mutex();
+    return *lock;
+}
+
+void Timer::recordFileSize(const std::string &path, int64_t size_bytes, int64_t alloc_bytes, const char *source) {
+    std::lock_guard<std::mutex> guard(fileSizeLock());
+    auto &rec = fileSizeRegistry()[path];
+    rec.size_bytes = size_bytes;
+    rec.alloc_bytes = alloc_bytes;
+    rec.source = source ? source : "unavailable";
+    rec.closed_epoch_ns = epochNs();
+    rec.closes += 1;
+}
+
+std::map<std::string, Timer::FileSizeRecord> Timer::fileSizes() {
+    std::lock_guard<std::mutex> guard(fileSizeLock());
+    return fileSizeRegistry();
 }
 
 uint64_t Timer::epochNs() {
