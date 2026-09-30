@@ -660,7 +660,7 @@ void TrackFile::close() {
     }
     if (write_header_r) {
         current_file_stat_r << _filename << " " << "Block no." << " " << "Frequency" << " "
-                            << "Access size in byte" << std::endl;
+                            << "Access size in byte" << '\n';
     }
 
     auto sum_weight_r = 0;
@@ -669,7 +669,7 @@ void TrackFile::close() {
         cumulative_weighted_sum_r += blk_info.second * track_file_blk_r_stat_size[_name][blk_info.first];
         sum_weight_r += blk_info.second;
         current_file_stat_r << blk_info.first << " " << blk_info.second << " "
-                            << track_file_blk_r_stat_size[_name][blk_info.first] << std::endl;
+                            << track_file_blk_r_stat_size[_name][blk_info.first] << '\n';
     }
 
     if (sum_weight_r != 0) {
@@ -689,7 +689,7 @@ void TrackFile::close() {
     }
     if (write_header_w) {
         current_file_stat_w << _filename << " " << "Block no." << " " << "Frequency" << " "
-                            << "Access size in byte" << std::endl;
+                            << "Access size in byte" << '\n';
     }
 
     auto sum_weight_w = 0;
@@ -698,7 +698,7 @@ void TrackFile::close() {
         cumulative_weighted_sum_w += blk_info.second * track_file_blk_w_stat_size[_name][blk_info.first];
         sum_weight_w += blk_info.second;
         current_file_stat_w << blk_info.first << " " << blk_info.second << " "
-                            << track_file_blk_w_stat_size[_name][blk_info.first] << std::endl;
+                            << track_file_blk_w_stat_size[_name][blk_info.first] << '\n';
     }
 
     if (sum_weight_w != 0) {
@@ -716,7 +716,7 @@ void TrackFile::close() {
     }
     auto const& blk_trace_info_r = trace_read_blk_seq[_name];
     for (auto const& blk_ : blk_trace_info_r) {
-        current_file_trace_r << blk_ << std::endl;
+        current_file_trace_r << blk_ << '\n';
     }
 
     // Write write block access order stats
@@ -729,7 +729,7 @@ void TrackFile::close() {
     }
     auto const& blk_trace_info_w = trace_write_blk_seq[_name];
     for (auto const& blk_ : blk_trace_info_w) {
-        current_file_trace_w << blk_ << std::endl;
+        current_file_trace_w << blk_ << '\n';
     }
     } // end if (!Config::enableJsonOutput)
 #endif
