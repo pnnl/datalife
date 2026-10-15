@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <fnmatch.h>
+#include <pthread.h>
 #include <limits.h>
 #include <errno.h>
 #include <unordered_map>
@@ -33,6 +34,7 @@
 #include "MonitorFile.h"
 #include "MonitorFileDescriptor.h"
 #include "MonitorFileStream.h"
+#include "MonitorPathPolicy.h"
 #include "Timer.h"
 #include "Trackable.h"
 #include "UnixIO.h"
@@ -79,6 +81,14 @@ public:
   }
 };
 
+// pthread_atfork child handler.
+static void monitorForkChild(void) {
+    if (timer) {
+        timer->resetAfterFork();
+    }
+    trackFileForkChildReset();
+}
+
 void __attribute__((constructor)) monitorInit(void) {
     // // std::cout << "Lip.cpp: " << "monitorInit(void)" << std::endl;
     DPRINTF("Lip.cpp: monitorInit(void)\n");
@@ -86,6 +96,8 @@ void __attribute__((constructor)) monitorInit(void) {
 
     std::call_once(log_flag, []() {
         timer = new Timer();
+        // Keep a forked child from reporting the parent's I/O as its own.
+        pthread_atfork(nullptr, nullptr, monitorForkChild);
 
         timer->start();
         Loggable::mtx_cout = new std::mutex();
@@ -166,6 +178,7 @@ void __attribute__((constructor)) monitorInit(void) {
         if (unsetLib){
             unsetenv("LD_PRELOAD");
         }
+
 
         timer->end(Timer::MetricType::monitor, Timer::Metric::constructor);
         //*InputFile::_time_of_last_read = std::chrono::high_resolution_clock::now();
@@ -293,10 +306,20 @@ int open(const char *pathname, int flags, ...) {
     DPRINTF("Lib.cpp: Open %s: \n", pathname);
 
     int mode = 0;
-    va_list arg;
-    va_start(arg, flags);
-    mode = va_arg(arg, int);
-    va_end(arg);
+    if ((flags & O_CREAT)
+#ifdef O_TMPFILE
+        || ((flags & O_TMPFILE) == O_TMPFILE)
+#endif
+    ) {
+        va_list arg;
+        va_start(arg, flags);
+        mode = va_arg(arg, int);
+        va_end(arg);
+    }
+
+    if (isMonitorInternalIO() || isMonitorOwnedPath(pathname, Config::dataLifeOutputPath)) {
+        return (*unixopen)(pathname, flags, mode);
+    }
 
     Timer::Metric metric = (flags & O_WRONLY || flags & O_RDWR) ? Timer::Metric::out_open : Timer::Metric::in_open;
 
@@ -305,6 +328,7 @@ int open(const char *pathname, int flags, ...) {
         if (fnmatch(pattern.c_str(), get_basename(pathname), 0) == 0) {
             DPRINTF("Lib.cpp: open() Firing off trackFileOpen for %s\n", pathname);
             int fd = outerWrapper("open", pathname, metric, trackFileOpen, unixopen, pathname, flags, mode);
+
 
             if (fd >= 0) {
                 // Track the fd and pathname
@@ -334,24 +358,29 @@ int open(const char *pathname, int flags, ...) {
 
 int open64(const char *pathname, int flags, ...) {
     DPRINTF("Lib.cpp: Open64 %s: \n", pathname);
-    // // std::cout << "Lib.cpp: Open64(): " << pathname << std::endl;
 
     int mode = 0;
-    va_list arg;
-    va_start(arg, flags);
-    mode = va_arg(arg, int);
-    va_end(arg);
+    if ((flags & O_CREAT)
+#ifdef O_TMPFILE
+        || ((flags & O_TMPFILE) == O_TMPFILE)
+#endif
+    ) {
+        va_list arg;
+        va_start(arg, flags);
+        mode = va_arg(arg, int);
+        va_end(arg);
+    }
+
+    if (isMonitorInternalIO() || isMonitorOwnedPath(pathname, Config::dataLifeOutputPath)) {
+        return (*unixopen64)(pathname, flags, mode);
+    }
 
     Timer::Metric metric = (flags & O_WRONLY || flags & O_RDWR) ? Timer::Metric::out_open : Timer::Metric::in_open;
 
     // Check if the file matches any pattern
     for (auto pattern : patterns) {
-        // // std::cout << "Lib.cpp: open64() checking pattern: " << pattern << " of pathname: " << pathname << std::endl;
         if (fnmatch(pattern.c_str(), get_basename(pathname), 0) == 0) {
-            // std::cout << "Lib.cpp: open64() Firing off trackFileOpen for " << pathname << std::endl;
-            
             int fd = outerWrapper("open64", pathname, metric, trackFileOpen, unixopen64, pathname, flags, mode);
-            // std::cout << "Lib.cpp: open64() outerWrapper returned fd: " << fd << std::endl;
 
             if (fd >= 0) {
                 // Track the fd and pathname
@@ -359,7 +388,6 @@ int open64(const char *pathname, int flags, ...) {
                 fdToFileMap[fd] = std::string(pathname);
             } else {
                 DPRINTF("Lib.cpp: trackFileOpen failed for %s\n", pathname);
-                // std::cout << "Lib.cpp: trackFileOpen failed for " << pathname << std::endl;
             }
             return fd;
         }
@@ -380,15 +408,16 @@ int open64(const char *pathname, int flags, ...) {
     return fd;
 }
 
-int monitorOpenat(std::string name, std::string metaName, MonitorFile::Type type, 
+
+int monitorOpenat(std::string name, std::string metaName, MonitorFile::Type type,
 		int dirfd, const char *pathname, int flags, int mode) {
-  return (*unixopenat)(dirfd, name.c_str(), flags);
+  return (*unixopenat)(dirfd, name.c_str(), flags, mode);
 }
 
 int trackFileOpenat(std::string name, std::string metaName, MonitorFile::Type type, 
 		    int dirfd, const char *pathname, int flags, int mode) {
   DPRINTF("Lib.cpp: trackfileOpenat: %s %s %u\n", name.c_str(), metaName.c_str(), type);
-  auto fd = (*unixopenat)(dirfd, name.c_str(), flags);
+  auto fd = (*unixopenat)(dirfd, name.c_str(), flags, mode);
   if (fd > 0) {  
     MonitorFile *file = MonitorFile::addNewMonitorFile(type, name, name, fd, true);
     if (file) {
@@ -403,10 +432,20 @@ int trackFileOpenat(std::string name, std::string metaName, MonitorFile::Type ty
 
 int openat(int dirfd, const char *pathname, int flags, ...) {
   int mode = 0;
-  va_list arg;
-  va_start(arg, flags);
-  mode = va_arg(arg, int);
-  va_end(arg);
+  if ((flags & O_CREAT)
+#ifdef O_TMPFILE
+      || ((flags & O_TMPFILE) == O_TMPFILE)
+#endif
+  ) {
+    va_list arg;
+    va_start(arg, flags);
+    mode = va_arg(arg, int);
+    va_end(arg);
+  }
+
+  if (isMonitorInternalIO() || isMonitorOwnedPathAt(dirfd, pathname, Config::dataLifeOutputPath)) {
+    return (*unixopenat)(dirfd, pathname, flags, mode);
+  }
   
   Timer::Metric metric = (flags & O_WRONLY || flags & O_RDWR) ? 
     Timer::Metric::out_open : Timer::Metric::in_open;
@@ -693,6 +732,9 @@ FILE *monitorFopen(std::string name, std::string metaName, MonitorFile::Type typ
 
 FILE *fopen(const char *__restrict fileName, const char *__restrict modes) {
   DPRINTF("Lib.cpp: Calling fopen on %s \n", fileName);  
+  if (isMonitorInternalIO() || isMonitorOwnedPath(fileName, Config::dataLifeOutputPath)) {
+    return (*unixfopen)(fileName, modes);
+  }
   Timer::Metric metric = (modes[0] == 'r') ? Timer::Metric::in_fopen : Timer::Metric::out_fopen;
 
   for (auto pattern: patterns) {
@@ -709,6 +751,9 @@ FILE *fopen(const char *__restrict fileName, const char *__restrict modes) {
 
 FILE *fopen64(const char *__restrict fileName, const char *__restrict modes) {
   DPRINTF("Lib.cpp: Calling fopen64 on %s \n", fileName);  
+  if (isMonitorInternalIO() || isMonitorOwnedPath(fileName, Config::dataLifeOutputPath)) {
+    return (*unixfopen64)(fileName, modes);
+  }
   Timer::Metric metric = (modes[0] == 'r') ? Timer::Metric::in_fopen : Timer::Metric::out_fopen;
 
   for (auto pattern: patterns) {
@@ -727,6 +772,11 @@ FILE *fopen64(const char *__restrict fileName, const char *__restrict modes) {
 
 int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
   DPRINTF("Lib.cpp: In monitor fclose \n");
+  // Push buffered stdio data to the descriptor first, so the size captured in
+  // TrackFile::close() (fstat while the fd is open) is the final one.
+  if (fp && unixfflush) {
+    (*unixfflush)(fp);
+  }
 #ifdef TRACKFILECHANGES
   for (auto pattern: patterns) {
     auto ret_val = fnmatch(pattern.c_str(), get_basename(file->name().c_str()), 0);
@@ -757,20 +807,8 @@ size_t monitorFread(MonitorFile *file, unsigned int pos, int fd, void *__restric
     auto items_read = (*unixfread)(ptr, size, n, fp);
     auto read_bytes = items_read * size;
 
-    // // Update the timer with the number of bytes read
-    // timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, read_bytes);
-
-    // if (read_bytes >= size){return n;}
-    // else return (size_t) (size / n) ;
-
     // Update the timer with the number of bytes read
     timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, read_bytes);
-
-    // long new_pos = (*unixftell)(fp);
-    // if (new_pos >= 0) {
-    //     file->setFilePos(pos, new_pos);
-
-    // }
 
     // Track for JSON tracing (if file is TrackFile)
     if (read_bytes > 0) {
@@ -804,19 +842,6 @@ size_t monitorFwrite(MonitorFile *file, unsigned int pos, int fd, const void *__
 
     // Update the timer with the number of bytes written
     timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, written_bytes);
-
-    // if (written_bytes >= size) return n;
-    // else return (size_t) (size / n);
-
-    // if (written_bytes >= (ssize_t)(size * n)) {
-    //     return n;
-    // }
-    // return (size > 0 && written_bytes > 0) ? (size_t)(written_bytes / size) : 0;
-
-    // long new_pos = (*unixftell)(fp);
-    // if (new_pos >= 0) {
-    //     file->setFilePos(pos, new_pos);
-    // }
 
     // Track for JSON tracing (if file is TrackFile)
     if (written_bytes > 0) {
@@ -1166,4 +1191,3 @@ ssize_t pwrite64(int fd, const void *buf, size_t count, off64_t offset) {
                             monitorPwrite64, unixpwrite64, fd, buf, count, offset);
     return ret;
 }
-

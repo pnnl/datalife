@@ -13,6 +13,7 @@
 
 SET(MONITOR_INC_DIR ${MONITOR_INC_DIR})
 set(MONITOR_HEADERS
+    ${MONITOR_INC_DIR}/MonitorPathPolicy.h
     ${MONITOR_INC_DIR}/TrackFile.h
     ${MONITOR_INC_DIR}/AtomicHelper.h
     ${MONITOR_INC_DIR}/FcntlReaderWriterLock.h
@@ -43,6 +44,7 @@ set(MONITOR_HEADERS
     ${MONITOR_INC_DIR}/ConnectionPool.h
     ${MONITOR_INC_DIR}/Message.h
     ${MONITOR_INC_DIR}/ReaderWriterLock.h
+    ${MONITOR_INC_DIR}/SpinLock.h
     ${MONITOR_INC_DIR}/DeltaPrefetcher.h
     ${MONITOR_INC_DIR}/NetworkCache.h
     ${MONITOR_INC_DIR}/lz4.h
@@ -59,6 +61,7 @@ set(MONITOR_FILES
     #OutputFile.cpp
     #LocalFile.cpp
     TrackFile.cpp
+    MonitorPathPolicy.cpp
     MonitorFileStream.cpp
     CacheStats.cpp
     Lib.cpp
