@@ -64,6 +64,12 @@ Timer::Timer() {
     stdoutcp = dup(1);
     myprogname = __progname;
     _thread_timers = new std::unordered_map<std::thread::id, Timer::ThreadMetric*>;
+    _lock = new ReaderWriterLock();
+
+    _io_busy_lock = new SpinLock();
+    _io_inflight = 0;
+    _io_busy_start_ns = 0;
+    _io_busy_ns = 0;
 
     // Task caliper start: the Timer is created in the library constructor.
     _task_start_epoch_ns = epochNs();
@@ -75,8 +81,15 @@ Timer::~Timer() {
     // Task caliper end: the Timer is deleted in the library destructor.
     const uint64_t task_end_epoch_ns = epochNs();
     const double task_wall_s = (steadyNs() - _task_start_steady_ns) / billion;
-    // Total time spent inside intercepted I/O calls, all categories, excluding the
-    // library's own constructor/destructor bookkeeping and the dummy offset entry.
+    uint64_t io_busy_ns = 0;
+    {
+        std::lock_guard<SpinLock> busy_guard(*_io_busy_lock);
+        io_busy_ns = _io_busy_ns;
+    }
+    const double io_busy_s = io_busy_ns / billion;
+    const double compute_time_s = task_wall_s - io_busy_s;
+    // Per-call I/O time summed over all threads (excludes constructor/destructor/dummy);
+    // exceeds wall time under concurrent I/O, hence compute time uses io_busy_s instead.
     double io_time_s = 0.0;
     uint64_t io_calls = 0;
     for (int i = 0; i < lastMetric; i++) {
@@ -89,9 +102,9 @@ Timer::~Timer() {
     }
     char hostname[256];
     std::string host_name = (gethostname(hostname, sizeof(hostname)) == 0) ? hostname : "unknown_host";
-    const bool task_name_set = !Config::task_name_env.empty() && Config::task_name_env != "task_name";
 
 #ifdef TIMER_JSON
+    const bool task_name_set = !Config::task_name_env.empty() && Config::task_name_env != "task_name";
     std::unordered_map<std::thread::id, Timer::ThreadMetric*>::iterator itor;
     if (Config::printStats) {
         nlohmann::json jsonOutput;
@@ -122,10 +135,10 @@ Timer::~Timer() {
                 }
             }
         }
-        // Task caliper block: process lifetime and the I/O total to subtract from it.
+        // Task caliper block. start_pid is the parent's pid in a forked child.
         jsonOutput[myprogname]["task"] = {
             {"pid", (int64_t)getpid()},
-            {"start_pid", (int64_t)_task_start_pid},           // differs from pid in a forked child
+            {"start_pid", (int64_t)_task_start_pid},
             {"hostname", host_name},
             {"program", myprogname},
             {"task_name", task_name_set ? Config::task_name_env : ""},
@@ -133,8 +146,9 @@ Timer::~Timer() {
             {"end_epoch_ns", task_end_epoch_ns},
             {"wall_time_s", task_wall_s},
             {"io_time_s", io_time_s},
+            {"io_busy_time_s", io_busy_s},
             {"io_calls", io_calls},
-            {"compute_time_s", task_wall_s - io_time_s},
+            {"compute_time_s", compute_time_s},
         };
 
         // Final sizes of the traced files this process closed (both trace modes).
@@ -196,6 +210,8 @@ Timer::~Timer() {
         delete itor->second;
     }
     delete _thread_timers;
+    delete _lock;
+    delete _io_busy_lock;
 
 #else
 
@@ -221,7 +237,7 @@ Timer::~Timer() {
         }
         for (const auto &entry : fileSizes())
             ss << "[MONITOR] file " << entry.first << " file_size_bytes " << entry.second.size_bytes << " file_alloc_bytes " << entry.second.alloc_bytes << " file_size_source " << entry.second.source << " closes " << entry.second.closes << std::endl;
-        ss << "[MONITOR] task pid " << getpid() << " host " << host_name << " wall_time_s " << task_wall_s << " io_time_s " << io_time_s << " compute_time_s " << (task_wall_s - io_time_s) << " start_epoch_ns " << _task_start_epoch_ns << " end_epoch_ns " << task_end_epoch_ns << std::endl;
+        ss << "[MONITOR] task pid " << getpid() << " start_pid " << _task_start_pid << " host " << host_name << " wall_time_s " << task_wall_s << " io_time_s " << io_time_s << " io_busy_time_s " << io_busy_s << " compute_time_s " << compute_time_s << " start_epoch_ns " << _task_start_epoch_ns << " end_epoch_ns " << task_end_epoch_ns << std::endl;
         dprintf(stdoutcp, "[MONITOR] %s\n%s\n", myprogname.c_str(), ss.str().c_str());
     }
     
@@ -229,6 +245,8 @@ Timer::~Timer() {
         delete itor->second;
     }
     delete _thread_timers;
+    delete _lock;
+    delete _io_busy_lock;
 
 #endif
 }
@@ -241,17 +259,48 @@ uint64_t Timer::getCurrentTime() {
     return ret + Config::referenceTime;
 }
 
-// Heap-allocated and never freed on purpose: the Timer is destroyed from the
-// library destructor, which runs after ordinary static objects have already been
-// torn down (same reason the rest of the monitor news its global state).
+// Heap-allocated and never freed: the Timer is destroyed after ordinary statics are
+// gone. Replaced wholesale in a forked child (resetAfterFork()).
+static std::map<std::string, Timer::FileSizeRecord> *fileSizeRegistryPtr = nullptr;
+static std::mutex *fileSizeLockPtr = nullptr;
+
 static std::map<std::string, Timer::FileSizeRecord> &fileSizeRegistry() {
-    static auto *registry = new std::map<std::string, Timer::FileSizeRecord>();
-    return *registry;
+    if (!fileSizeRegistryPtr)
+        fileSizeRegistryPtr = new std::map<std::string, Timer::FileSizeRecord>();
+    return *fileSizeRegistryPtr;
 }
 
 static std::mutex &fileSizeLock() {
-    static auto *lock = new std::mutex();
-    return *lock;
+    if (!fileSizeLockPtr)
+        fileSizeLockPtr = new std::mutex();
+    return *fileSizeLockPtr;
+}
+
+void Timer::resetAfterFork() {
+    // Single-threaded here; locks may be held by threads that no longer exist, so
+    // replace them (leaking the old ones) rather than acquire them.
+    fileSizeLockPtr = new std::mutex();
+    fileSizeRegistryPtr = new std::map<std::string, FileSizeRecord>();
+
+    _lock = new ReaderWriterLock();
+    _thread_timers = new std::unordered_map<std::thread::id, Timer::ThreadMetric*>;
+
+    for (int i = 0; i < lastMetric; i++) {
+        for (int j = 0; j < last; j++) {
+            _time[i][j] = 0;
+            _cnt[i][j] = 0;
+            _amt[i][j] = 0;
+        }
+    }
+
+    _io_busy_lock = new SpinLock();
+    _io_inflight = 0;
+    _io_busy_start_ns = 0;
+    _io_busy_ns = 0;
+
+    // Caliper restarts at the fork; _task_start_pid keeps the parent's pid.
+    _task_start_epoch_ns = epochNs();
+    _task_start_steady_ns = steadyNs();
 }
 
 void Timer::recordFileSize(const std::string &path, int64_t size_bytes, int64_t alloc_bytes, const char *source) {
@@ -290,23 +339,47 @@ int64_t Timer::getTimestamp() {
     return (int64_t)std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 }
 
+void Timer::ioBusyBegin() {
+    std::lock_guard<SpinLock> busy_guard(*_io_busy_lock);
+    if (_io_inflight++ == 0) {
+        _io_busy_start_ns = steadyNs();
+    }
+}
+
+void Timer::ioBusyEnd(Metric metric) {
+    std::lock_guard<SpinLock> busy_guard(*_io_busy_lock);
+    if (_io_inflight == 0) {
+        return; // unbalanced end(); never underflow
+    }
+    if (--_io_inflight == 0) {
+        // Not I/O; excluded as in io_time_s.
+        if (metric != constructor && metric != destructor && metric != dummy) {
+            const uint64_t now = steadyNs();
+            if (now > _io_busy_start_ns)
+                _io_busy_ns += now - _io_busy_start_ns;
+        }
+    }
+}
+
 void Timer::start() {
-    if (!_depth)
+    if (!_depth) {
         _current = getCurrentTime();
+        ioBusyBegin();
+    }
     _depth++;
 
     if (Config::ThreadStats){
         auto id = std::this_thread::get_id();
-        _lock.readerLock();
+        _lock->readerLock();
         if (_thread_timers->find(id) == _thread_timers->end()){
-            _lock.readerUnlock();
+            _lock->readerUnlock();
             addThread(id);
-            _lock.readerLock();
+            _lock->readerLock();
         }
         if (!(*_thread_timers)[id]->depth->load(std::memory_order_relaxed))
             (*_thread_timers)[id]->current->store(getCurrentTime(), std::memory_order_relaxed);
         (*_thread_timers)[id]->depth->fetch_add(1, std::memory_order_relaxed);
-        _lock.readerUnlock();
+        _lock->readerUnlock();
     }
 }
 
@@ -314,15 +387,16 @@ void Timer::end(MetricType type, Metric metric) {
     if (_depth == 1) {
         _time[type][metric] += getCurrentTime() - _current;
         _cnt[type][metric]++;
+        ioBusyEnd(metric);
     }
     _depth--;
     if (Config::ThreadStats){
         auto id = std::this_thread::get_id();
-        _lock.readerLock();
+        _lock->readerLock();
         if (_thread_timers->find(id) == _thread_timers->end()){
-            _lock.readerUnlock();
+            _lock->readerUnlock();
             addThread(id);
-            _lock.readerLock();
+            _lock->readerLock();
         }
         if ((*_thread_timers)[id]->depth->load(std::memory_order_relaxed) == 1) {
             uint64_t x = getCurrentTime() - (*_thread_timers)[id]->current->load(std::memory_order_relaxed);
@@ -330,7 +404,7 @@ void Timer::end(MetricType type, Metric metric) {
             (*_thread_timers)[id]->cnt[type][metric]->fetch_add(1, std::memory_order_relaxed);
         }
         (*_thread_timers)[id]->depth->fetch_sub(1, std::memory_order_relaxed);
-        _lock.readerUnlock();
+        _lock->readerUnlock();
     }
 
     
@@ -343,14 +417,14 @@ void Timer::addAmt(MetricType type, Metric metric, uint64_t amt) {
     _amt[type][metric] += amt;
     if (Config::ThreadStats){
         auto id = std::this_thread::get_id();
-        _lock.readerLock();
+        _lock->readerLock();
         if (_thread_timers->find(id) == _thread_timers->end()){
-            _lock.readerUnlock();
+            _lock->readerUnlock();
             addThread(id);
-            _lock.readerLock();
+            _lock->readerLock();
         }
         (*_thread_timers)[id]->amt[type][metric]->fetch_add(amt, std::memory_order_relaxed);
-        _lock.readerUnlock();
+        _lock->readerUnlock();
     }
 }
 
@@ -375,16 +449,16 @@ void Timer::addAmt(MetricType type, Metric metric, uint64_t amt) {
 
 void Timer::addThread(std::thread::id id) {
     //(*_thread_timers)[id] = *(new Timer::ThreadMetric());
-    _lock.writerLock();
+    _lock->writerLock();
     (*_thread_timers)[id] = new Timer::ThreadMetric();
-    _lock.writerUnlock();
+    _lock->writerUnlock();
     // std::cout <<"adding timer thread id "<<id<<std::endl;
 }
 
 // bool Timer::checkThread(std::thread::id id, bool addIfNotFound) {
-//     _lock.readerLock();
+//     _lock->readerLock();
 //     bool ret = (_thread_timers->find(id) != _thread_timers->end());
-//     _lock.readerUnlock();
+//     _lock->readerUnlock();
     
 //     if (!ret && addIfNotFound)
 //         addThread(id);

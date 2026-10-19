@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <fnmatch.h>
+#include <pthread.h>
 #include <limits.h>
 #include <errno.h>
 #include <unordered_map>
@@ -80,6 +81,14 @@ public:
   }
 };
 
+// pthread_atfork child handler.
+static void monitorForkChild(void) {
+    if (timer) {
+        timer->resetAfterFork();
+    }
+    trackFileForkChildReset();
+}
+
 void __attribute__((constructor)) monitorInit(void) {
     // // std::cout << "Lip.cpp: " << "monitorInit(void)" << std::endl;
     DPRINTF("Lip.cpp: monitorInit(void)\n");
@@ -87,6 +96,8 @@ void __attribute__((constructor)) monitorInit(void) {
 
     std::call_once(log_flag, []() {
         timer = new Timer();
+        // Keep a forked child from reporting the parent's I/O as its own.
+        pthread_atfork(nullptr, nullptr, monitorForkChild);
 
         timer->start();
         Loggable::mtx_cout = new std::mutex();

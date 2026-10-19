@@ -51,6 +51,25 @@ using namespace std::chrono;
 // #define ENABLE_TRACE 1
 // #define WRITE_STAT_EACH 0
 
+static SpinLock *trackFileStatLockPtr = nullptr;
+
+SpinLock &trackFileStatLock() {
+    if (!trackFileStatLockPtr)
+        trackFileStatLockPtr = new SpinLock();
+    return *trackFileStatLockPtr;
+}
+
+void trackFileForkChildReset() {
+    // May be held by a thread that does not exist in the child; replace, don't acquire.
+    trackFileStatLockPtr = new SpinLock();
+}
+
+// Locked map lookup; the returned reference stays valid (unordered_map never moves elements).
+static TraceData &traceEntry(std::unordered_map<std::string, TraceData> &traces, const std::string &key) {
+    std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
+    return traces[key];
+}
+
 // Helper function to extract basename from a path
 inline std::string get_basename_str(const std::string& path) {
     size_t pos = path.rfind('/');
@@ -81,6 +100,8 @@ TrackFile::~TrackFile() {
 
 void TrackFile::open() {
   DPRINTF("[MONITOR] TrackFile open: %s\n", _name.c_str()) ;
+  // Inserts into the shared maps while other threads may be looking them up.
+  std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
   // #if 0
   // _closed = false;
 
@@ -151,6 +172,9 @@ ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
     total_time_spent_read += duration_cast<seconds>(high_resolution_clock::now() - start_time);
 
     DPRINTF("bytes_read: %ld _fd_orig: %d _name: %s\n", bytes_read, _fd_orig, _name.c_str());
+
+    { // shared bookkeeping, after the syscall
+    std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
 
     // JSON mode: track block access patterns
     if (Config::enableJsonOutput) {
@@ -258,6 +282,7 @@ ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
         }
     }
 #endif
+    } // end stat_guard scope
 
     if (bytes_read != -1) {
         DPRINTF("Successfully read the TrackFile\n");
@@ -319,6 +344,9 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index, off_t of
     total_time_spent_write += duration_cast<seconds>(end_time - start_time);
 
     DPRINTF("Bytes written: %ld, FD: %d, File: %s\n", bytes_written, _fd_orig, _name.c_str());
+
+    { // shared bookkeeping, after the syscall
+    std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
 
     // JSON mode: track block access patterns
     if (Config::enableJsonOutput) {
@@ -419,6 +447,7 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index, off_t of
         }
     }
 #endif
+    } // end stat_guard scope
 
     if (bytes_written > 0 && offset < 0) {
         // Update file position tracking only for sequential writes
@@ -433,6 +462,7 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index, off_t of
 int TrackFile::vfprintf(unsigned int pos, int count) {
   DPRINTF("In trackfile vfprintf\n");
 #ifdef GATHERSTAT
+  std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
   if (count > -1) {
     auto diff = _filePos[pos]; //  - _filePos[0];
     auto precNumBlocks = diff / _blkSize;
@@ -540,13 +570,16 @@ void write_trace_data(const std::string& filename, const std::string &data_name,
 
   DPRINTF("write_trace_data(): writing to %s", fullPath.c_str());
 
+  nlohmann::json jsonOutput;
+  { // read and clear shared trace state under the lock; write the file without it
+  std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
+
   if (blk_trace_info.empty()) {
       DPRINTF("write_trace_data(): blk_trace_info is empty");
       return;  // Do nothing if blk_trace_info is empty
   }
 
   // Create JSON object
-  nlohmann::json jsonOutput;
   jsonOutput["file_name"] = actualDataName;
   jsonOutput["task_name"] = getenv("DATALIFE_TASK_NAME") ? std::string(getenv("DATALIFE_TASK_NAME")) : "task_name";
   jsonOutput["pid"] = pid;
@@ -590,6 +623,7 @@ void write_trace_data(const std::string& filename, const std::string &data_name,
 
   // Clear the vector after creating JSON object
   blk_trace_info.clear();
+  } // end stat_guard scope
 
   // Write the JSON object to the new file location
   std::ofstream file(fullPath, std::ios::out | std::ios::trunc); // Overwrite file
@@ -642,7 +676,7 @@ void TrackFile::close() {
         DPRINTF("Writing r blk access order stat with prefix %s\n", _filename.c_str());
         std::string file_name_trace_r = _filename + "." + pid + "-" + host_name + ".r_blk_trace.json";
 
-        auto& blk_trace_info_r = trace_read_blk_order[_filename];
+        auto& blk_trace_info_r = traceEntry(trace_read_blk_order, _filename);
         auto future_r = std::async(std::launch::async,
                                    write_trace_data,
                                    file_name_trace_r,
@@ -656,7 +690,7 @@ void TrackFile::close() {
         DPRINTF("Writing w blk access order stat with prefix %s\n", _filename.c_str());
         std::string file_name_trace_w = _filename + "." + pid + "-" + host_name + ".w_blk_trace.json";
 
-        auto& blk_trace_info_w = trace_write_blk_order[_filename];
+        auto& blk_trace_info_w = traceEntry(trace_write_blk_order, _filename);
         auto future_w = std::async(std::launch::async,
                                    write_trace_data,
                                    file_name_trace_w,
@@ -675,6 +709,24 @@ void TrackFile::close() {
 #ifdef GATHERSTAT
     // Original stat output mode (non-JSON)
     if (!Config::enableJsonOutput) {
+    // Snapshot under the stat lock, write with it released: the stream writes go
+    // through the interposed write() and take vLock, which readers hold while
+    // waiting for the stat lock.
+    std::map<int, int64_t> r_stat, r_stat_size, w_stat, w_stat_size;
+    std::vector<int> blk_trace_info_r, blk_trace_info_w;
+    {
+        std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
+        for (auto const& blk_info : track_file_blk_r_stat[_name])
+            r_stat[blk_info.first] = blk_info.second.load();
+        for (auto const& blk_info : track_file_blk_r_stat_size[_name])
+            r_stat_size[blk_info.first] = blk_info.second.load();
+        for (auto const& blk_info : track_file_blk_w_stat[_name])
+            w_stat[blk_info.first] = blk_info.second.load();
+        for (auto const& blk_info : track_file_blk_w_stat_size[_name])
+            w_stat_size[blk_info.first] = blk_info.second.load();
+        blk_trace_info_r = trace_read_blk_seq[_name];
+        blk_trace_info_w = trace_write_blk_seq[_name];
+    }
         // Write read block access stats
         DPRINTF("Writing r blk access stat\n");
     std::fstream current_file_stat_r;
@@ -692,11 +744,11 @@ void TrackFile::close() {
 
     auto sum_weight_r = 0;
     auto cumulative_weighted_sum_r = 0;
-    for (auto& blk_info : track_file_blk_r_stat[_name]) {
-        cumulative_weighted_sum_r += blk_info.second * track_file_blk_r_stat_size[_name][blk_info.first];
+    for (auto& blk_info : r_stat) {
+        cumulative_weighted_sum_r += blk_info.second * r_stat_size[blk_info.first];
         sum_weight_r += blk_info.second;
         current_file_stat_r << blk_info.first << " " << blk_info.second << " "
-                            << track_file_blk_r_stat_size[_name][blk_info.first] << '\n';
+                            << r_stat_size[blk_info.first] << '\n';
     }
 
     if (sum_weight_r != 0) {
@@ -721,11 +773,11 @@ void TrackFile::close() {
 
     auto sum_weight_w = 0;
     auto cumulative_weighted_sum_w = 0;
-    for (auto& blk_info : track_file_blk_w_stat[_name]) {
-        cumulative_weighted_sum_w += blk_info.second * track_file_blk_w_stat_size[_name][blk_info.first];
+    for (auto& blk_info : w_stat) {
+        cumulative_weighted_sum_w += blk_info.second * w_stat_size[blk_info.first];
         sum_weight_w += blk_info.second;
         current_file_stat_w << blk_info.first << " " << blk_info.second << " "
-                            << track_file_blk_w_stat_size[_name][blk_info.first] << '\n';
+                            << w_stat_size[blk_info.first] << '\n';
     }
 
     if (sum_weight_w != 0) {
@@ -741,7 +793,6 @@ void TrackFile::close() {
     if (!current_file_trace_r) {
         DPRINTF("File for read trace stat collection not created!");
     }
-    auto const& blk_trace_info_r = trace_read_blk_seq[_name];
     for (auto const& blk_ : blk_trace_info_r) {
         current_file_trace_r << blk_ << '\n';
     }
@@ -754,7 +805,6 @@ void TrackFile::close() {
     if (!current_file_trace_w) {
         DPRINTF("File for write trace stat collection not created!");
     }
-    auto const& blk_trace_info_w = trace_write_blk_seq[_name];
     for (auto const& blk_ : blk_trace_info_w) {
         current_file_trace_w << blk_ << '\n';
     }
@@ -769,6 +819,8 @@ void TrackFile::trackRead(size_t count, uint32_t index, off_t filePos) {
 
     // Update file position
     _filePos[index] = filePos;
+
+    std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
 
     // JSON mode: track block access patterns
     if (Config::enableJsonOutput) {
@@ -859,6 +911,8 @@ void TrackFile::trackWrite(size_t count, uint32_t index, off_t filePos) {
 
     // Update file position
     _filePos[index] = filePos;
+
+    std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
 
     // JSON mode: track block access patterns
     if (Config::enableJsonOutput) {

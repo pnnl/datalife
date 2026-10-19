@@ -44,6 +44,7 @@ set(MONITOR_HEADERS
     ${MONITOR_INC_DIR}/ConnectionPool.h
     ${MONITOR_INC_DIR}/Message.h
     ${MONITOR_INC_DIR}/ReaderWriterLock.h
+    ${MONITOR_INC_DIR}/SpinLock.h
     ${MONITOR_INC_DIR}/DeltaPrefetcher.h
     ${MONITOR_INC_DIR}/NetworkCache.h
     ${MONITOR_INC_DIR}/lz4.h

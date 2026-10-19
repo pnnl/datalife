@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "ReaderWriterLock.h"
+#include "SpinLock.h"
 
 class Timer {
   public:
@@ -81,6 +82,9 @@ class Timer {
     static void recordFileSize(const std::string &path, int64_t size_bytes, int64_t alloc_bytes, const char *source);
     static std::map<std::string, FileSizeRecord> fileSizes();
 
+    // pthread_atfork child handler: drop inherited counters/registry, restart the caliper.
+    void resetAfterFork();
+
   private:
     void addThread(std::thread::id id);
     class ThreadMetric {
@@ -99,16 +103,24 @@ class Timer {
     uint64_t _time[Timer::MetricType::lastMetric][Timer::Metric::last];
     uint64_t _cnt[Timer::MetricType::lastMetric][Timer::Metric::last];
     uint64_t _amt[Timer::MetricType::lastMetric][Timer::Metric::last];
-    ReaderWriterLock _lock;
+    ReaderWriterLock *_lock; // heap-allocated so resetAfterFork() can replace it
 
     int stdoutcp;
     std::string myprogname;
 
-    // Task caliper: stamps taken when the library initializes (constructor, before
-    // main) and tears down (destructor, at exit), i.e. the traced process lifetime.
+    // Task caliper: library init to library teardown (restarted at fork in a child).
     uint64_t _task_start_epoch_ns;
     uint64_t _task_start_steady_ns;
     pid_t _task_start_pid;
+
+    // I/O busy time: wall-clock time with >= 1 thread inside an intercepted call
+    // (union of intervals, unlike _time which sums per call across threads).
+    SpinLock *_io_busy_lock;
+    uint32_t _io_inflight;
+    uint64_t _io_busy_start_ns;
+    uint64_t _io_busy_ns;
+    void ioBusyBegin();
+    void ioBusyEnd(Metric metric);
 };
 
 #endif /* TIMER_H */

@@ -6,8 +6,7 @@ DataLife
 =============================================================================
 
 **Home**:
-  - [DataLife](https://github.com/pnnl/DataLife),
-    part of [DataFlowDrs](https://github.com/pnnl/DataFlowDrs)
+  - [DataLife](https://github.com/pnnl/DataLife), part of [DataFlowDrs](https://github.com/pnnl/DataFlowDrs)
   
   - [Performance Lab for EXtreme Computing and daTa](https://github.com/PerfLab-EXaCT)
 
@@ -61,13 +60,25 @@ bottleneck estimator provides several analyses and visualizations to
 identify and rank opportunities for improving task and data placement
 and resource assignment.
 
+------------------------------------------------------------------------------
+
+# Getting Started
+
+See: [README-Install.txt](/README-Install.txt)
+
+
+------------------------------------------------------------------------------
+
+## Contacts
 
 **Contacts**: (_firstname_._lastname_@pnnl.gov)
   - Nathan R. Tallent ([www](https://nathantallent.github.io))
   - Lenny Guo ([www](https://www.pnnl.gov/people/luanzheng-guo))
   - Jesun Firoz ([www](https://www.pnnl.gov/people/jesun-firoz))
+  - Md Hasanur Rashid ([www](https://www.linkedin.com/in/hasanurrashid95/)) 
+    <!-- https://www.linkedin.com/in/hasanurrashid95/ https://scholar.google.com.ec/citations?user=bxJd9ukAAAAJ&hl=fil -->
   - Meng Tang (Illinois Institute of Technology) ([www](https://scholar.google.com/citations?user=KXC9NesAAAAJ&hl=en))
-  
+
   <!-- Hyungro Lee ([www](https://lee212.github.io/)) -->
 
 
@@ -76,39 +87,23 @@ and resource assignment.
   - Lenny Guo ([www](https://www.pnnl.gov/people/luanzheng-guo))
   - Jesun Firoz ([www](https://www.pnnl.gov/people/jesun-firoz))
   - Zhen Peng ([www](https://johnpzh.github.io))
+  - Md Hasanur Rashid ([www](https://www.linkedin.com/in/hasanurrashid95/))
   - Nathan R. Tallent ([www](https://nathantallent.github.io))
   - Hyungro Lee ([www](https://lee212.github.io/))
 
 
-
 References
 -----------------------------------------------------------------------------
+- **Overview**: Nathan R. Tallent, Meng Tang, Zhen Peng, Jesun Firoz, Luanzheng Guo, Anthony Kougkas, and Xian-He Sun. "DataFlowDrs: Automating Performance Optimization of Data Flow Within HPC Workflows" IEEE Transactions on Parallel and Distributed Systems, pp. 1-18, September 2026 ([doi: 10.1109/TPDS.2026.3722592](https://doi.org/10.1109/IPDPS65963.2026.00112))
 
-* H. Lee, L. Guo, M. Tang, J. Firoz, N. Tallent, A. Kougkas, and X.-H. Sun, “Data flow lifecycles for optimizing workflow coordination,” in Proc. of the Intl. Conf. for High Performance Computing, Networking, Storage and Analysis (SuperComputing), SC ’23, (New York, NY, USA), Association for Computing Machinery, November 2023. ([doi](https://doi.org/10.1145/3581784.3607104))
+* **Specific**:  Hyungro Lee, Luanzheng Guo, Meng Tang, Jesun Firoz, Nathan Tallent, Anthony Kougkas, and Xian-He Sun. "Data Flow Lifecycles for Optimizing Workflow Coordination." Proc. of the Intl. Conf. for High Performance Computing, Networking, Storage and Analysis (SuperComputing), SC '23, Association for Computing Machinery, November 2023. ([doi: 10.1145/3581784.3607104](https://doi.org/10.1145/3581784.3607104))
 
-* M. Tang, J. Cernuda, J. Ye, L. Guo, N. R. Tallent, A. Kougkas, and X.-H. Sun, “DaYu: Optimizing distributed scientific workflows by decoding dataflow semantics and dynamics,” in Proc. of the 2024 IEEE Conf. on Cluster Computing, pp. 357–369, IEEE, September 2024. ([doi](https://doi.org/10.1109/CLUSTER59578.2024.00038))
-
-* L. Guo, H. Lee, J. Firoz, M. Tang, and N. R. Tallent, “Improving I/O-aware workflow scheduling via data flow characterization and trade-off analysis,” in Seventh IEEE Intl. Workshop on Benchmarking, Performance Tuning and Optimization for Big Data Applications (Proc. of the IEEE Intl. Conf. on Big Data), IEEE Computer Society, December 2024. ([doi](https://doi.org/10.1109/BigData62323.2024.10825855))
-
-* H. Lee, J. Firoz, N. R. Tallent, L. Guo, and M. Halappanavar, “FlowForecaster: Automatically inferring detailed & interpretable workflow scaling models for forecasts,” in Proc. of the 39th IEEE Intl. Parallel and Distributed Processing Symp., IEEE Computer Society, June 2025. ([doi](https://doi.org/10.1109/IPDPS64566.2025.00045))
-
-* J. Firoz, H. Lee, L. Guo, M. Tang, N. R. Tallent, and Z. Peng, “FastFlow: Rapid workflow response by prioritizing critical data flows and their interactions,” in Proc. of the 37th Intl. Conf. on Scalable Scientific Data Management, ACM, June 2025. ([doi](https://doi.org/10.1145/3733723.3733735))
-
-* M. Tang, Z. Zhu, L. Guo, J. G. Bandy, T. Carlson, S. Neuwirth, A. Kougkas, X.-H. Sun, and N. R. Tallent, “Quantifying AWS S3 I/O performance boundaries using the roofline model,” in Proc. of the SC ’25 Workshops of the Intl. Conf. for High Performance Computing, Networking, Storage and Analysis (10th Intl Parallel Data Systems Workshop), (New York, NY, USA), pp. 1415–1423, Association for Computing Machinery, 11 2025. ([doi](https://doi.org/10.1145/3731599.3767513))
-
-* M. Tang, L. Guo, A. Kougkas, X.-H. Sun, and N. R. Tallent, “Characterization and implications of dataflow in HPC workflows,” in Proc. of the 40th IEEE Intl. Parallel and Distributed Processing Symp., IEEE Computer Society, May 2026.
-
-* M. H. Rashid, J. Firoz, N. R. Tallent, L. Guo, M. Tang, and D. Dai, “QoSFlow: Ensuring Service Quality of Distributed Workflows Using Interpretable Sensitivity Models,” in Proc. of the 40th IEEE Intl. Parallel and Distributed Processing Symp., IEEE Computer Society, May 2026.
+- For all related references, see [DataFlowDrs](https://github.com/pnnl/DataFlowDrs)
 
 
+## License
 
-
-## Related
-  
-* C. Egersdoerfer, M. H. Rashid, D. Dai, B. Fang, and N. R. Tallent, “Understanding and predicting cross-application I/O interference in HPC storage systems,” in Proc. of the Workshops of the Intl. Conf. for High Performance Computing, Networking, Storage and Analysis (9th Intl. Parallel Data Systems Workshop), Nov. 2024. ([doi](https://doi.org/10.1109/SCW63240.2024.00174))
-
-* M. H. Rashid, N. R. Tallent, F. S. Bao, and D. Dai, “CARAT: Client-side adaptive RPC and cache co-tuning for parallel file systems,” in Proc. of the 40th IEEE Intl. Parallel and Distributed Processing Symp., IEEE Computer Society, May 2026.
-
+BSD 2-clause license: [README-License.txt](/README-License.txt)
 
 
 Acknowledgements
@@ -118,6 +113,4 @@ This work was supported by the U.S. Department of Energy's Office of
 Advanced Scientific Computing Research:
 
 - Orchestration for Distributed & Data-Intensive Scientific Exploration
-
-
 

@@ -2,6 +2,7 @@
 #define TRACKFILE_H
 #include "FileCacheRegister.h"
 #include "MonitorFile.h"
+#include "SpinLock.h"
 #include <atomic>
 #include <mutex>
 #include <string>
@@ -24,6 +25,11 @@ extern std::unordered_map<std::string, TraceData> trace_read_blk_order;
 extern std::unordered_map<std::string, TraceData> trace_write_blk_order;
 extern int first_access_block;
 extern int largest_access_block;
+
+// Guards the maps above and the per-file trace state, which several threads update
+// concurrently. Held for bookkeeping only, never across a syscall or output write.
+SpinLock &trackFileStatLock();
+void trackFileForkChildReset();
 
 class TrackFile : public MonitorFile {
 public:
