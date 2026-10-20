@@ -11,6 +11,9 @@
 # 
 #****************************************************************************
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 cmake_minimum_required(VERSION 2.8...3.27)
 project(DataLife VERSION 0.1.0)
 
@@ -20,7 +23,7 @@ project(DataLife VERSION 0.1.0)
 #****************************************************************************
 
 option(ENABLE_FlowMonitor "Enable build of DataLife-FlowMonitor" ON)
-option(ENABLE_FlowAnalysis "Enable build of DataLife-FlowAnalysis" ON)
+option(ENABLE_FlowAnalysis "Enable build of DataLife-FlowAnalysis" OFF)
 option(ENABLE_TESTS "Build test programs" OFF)
 # Compiling Mode
 # Set a default build type if none was specified

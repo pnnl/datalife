@@ -61,6 +61,7 @@ const bool enableSharedMem = getenv("MONITOR_ENABLE_SHARED_MEMORY") ? atoi(geten
 const std::string monitor_id(getenv("USER") ? "monitor" + std::string(getenv("USER")) : "monitor");
 
 const uint64_t maxBlockSize = getenv("MONITOR_BLOCKSIZE") ? atol(getenv("MONITOR_BLOCKSIZE")) : 1 * 1024UL * 1024UL;
+const int64_t maxMetaFileSize = getenv("MONITOR_MAX_META_SIZE") ? atol(getenv("MONITOR_MAX_META_SIZE")) : 1 * 1024L * 1024L;
 #define BOUNDEDCACHENAME "boundedcache"
 #define NETWORKCACHENAME "network"
 

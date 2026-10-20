@@ -62,6 +62,7 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
         }
     }
 
+
     if (matched) {
         DPRINTF("File %s matched pattern. Reading metadata...\n", name.c_str());
         readMetaInfo();
@@ -98,6 +99,30 @@ bool MonitorFile::readMetaInfo() {
 
     int64_t fileSize = (*unixlseek)(_fd, 0L, SEEK_END);
     (*unixlseek)(_fd, 0L, SEEK_SET);
+    // Not seekable (pipe, socket, tty): never consume bytes from it.
+    if (fileSize < 0) {
+        return 0;
+    }
+
+    // A meta descriptor starts with the MONITOR0.1 magic line (see checkMeta()).
+    // Peek at that header only; a tracked data file fails the test here, so it
+    // is never slurped into memory, whatever its size. The application's file
+    // position is restored either way.
+    static const std::string monitorVersion("MONITOR0.1");
+    char header[16] = {0};
+    int headerBytes = (*unixRead)(_fd, (void *)header, monitorVersion.length());
+    (*unixlseek)(_fd, 0L, SEEK_SET);
+    if (headerBytes != (int)monitorVersion.length() ||
+        monitorVersion.compare(0, monitorVersion.length(), header, monitorVersion.length()) != 0) {
+        return 0;
+    }
+
+    // Genuine descriptor: a few hundred bytes of key=value text. The size cap is
+    // only a guard on the allocation below (MONITOR_MAX_META_SIZE, default 1 MiB).
+    if (fileSize > Config::maxMetaFileSize) {
+        log(this) << "ERROR: meta descriptor " << _metaName.c_str() << " exceeds MONITOR_MAX_META_SIZE, ignoring it" << std::endl;
+        return 0;
+    }
     char *meta = new char[fileSize + 1];
     int ret = (*unixRead)(_fd, (void *)meta, fileSize);
 

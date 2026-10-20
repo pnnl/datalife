@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DataLife Monitor Timer",
+  "description": "Per-process I/O timing and byte statistics, produced by DataLife flow-monitor. Filename pattern: monitor_timer.<pid>-<host>.datalife.json",
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": {
+    "type": "object",
+    "description": "Keyed by process name (e.g., 'python')",
+    "properties": {
+      "local": {"$ref": "#/$defs/io_category"},
+      "monitor": {"$ref": "#/$defs/io_category"},
+      "system": {"$ref": "#/$defs/io_category"}
+    },
+    "required": ["monitor"]
+  },
+  "$defs": {
+    "io_category": {
+      "type": "object",
+      "description": "I/O statistics per category. Each operation maps to [time_seconds, op_count, total_bytes].",
+      "additionalProperties": {
+        "type": "array",
+        "items": {"type": "number"},
+        "minItems": 3,
+        "maxItems": 3
+      }
+    }
+  }
+}

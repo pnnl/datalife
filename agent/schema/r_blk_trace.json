@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DataLife Read Block Trace",
+  "description": "Block-range trace for read operations, produced by DataLife flow-monitor. Filename pattern: <file>.<pid>-<host>.r_blk_trace.json",
+  "type": "object",
+  "required": ["io_blk_range"],
+  "properties": {
+    "io_blk_range": {
+      "type": "array",
+      "items": {"type": "integer"},
+      "minItems": 2,
+      "description": "Flat array of block range pairs [start, end, start, end, ...]. Each pair describes a contiguous range of blocks accessed."
+    },
+    "task_name": {
+      "type": "string",
+      "description": "Optional task name for workflow correlation."
+    }
+  }
+}
