@@ -61,14 +61,12 @@ identify and rank opportunities for improving task and data placement
 and resource assignment.
 
 ------------------------------------------------------------------------------
-
 # Getting Started
 
 See: [README-Install.txt](/README-Install.txt)
 
 
 ------------------------------------------------------------------------------
-
 ## Contacts
 
 **Contacts**: (_firstname_._lastname_@pnnl.gov)
