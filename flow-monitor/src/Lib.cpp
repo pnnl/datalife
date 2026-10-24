@@ -74,7 +74,7 @@ public:
     auto file_desc = next_iter->second;
     auto file = file_desc->getFile();
     DPRINTF("Lib.cpp: Calling CleanupTrackFile() \n");
-    file->close();
+    file->close(fd_);
     MonitorFile::removeMonitorFile(file);
     MonitorFileDescriptor::removeMonitorFileDescriptor(fd_);
   }
@@ -90,8 +90,8 @@ public:
 // takes the trace-stat lock under a registry lock). Each is held only for an
 // in-memory update, so fork() waits briefly and the child gets them unlocked,
 // with the maps they guard intact. vLock and the per-stream locks are held
-// across the real I/O call, which can block (pipes, sockets), so fork() does
-// not wait for them; the child resets them instead.
+// across the real I/O call, which can take long, so fork() does not wait for
+// them; the child resets them instead.
 //
 // fork() called from a signal handler can interrupt this thread while it holds
 // or is taking a DataLife lock, which only the interrupted code can release.
@@ -539,7 +539,7 @@ int monitorClose(MonitorFile *file, unsigned int fp, int fd) {
 #ifdef TRACKFILECHANGES
     for (auto pattern : patterns) {
         if (fnmatch(pattern.c_str(), get_basename(file->name().c_str()), 0) == 0) {
-            file->close();
+            file->close(fd);
             DPRINTF("Lib.cpp: Successfully closed a file with fd %d\n", fd);
             break;
         }
@@ -590,7 +590,7 @@ void exit(int status) {
     auto fd_ = next_iter->first;
     auto file_desc = next_iter->second;
     auto file = file_desc->getFile();
-    file->close();
+    file->close(fd_);
     iter = next_iter;
   }
   (*unixexit)(status);
@@ -613,60 +613,82 @@ void exit_group(int status) {
 }
 #endif
 
+// vLock around one call on a monitored file: shared for read and lseek, exclusive
+// for write. Regular files only: a read on a FIFO can block until another thread
+// writes to it.
+class MonitoredIOLock {
+  public:
+    MonitoredIOLock(MonitorFile *file, bool exclusive) : _exclusive(exclusive), _locked(file->regularFile()) {
+        if (!_locked) {
+            return;
+        }
+        if (_exclusive) {
+            vLock.writerLock();
+        } else {
+            vLock.readerLock();
+        }
+    }
+
+    ~MonitoredIOLock() {
+        if (!_locked) {
+            return;
+        }
+        if (_exclusive) {
+            vLock.writerUnlock();
+        } else {
+            vLock.readerUnlock();
+        }
+    }
+
+    MonitoredIOLock(const MonitoredIOLock &) = delete;
+    MonitoredIOLock &operator=(const MonitoredIOLock &) = delete;
+
+  private:
+    bool _exclusive;
+    bool _locked;
+};
+
 ssize_t monitorRead(MonitorFile *file, unsigned int fp, int fd, void *buf, size_t count) {
   DPRINTF("Lib.cpp: In Monitor read\n");
-  ssize_t ret = file->read(buf, count, fp);
+  MonitoredIOLock lock(file, false);
+  ssize_t ret = file->read(fd, buf, count, fp);
   timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, ret);
   return ret;
 }
 
 ssize_t read(int fd, void *buf, size_t count) {
-    bool locked = !isMonitorInternalIO();
-    if (locked) vLock.readerLock();
     DPRINTF("Lib.cpp: Invoking read fd: %d count: %u\n", fd, count);
-    auto ret = outerWrapper("read", fd, Timer::Metric::read, monitorRead, unixread, fd, buf, count);
-    if (locked) vLock.readerUnlock();
-    return ret;
+    return outerWrapper("read", fd, Timer::Metric::read, monitorRead, unixread, fd, buf, count);
 }
 
 ssize_t monitorWrite(MonitorFile *file, unsigned int fp, int fd, const void *buf, size_t count) {
     DPRINTF("Lib.cpp: In Monitor write\n");
+    MonitoredIOLock lock(file, true);
     // auto ret = file->write(buf, count, fp);
     // Pass -1 for offset to indicate positional write
-    auto ret = file->write(buf, count, fp, -1);
+    auto ret = file->write(fd, buf, count, fp, -1);
     timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, ret);
     DPRINTF("Lib.cpp: Returning from Monitor write\n");
     return ret;
 }
 
 ssize_t write(int fd, const void *buf, size_t count) {
-    bool locked = !isMonitorInternalIO();
-    if (locked) vLock.writerLock();
     DPRINTF("Lib.cpp: Invoking write fd: %d count: %u\n", fd, count);
-    auto ret = outerWrapper("write", fd, Timer::Metric::write, monitorWrite, unixwrite, fd, buf, count);
-    if (locked) vLock.writerUnlock();
-    return ret;
+    return outerWrapper("write", fd, Timer::Metric::write, monitorWrite, unixwrite, fd, buf, count);
 }
 
 template <typename T>
 T monitorLseek(MonitorFile *file, unsigned int fp, int fd, T offset, int whence) {
-    return (T)file->seek(offset, whence, fp);
+    MonitoredIOLock lock(file, false);
+    return (T)file->seek(fd, offset, whence, fp);
 }
 
 off_t lseek(int fd, off_t offset, int whence) ADD_THROW {
-    bool locked = !isMonitorInternalIO();
-    if (locked) vLock.readerLock();
-    auto ret = outerWrapper("lseek", fd, Timer::Metric::seek, monitorLseek<off_t>, unixlseek, fd, offset, whence);
-    if (locked) vLock.readerUnlock();
-    return ret;
+    return outerWrapper("lseek", fd, Timer::Metric::seek, monitorLseek<off_t>, unixlseek, fd, offset, whence);
 }
 
 off64_t lseek64(int fd, off64_t offset, int whence) ADD_THROW {
-    bool locked = !isMonitorInternalIO();
-    if (locked) vLock.readerLock();
-    auto ret = outerWrapper("lseek64", fd, Timer::Metric::seek, monitorLseek<off64_t>, unixlseek64, fd, offset, whence);
-    if (locked) vLock.readerUnlock();
-    return ret;
+    return outerWrapper("lseek64", fd, Timer::Metric::seek, monitorLseek<off64_t>, unixlseek64, fd, offset, whence);
 }
 
 thread_local unixxstat_t whichStat = NULL;
@@ -744,18 +766,12 @@ int monitorFsync(MonitorFile *file, unsigned int fp, int fd) {
 }
 
 int fsync(int fd) {
-    bool locked = !isMonitorInternalIO();
-    if (locked) vLock.readerLock();
-    auto ret = outerWrapper("fsync", fd, Timer::Metric::stat, monitorFsync, unixfsync, fd);
-    if (locked) vLock.readerUnlock();
-    return ret;
+    return outerWrapper("fsync", fd, Timer::Metric::stat, monitorFsync, unixfsync, fd);
 }
 
 template <typename Func, typename FuncLocal>
 ssize_t monitorVector(const char *name, Timer::Metric metric, Func monitorFun, FuncLocal localFun, int fd, const struct iovec *iov, int iovcnt) {
     ssize_t ret = 0;
-    bool locked = !isMonitorInternalIO();
-    if (locked) vLock.writerLock();
     for (int i = 0; i < iovcnt && ret < iovcnt; i++) {
         auto temp = outerWrapper(name, fd, metric, monitorFun, localFun, fd, iov[i].iov_base, iov[i].iov_len);
         if (temp == (ssize_t)-1) {
@@ -765,7 +781,6 @@ ssize_t monitorVector(const char *name, Timer::Metric metric, Func monitorFun, F
         else
             ret += temp;
     }
-    if (locked) vLock.writerUnlock();
     return ret;
 }
 
@@ -861,7 +876,7 @@ int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
   for (auto pattern: patterns) {
     auto ret_val = fnmatch(pattern.c_str(), get_basename(file->name().c_str()), 0);
     if (ret_val == 0) {
-      file->close();
+      file->close(fd);
       DPRINTF("Lib.cpp: Successfully closed a file with fd %d\n", fd);
     }
   }
@@ -1130,7 +1145,7 @@ int feof(FILE *fp) ADD_THROW {
 }
 
 off_t monitorRewind(MonitorFile *file, unsigned int pos, int fd, int fd2, off_t offset, int whence) {
-    auto ret = (off_t)file->seek(offset, whence, pos);
+    auto ret = (off_t)file->seek(fd, offset, whence, pos);
     return ret;
 }
 
@@ -1205,7 +1220,7 @@ ssize_t monitorPread(MonitorFile *file, unsigned int pos, int fd, void *buf, siz
     DPRINTF("Lib.cpp: In monitor pread: fd=%d, count=%zu, offset=%lld\n", fd, count, (long long)offset);
 
     // Use the file object to perform the read operation
-    auto read_bytes = (ssize_t)file->read(buf, count, pos, offset);
+    auto read_bytes = (ssize_t)file->read(fd, buf, count, pos, offset);
 
     // Update the timer with the number of bytes read
     timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, read_bytes);
@@ -1224,7 +1239,7 @@ ssize_t monitorPwrite(MonitorFile *file, unsigned int pos, int fd, const void *b
     DPRINTF("Lib.cpp: In monitor pwrite: fd=%d, count=%zu, offset=%ld\n", fd, count, offset);
 
     // Pass `offset` to the TrackFile::write method
-    auto bytes_written = (ssize_t)file->write(buf, count, pos, offset);
+    auto bytes_written = (ssize_t)file->write(fd, buf, count, pos, offset);
 
     timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, bytes_written);
     return bytes_written;
@@ -1242,7 +1257,7 @@ ssize_t monitorPread64(MonitorFile *file, unsigned int pos, int fd, void *buf, s
     DPRINTF("Lib.cpp: In monitor pread64: fd=%d, count=%zu, offset=%lld\n", fd, count, (long long)offset);
 
     // Use the file object to perform the read operation
-    auto read_bytes = (ssize_t)file->read(buf, count, pos, offset);
+    auto read_bytes = (ssize_t)file->read(fd, buf, count, pos, offset);
 
     // Update the timer with the number of bytes read
     timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, read_bytes);
@@ -1262,7 +1277,7 @@ ssize_t monitorPwrite64(MonitorFile *file, unsigned int pos, int fd, const void 
     DPRINTF("Lib.cpp: In monitor pwrite64: fd=%d, count=%zu, offset=%ld\n", fd, count, offset);
     // Pass the correct `pos` as the `index` to TrackFile::write
     // auto bytes_written = (ssize_t)file->write(buf, count, pos);
-    auto bytes_written = (ssize_t)file->write(buf, count, pos, offset);
+    auto bytes_written = (ssize_t)file->write(fd, buf, count, pos, offset);
     timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, bytes_written);
     return bytes_written;
 }

@@ -92,8 +92,9 @@ static Timer* timer;
 
 std::once_flag log_flag;
 bool init = false;
-// Taken around the whole read, write, lseek, fsync, readv and writev call, except
-// for DataLife's own I/O (see the fork handlers in Lib.cpp).
+// Held across read, write and lseek calls on monitored regular files (see
+// MonitoredIOLock in Lib.cpp), never across I/O on other descriptors: a read on
+// a pipe, socket or FIFO can block until another thread writes to it.
 ReaderWriterLock vLock;
 
 std::unordered_set<std::string>* track_files = NULL; //this is a pointer cause we access in ((attribute)) constructor and initialization isnt guaranteed

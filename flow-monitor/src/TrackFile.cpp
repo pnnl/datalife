@@ -114,7 +114,6 @@ TrackFile::TrackFile(std::string name, int fd, bool openFile) :
   MonitorFile(MonitorFile::Type::TrackLocal, name, name, fd),
   _fileSize(0),
   _numBlks(0),
-  _fd_orig(fd),
   _filename(name),
   total_time_spent_read(0),
   total_time_spent_write(0)
@@ -191,7 +190,7 @@ void TrackFile::open() {
 
 }
 
-ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
+ssize_t TrackFile::read(int fd, void *buf, size_t count, uint32_t index, off_t offset) {
     DPRINTF("In trackfile read count %u\n", count);
     // std::cerr << "DEBUG: TrackFile::read() called for " << _name << " count=" << count << std::endl;
 
@@ -200,12 +199,12 @@ ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
 
     // Handle offset for `pread`
     ssize_t bytes_read = (offset == -1)
-        ? (*unixRead)(_fd_orig, buf, count)
-        : ((unixpread_t)unixRead)(_fd_orig, buf, count, offset);
+        ? (*unixRead)(fd, buf, count)
+        : ((unixpread_t)unixRead)(fd, buf, count, offset);
 
     total_time_spent_read += duration_cast<seconds>(high_resolution_clock::now() - start_time);
 
-    DPRINTF("bytes_read: %ld _fd_orig: %d _name: %s\n", bytes_read, _fd_orig, _name.c_str());
+    DPRINTF("bytes_read: %ld fd: %d _name: %s\n", bytes_read, fd, _name.c_str());
 
     { // shared bookkeeping, after the syscall
     std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
@@ -326,32 +325,13 @@ ssize_t TrackFile::read(void *buf, size_t count, uint32_t index, off_t offset) {
     }
 
 #ifdef WRITE_STAT_EACH
-    close();
+    close(fd);
 #endif
 
     return bytes_read;
 }
 
-ssize_t TrackFile::write(const void *buf, size_t count, uint32_t filePosIndex) {
-    DPRINTF("TrackFile::write with count=%zu, filePosIndex=%u\n", count, filePosIndex);
-
-    // Dynamically load the original write function
-    unixwrite_t unixWrite = (unixwrite_t)dlsym(RTLD_NEXT, "write");
-
-    // Perform the write
-    auto bytes_written = (*unixWrite)(_fd_orig, buf, count);
-    if (bytes_written < 0) {
-        perror("TrackFile::write failed");
-        return bytes_written;
-    }
-
-    // Update file position tracking
-    _filePos[filePosIndex] += bytes_written;
-
-    return bytes_written;
-}
-
-ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index, off_t offset) {
+ssize_t TrackFile::write(int fd, const void *buf, size_t count, uint32_t index, off_t offset) {
     DPRINTF("In TrackFile::write with count: %u\n", count);
 
     auto start_time = high_resolution_clock::now();
@@ -361,12 +341,12 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index, off_t of
     if (offset >= 0) {
         // Use pwrite for positional writes
         unixpwrite_t unixPwrite = (unixpwrite_t)dlsym(RTLD_NEXT, "pwrite");
-        bytes_written = (*unixPwrite)(_fd_orig, buf, count, offset);
+        bytes_written = (*unixPwrite)(fd, buf, count, offset);
         DPRINTF("Performing pwrite: offset=%ld\n", offset);
     } else {
         // Use write for sequential writes
         unixwrite_t unixWrite = (unixwrite_t)dlsym(RTLD_NEXT, "write");
-        bytes_written = (*unixWrite)(_fd_orig, buf, count);
+        bytes_written = (*unixWrite)(fd, buf, count);
     }
 
     if (bytes_written < 0) {
@@ -377,7 +357,7 @@ ssize_t TrackFile::write(const void *buf, size_t count, uint32_t index, off_t of
     auto end_time = high_resolution_clock::now();
     total_time_spent_write += duration_cast<seconds>(end_time - start_time);
 
-    DPRINTF("Bytes written: %ld, FD: %d, File: %s\n", bytes_written, _fd_orig, _name.c_str());
+    DPRINTF("Bytes written: %ld, FD: %d, File: %s\n", bytes_written, fd, _name.c_str());
 
     { // shared bookkeeping, after the syscall
     std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
@@ -535,7 +515,7 @@ uint64_t TrackFile::fileSize() {
         return _fileSize;
 }
 
-off_t TrackFile::seek(off_t offset, int whence, uint32_t index) {
+off_t TrackFile::seek(int fd, off_t offset, int whence, uint32_t index) {
 //   struct stat sb;
 //   fstat(_fd_orig, &sb);
 //   auto _fileSize = sb.st_size;
@@ -563,7 +543,7 @@ off_t TrackFile::seek(off_t offset, int whence, uint32_t index) {
 //   auto offset_loc = (*unixLseek)(_fd_orig, offset, whence);
 //   return  offset_loc;
 
-  auto actual_pos = (*unixLseek)(_fd_orig, offset, whence);
+  auto actual_pos = (*unixLseek)(fd, offset, whence);
 
   if (actual_pos != (off_t)-1) {
     _filePos[index] = actual_pos;
@@ -671,7 +651,7 @@ void write_trace_data(const std::string& filename, const std::string &data_name,
   file.close();
 }
 
-void TrackFile::close() {
+void TrackFile::close(int fd) {
     if (isMonitorInternalIO()) {
         return;
     }
@@ -690,7 +670,7 @@ void TrackFile::close() {
     int64_t file_alloc_bytes = -1;
     const char *file_size_source = "unavailable";
     struct stat st;
-    if (_fd_orig >= 0 && ::fstat(_fd_orig, &st) == 0) {
+    if (fd >= 0 && ::fstat(fd, &st) == 0) {
         file_size_bytes = (int64_t)st.st_size;
         file_alloc_bytes = (int64_t)st.st_blocks * 512;
         file_size_source = "posix_fstat_at_close";
@@ -743,9 +723,8 @@ void TrackFile::close() {
 #ifdef GATHERSTAT
     // Original stat output mode (non-JSON)
     if (!Config::enableJsonOutput) {
-    // Snapshot under the stat lock, write with it released: the stream writes go
-    // through the interposed write() and take vLock, which readers hold while
-    // waiting for the stat lock.
+    // Snapshot under the stat lock, write with it released: every monitored read
+    // and write waits for the stat lock, so it is never held across I/O.
     std::map<int, int64_t> r_stat, r_stat_size, w_stat, w_stat_size;
     std::vector<int> blk_trace_info_r, blk_trace_info_w;
     {

@@ -38,6 +38,12 @@ inline const char* get_basename(const char* pathname) {
 }
 
 extern int removeStr(char *s, const char *r);
+
+static bool isRegularFile(int fd) {
+    struct stat st;
+    return fd >= 0 && fstat(fd, &st) == 0 && S_ISREG(st.st_mode);
+}
+
 MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string metaName, int fd) : 
     Loggable(Config::MonitorFileLog, "MonitorFile"),
     _type(type),
@@ -50,7 +56,8 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
     _blkSize(1),
     _initMetaTime(0),
     _active(false),
-    _fd(fd)
+    _fd(fd),
+    _regularFile(isRegularFile(fd))
      {
 
 #ifdef TRACKFILECHANGES
@@ -276,6 +283,10 @@ bool MonitorFile::active() {
 
 bool MonitorFile::eof(uint32_t index) {
     return _eof[index];
+}
+
+bool MonitorFile::regularFile() {
+    return _regularFile;
 }
 
 uint32_t MonitorFile::newFilePosIndex() {
