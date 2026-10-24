@@ -35,7 +35,10 @@
 
 using namespace std::chrono;
 #ifdef LIBDEBUG
-#define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
+// Marked as the library's own I/O: callers may hold the trace-stat lock, and GCC
+// can turn the fprintf into fwrite, whose wrapper takes a registry lock that the
+// fork prepare handler in Lib.cpp takes before the trace-stat lock.
+#define DPRINTF(...) do { ScopedMonitorInternalIO dprintf_io; fprintf(stderr, __VA_ARGS__); } while (0)
 #else
 #define DPRINTF(...)
 #endif
@@ -59,9 +62,40 @@ SpinLock &trackFileStatLock() {
     return *trackFileStatLockPtr;
 }
 
+// Empties a trace map in a forked child without freeing the parent's entries: freeing
+// writes to every page they occupy, which the child would then have to copy. The
+// entries move into a heap object that is leaked instead.
+template <class Map> static void dropInheritedTraces(Map &traces) {
+    new Map(std::move(traces));
+    traces.clear(); // a moved-from map is valid but unspecified
+}
+
 void trackFileForkChildReset() {
     // May be held by a thread that does not exist in the child; replace, don't acquire.
     trackFileStatLockPtr = new SpinLock();
+
+    // Start the child's block statistics and traces empty, so its trace files cover
+    // only its own accesses, as its timer output does.
+    dropInheritedTraces(track_file_blk_r_stat);
+    dropInheritedTraces(track_file_blk_r_stat_size);
+    dropInheritedTraces(track_file_blk_w_stat);
+    dropInheritedTraces(track_file_blk_w_stat_size);
+    dropInheritedTraces(trace_read_blk_seq);
+    dropInheritedTraces(trace_write_blk_seq);
+    dropInheritedTraces(trace_read_blk_order);
+    dropInheritedTraces(trace_write_blk_order);
+    first_access_block = -1;
+    largest_access_block = -1;
+    // Files open across fork() restart their sequential/random detection.
+    for (auto it = Trackable<std::string, MonitorFile *>::begin();
+         it != Trackable<std::string, MonitorFile *>::end(); ++it) {
+        if (it->second->type() == MonitorFile::TrackLocal) {
+            TrackFile *file = static_cast<TrackFile *>(it->second);
+            file->prev_start_block = -1;
+            file->prev_end_block = -1;
+            file->has_been_random = false;
+        }
+    }
 }
 
 // Locked map lookup; the returned reference stays valid (unordered_map never moves elements).

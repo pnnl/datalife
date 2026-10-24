@@ -96,8 +96,8 @@ Timer::~Timer() {
         for (int j = 0; j < last; j++) {
             if (j == constructor || j == destructor || j == dummy)
                 continue;
-            io_time_s += _time[i][j] / billion;
-            io_calls += _cnt[i][j];
+            io_time_s += _time[i][j].load(std::memory_order_relaxed) / billion;
+            io_calls += _cnt[i][j].load(std::memory_order_relaxed);
         }
     }
     char hostname[256];
@@ -114,7 +114,9 @@ Timer::~Timer() {
         for (int i = 0; i < lastMetric; i++) {
             for (int j = 0; j < last; j++) {
                 jsonOutput[myprogname][metricTypeName[i]][metricName[j]] = 
-                    { _time[i][j] / billion, _cnt[i][j], _amt[i][j] };
+                    { _time[i][j].load(std::memory_order_relaxed) / billion,
+                      _cnt[i][j].load(std::memory_order_relaxed),
+                      _amt[i][j].load(std::memory_order_relaxed) };
             }
         }
 
@@ -221,7 +223,8 @@ Timer::~Timer() {
         ss << std::fixed;
         for (int i = 0; i < lastMetric; i++) {
             for (int j = 0; j < last; j++) {
-                ss << "[MONITOR] " << metricTypeName[i] << " " << metricName[j] << " " << _time[i][j] / billion << " " << _cnt[i][j] << " " << _amt[i][j] << std::endl;
+                ss << "[MONITOR] " << metricTypeName[i] << " " << metricName[j] << " " << _time[i][j].load(std::memory_order_relaxed) / billion << " "
+                   << _cnt[i][j].load(std::memory_order_relaxed) << " " << _amt[i][j].load(std::memory_order_relaxed) << std::endl;
             }
         }
         //uint64_t thread_count = 0;
@@ -385,8 +388,8 @@ void Timer::start() {
 
 void Timer::end(MetricType type, Metric metric) {
     if (_depth == 1) {
-        _time[type][metric] += getCurrentTime() - _current;
-        _cnt[type][metric]++;
+        _time[type][metric].fetch_add(getCurrentTime() - _current, std::memory_order_relaxed);
+        _cnt[type][metric].fetch_add(1, std::memory_order_relaxed);
         ioBusyEnd(metric);
     }
     _depth--;
@@ -414,7 +417,7 @@ void Timer::end(MetricType type, Metric metric) {
 }
 
 void Timer::addAmt(MetricType type, Metric metric, uint64_t amt) {
-    _amt[type][metric] += amt;
+    _amt[type][metric].fetch_add(amt, std::memory_order_relaxed);
     if (Config::ThreadStats){
         auto id = std::this_thread::get_id();
         _lock->readerLock();

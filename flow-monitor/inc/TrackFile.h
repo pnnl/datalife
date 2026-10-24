@@ -29,6 +29,8 @@ extern int largest_access_block;
 // Guards the maps above and the per-file trace state, which several threads update
 // concurrently. Held for bookkeeping only, never across a syscall or output write.
 SpinLock &trackFileStatLock();
+// pthread_atfork child handler: replaces the stat lock and drops the parent's block
+// statistics and traces.
 void trackFileForkChildReset();
 
 class TrackFile : public MonitorFile {
@@ -72,6 +74,7 @@ private:
   int prev_start_block = -1;
   int prev_end_block = -1;
   bool has_been_random = false;
+  friend void trackFileForkChildReset(); // resets the three above in a forked child
 };
 
 
