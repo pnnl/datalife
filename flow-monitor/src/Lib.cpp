@@ -81,12 +81,78 @@ public:
   }
 };
 
-// pthread_atfork child handler.
-static void monitorForkChild(void) {
-    if (timer) {
-        timer->resetAfterFork();
+// pthread_atfork handlers. A forked child has only the forking thread, so a
+// lock another thread held at fork() stays held in the child, and the child's
+// next intercepted call that needs it hangs.
+//
+// Prepare takes the fd map, registry and trace-stat locks, outermost first as
+// the I/O paths nest them (mmap takes a registry under the fd map lock, open
+// takes the trace-stat lock under a registry lock). Each is held only for an
+// in-memory update, so fork() waits briefly and the child gets them unlocked,
+// with the maps they guard intact. vLock and the per-stream locks are held
+// across the real I/O call, which can block (pipes, sockets), so fork() does
+// not wait for them; the child resets them instead.
+//
+// fork() called from a signal handler can interrupt this thread while it holds
+// or is taking a DataLife lock, which only the interrupted code can release.
+// Prepare then takes no locks and the child resets nothing, as if these
+// handlers were not installed.
+//
+// Handlers registered before these run inside them: their prepare after ours,
+// their parent and child handlers before ours. Their intercepted I/O counts as
+// DataLife's own, so it bypasses monitoring and the locks held here.
+//
+// fork() calls in progress on this thread whose prepare took no locks (more
+// than one if a signal handler forks during another fork).
+static thread_local unsigned int skippedForks = 0;
+
+static void monitorForkPrepare(void) {
+    enterMonitorInternalIO();
+    if (heldLocks() != 0) {
+        ++skippedForks;
+        return;
     }
-    trackFileForkChildReset();
+    fdToFileMapMutex.lock();
+    Trackable<FILE *, MonitorFileStream *>::registryLock().writerLock();
+    Trackable<std::string, MonitorFile *>::registryLock().writerLock();
+    Trackable<int, MonitorFileDescriptor *>::registryLock().writerLock();
+    trackFileStatLock().lock();
+}
+
+static void monitorForkRelease(void) {
+    trackFileStatLock().unlock();
+    Trackable<int, MonitorFileDescriptor *>::registryLock().writerUnlock();
+    Trackable<std::string, MonitorFile *>::registryLock().writerUnlock();
+    Trackable<FILE *, MonitorFileStream *>::registryLock().writerUnlock();
+    fdToFileMapMutex.unlock();
+}
+
+static void monitorForkParent(void) {
+    if (skippedForks != 0) {
+        --skippedForks;
+    } else {
+        monitorForkRelease();
+    }
+    leaveMonitorInternalIO();
+}
+
+static void monitorForkChild(void) {
+    if (skippedForks != 0) {
+        --skippedForks;
+    } else {
+        monitorForkRelease();
+        vLock.resetAfterFork();
+        for (auto it = Trackable<FILE *, MonitorFileStream *>::begin();
+             it != Trackable<FILE *, MonitorFileStream *>::end(); ++it) {
+            it->second->getLock()->resetAfterFork();
+        }
+        Loggable::mtx_cout = new std::mutex(); // the old one may be held; leaked
+        if (timer) {
+            timer->resetAfterFork();
+        }
+        trackFileForkChildReset();
+    }
+    leaveMonitorInternalIO();
 }
 
 void __attribute__((constructor)) monitorInit(void) {
@@ -96,9 +162,6 @@ void __attribute__((constructor)) monitorInit(void) {
 
     std::call_once(log_flag, []() {
         timer = new Timer();
-        // Keep a forked child from reporting the parent's I/O as its own.
-        pthread_atfork(nullptr, nullptr, monitorForkChild);
-
         timer->start();
         Loggable::mtx_cout = new std::mutex();
         //InputFile::_time_of_last_read = new std::chrono::time_point<std::chrono::high_resolution_clock>();
@@ -173,6 +236,12 @@ void __attribute__((constructor)) monitorInit(void) {
         unixpread64 = (pread64_t)dlsym(RTLD_NEXT, "pread64");
         unixpwrite64 = (pwrite64_t)dlsym(RTLD_NEXT, "pwrite64");
 
+        // Keep a forked child from hanging on a lock another thread held at
+        // fork(), and from reporting the parent's I/O as its own. Registered
+        // after the pointers above: I/O from other fork handlers takes the
+        // internal-I/O bypasses, and some of them call these pointers.
+        pthread_atfork(monitorForkPrepare, monitorForkParent, monitorForkChild);
+
         //enable if running into issues with an application that launches child shells
         bool unsetLib = getenv("MONITOR_UNSET_LIB") ? atoi(getenv("MONITOR_UNSET_LIB")) : 0;
         if (unsetLib){
@@ -223,7 +292,7 @@ void __attribute__((destructor)) monitorCleanup(void) {
 }
 
 std::string getFileNameFromFd(int fd) {
-    std::lock_guard<std::mutex> lock(fdToFileMapMutex);
+    std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
     auto it = fdToFileMap.find(fd);
     if (it != fdToFileMap.end()) {
         return it->second;
@@ -332,7 +401,7 @@ int open(const char *pathname, int flags, ...) {
 
             if (fd >= 0) {
                 // Track the fd and pathname
-                std::lock_guard<std::mutex> lock(fdToFileMapMutex);
+                std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
                 fdToFileMap[fd] = std::string(pathname);
             } else {
                 DPRINTF("Lib.cpp: trackFileOpen failed for %s\n", pathname);
@@ -347,7 +416,7 @@ int open(const char *pathname, int flags, ...) {
 
     if (fd >= 0) {
         // Track the fd and pathname
-        std::lock_guard<std::mutex> lock(fdToFileMapMutex);
+        std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
         fdToFileMap[fd] = std::string(pathname);
     } else {
         DPRINTF("Lib.cpp: monitorOpen failed for %s\n", pathname);
@@ -384,7 +453,7 @@ int open64(const char *pathname, int flags, ...) {
 
             if (fd >= 0) {
                 // Track the fd and pathname
-                std::lock_guard<std::mutex> lock(fdToFileMapMutex);
+                std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
                 fdToFileMap[fd] = std::string(pathname);
             } else {
                 DPRINTF("Lib.cpp: trackFileOpen failed for %s\n", pathname);
@@ -399,7 +468,7 @@ int open64(const char *pathname, int flags, ...) {
 
     if (fd >= 0) {
         // Track the fd and pathname
-        std::lock_guard<std::mutex> lock(fdToFileMapMutex);
+        std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
         fdToFileMap[fd] = std::string(pathname);
     } else {
         DPRINTF("Lib.cpp: monitorOpen failed for %s\n", pathname);
@@ -485,8 +554,13 @@ int monitorClose(MonitorFile *file, unsigned int fp, int fd) {
 
 int close(int fd) {
     DPRINTF("Lib.cpp: Trying to close file with fd %d\n", fd);
+    // DataLife's own I/O can run inside the fork handlers, which hold the fd
+    // map and registry locks; outerWrapper passes it straight to libc.
+    if (isMonitorInternalIO()) {
+        return outerWrapper("close", fd, Timer::Metric::close, monitorClose, unixclose, fd);
+    }
     {
-        std::lock_guard<std::mutex> lock(fdToFileMapMutex);
+        std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
         fdToFileMap.erase(fd);
     }
 
@@ -547,10 +621,11 @@ ssize_t monitorRead(MonitorFile *file, unsigned int fp, int fd, void *buf, size_
 }
 
 ssize_t read(int fd, void *buf, size_t count) {
-    vLock.readerLock();
+    bool locked = !isMonitorInternalIO();
+    if (locked) vLock.readerLock();
     DPRINTF("Lib.cpp: Invoking read fd: %d count: %u\n", fd, count);
     auto ret = outerWrapper("read", fd, Timer::Metric::read, monitorRead, unixread, fd, buf, count);
-    vLock.readerUnlock();
+    if (locked) vLock.readerUnlock();
     return ret;
 }
 
@@ -565,10 +640,11 @@ ssize_t monitorWrite(MonitorFile *file, unsigned int fp, int fd, const void *buf
 }
 
 ssize_t write(int fd, const void *buf, size_t count) {
-    vLock.writerLock();
+    bool locked = !isMonitorInternalIO();
+    if (locked) vLock.writerLock();
     DPRINTF("Lib.cpp: Invoking write fd: %d count: %u\n", fd, count);
     auto ret = outerWrapper("write", fd, Timer::Metric::write, monitorWrite, unixwrite, fd, buf, count);
-    vLock.writerUnlock();
+    if (locked) vLock.writerUnlock();
     return ret;
 }
 
@@ -578,16 +654,18 @@ T monitorLseek(MonitorFile *file, unsigned int fp, int fd, T offset, int whence)
 }
 
 off_t lseek(int fd, off_t offset, int whence) ADD_THROW {
-    vLock.readerLock();
+    bool locked = !isMonitorInternalIO();
+    if (locked) vLock.readerLock();
     auto ret = outerWrapper("lseek", fd, Timer::Metric::seek, monitorLseek<off_t>, unixlseek, fd, offset, whence);
-    vLock.readerUnlock();
+    if (locked) vLock.readerUnlock();
     return ret;
 }
 
 off64_t lseek64(int fd, off64_t offset, int whence) ADD_THROW {
-    vLock.readerLock();
+    bool locked = !isMonitorInternalIO();
+    if (locked) vLock.readerLock();
     auto ret = outerWrapper("lseek64", fd, Timer::Metric::seek, monitorLseek<off64_t>, unixlseek64, fd, offset, whence);
-    vLock.readerUnlock();
+    if (locked) vLock.readerUnlock();
     return ret;
 }
 
@@ -666,16 +744,18 @@ int monitorFsync(MonitorFile *file, unsigned int fp, int fd) {
 }
 
 int fsync(int fd) {
-    vLock.readerLock();
+    bool locked = !isMonitorInternalIO();
+    if (locked) vLock.readerLock();
     auto ret = outerWrapper("fsync", fd, Timer::Metric::stat, monitorFsync, unixfsync, fd);
-    vLock.readerUnlock();
+    if (locked) vLock.readerUnlock();
     return ret;
 }
 
 template <typename Func, typename FuncLocal>
 ssize_t monitorVector(const char *name, Timer::Metric metric, Func monitorFun, FuncLocal localFun, int fd, const struct iovec *iov, int iovcnt) {
     ssize_t ret = 0;
-    vLock.writerLock();
+    bool locked = !isMonitorInternalIO();
+    if (locked) vLock.writerLock();
     for (int i = 0; i < iovcnt && ret < iovcnt; i++) {
         auto temp = outerWrapper(name, fd, metric, monitorFun, localFun, fd, iov[i].iov_base, iov[i].iov_len);
         if (temp == (ssize_t)-1) {
@@ -685,7 +765,7 @@ ssize_t monitorVector(const char *name, Timer::Metric metric, Func monitorFun, F
         else
             ret += temp;
     }
-    vLock.writerUnlock();
+    if (locked) vLock.writerUnlock();
     return ret;
 }
 
@@ -1088,9 +1168,12 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
             addr, length, prot, flags, fd, offset);
 
     void *result = unixmmap(addr, length, prot, flags, fd, offset);
+    if (isMonitorInternalIO()) {
+        return result; // as in close()
+    }
 
     // Look up file path from fd
-    std::lock_guard<std::mutex> lock(fdToFileMapMutex);
+    std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
     auto it = fdToFileMap.find(fd);
     if (it != fdToFileMap.end()) {
         const std::string &filePath = it->second;

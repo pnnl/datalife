@@ -100,9 +100,10 @@ class Timer {
 
     const double billion = 1000000000;
     std::unordered_map<std::thread::id, Timer::ThreadMetric*> *_thread_timers;
-    uint64_t _time[Timer::MetricType::lastMetric][Timer::Metric::last];
-    uint64_t _cnt[Timer::MetricType::lastMetric][Timer::Metric::last];
-    uint64_t _amt[Timer::MetricType::lastMetric][Timer::Metric::last];
+    // Process-wide totals, updated by every thread that does I/O.
+    std::atomic<uint64_t> _time[Timer::MetricType::lastMetric][Timer::Metric::last];
+    std::atomic<uint64_t> _cnt[Timer::MetricType::lastMetric][Timer::Metric::last];
+    std::atomic<uint64_t> _amt[Timer::MetricType::lastMetric][Timer::Metric::last];
     ReaderWriterLock *_lock; // heap-allocated so resetAfterFork() can replace it
 
     int stdoutcp;

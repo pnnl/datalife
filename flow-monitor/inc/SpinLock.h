@@ -1,6 +1,7 @@
 #ifndef DATALIFE_SPINLOCK_H
 #define DATALIFE_SPINLOCK_H
 
+#include "HeldLocks.h"
 #include <atomic>
 #include <thread>
 
@@ -13,6 +14,7 @@ class SpinLock {
     SpinLock &operator=(const SpinLock &) = delete;
 
     void lock() {
+        heldLockAcquire();
         while (_locked.exchange(true, std::memory_order_acquire)) {
             while (_locked.load(std::memory_order_relaxed)) {
                 std::this_thread::yield();
@@ -22,6 +24,7 @@ class SpinLock {
 
     void unlock() {
         _locked.store(false, std::memory_order_release);
+        heldLockRelease();
     }
 
   private:

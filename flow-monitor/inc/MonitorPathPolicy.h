@@ -16,6 +16,11 @@ public:
     ScopedMonitorInternalIO& operator=(const ScopedMonitorInternalIO&) = delete;
 };
 
+// The same scope for code that cannot use an object: the fork handlers in
+// Lib.cpp enter it in prepare and leave it in the parent and child handlers.
+void enterMonitorInternalIO();
+void leaveMonitorInternalIO();
+
 // DataLife output is control-plane data and must never be monitored as
 // workflow I/O.
 bool isMonitorOwnedPath(const char* path, const std::string& outputRoot);

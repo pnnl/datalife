@@ -1,6 +1,7 @@
 #ifndef TRACKABLE_H
 #define TRACKABLE_H
 
+#include "MonitorPathPolicy.h"
 #include "ReaderWriterLock.h"
 #include <algorithm>
 #include <atomic>
@@ -24,6 +25,8 @@ class Trackable {
    std::advance(_iter, 1);
    return _iter;
   }
+  // For the fork handlers in Lib.cpp, which hold it across fork().
+  static ReaderWriterLock &registryLock() { return _activeMutex; }
 
   protected:
     Trackable() : _id(_total.fetch_add(1)),
@@ -40,8 +43,13 @@ class Trackable {
         return (1 == _users.fetch_sub(dec));
     }
 
+    // createNew, reuseOld and the destructors in the Remove functions run under the
+    // writer lock. Their I/O (debug prints, logging) is marked as the library's own
+    // so it skips the stdio wrappers: those take the stream registry lock, and the
+    // fork prepare handler in Lib.cpp takes that lock before this one.
     static Value AddTrackable(Key k, std::function<Value(void)> createNew, std::function<void(Value)> reuseOld, bool &created) {
         Value ret = NULL;
+        ScopedMonitorInternalIO internal_io;
         _activeMutex.writerLock();
         if (!_active.count(k)) {
             ret = createNew();
@@ -78,6 +86,7 @@ class Trackable {
     static bool RemoveTrackable(Key k, unsigned int dec = 1) {
         // DPRINTF("in remove trackable %d\n",_active.count(k));
         bool ret = false;
+        ScopedMonitorInternalIO internal_io;
         _activeMutex.writerLock();
         if (_active.count(k)) {
             Value toDelete = _active[k];
@@ -103,6 +112,7 @@ class Trackable {
     }
 
     static void RemoveAllTrackable() {
+        ScopedMonitorInternalIO internal_io;
         _activeMutex.writerLock();
         std::for_each(_active.begin(), _active.end(),
                       [](std::pair<Key, Value> element) {
