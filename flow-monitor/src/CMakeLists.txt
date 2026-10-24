@@ -76,6 +76,7 @@ set(MONITOR_FILES
     Loggable.cpp
     Request.cpp
     ConnectionPool.cpp
+    Message.cpp
     MonitorFile.cpp
     FileCacheRegister.cpp
     #MemoryCache.cpp
@@ -88,6 +89,9 @@ set(MONITOR_FILES
 add_library(monitor SHARED ${MONITOR_HEADERS} ${MONITOR_FILES})
 #target_link_libraries(monitor ${RDMACM_LIB} ${RT_LIB} ${CURL_LIB} ${SSL_LIB} stdc++fs) 
 target_link_libraries(monitor stdc++fs) 
+# A symbol nothing defines fails the link here instead of every program that
+# preloads the library with LD_BIND_NOW=1. dlsym() is in libdl before glibc 2.34.
+target_link_libraries(monitor ${CMAKE_DL_LIBS} -Wl,--no-undefined)
 target_include_directories(monitor PUBLIC ${MONITOR_INC_DIR})
 install(TARGETS monitor LIBRARY DESTINATION lib)
  

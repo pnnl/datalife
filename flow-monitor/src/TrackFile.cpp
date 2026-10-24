@@ -17,6 +17,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <new>
 #include <signal.h>
 #include <sstream>
 #include <string.h>
@@ -54,25 +55,24 @@ using namespace std::chrono;
 // #define ENABLE_TRACE 1
 // #define WRITE_STAT_EACH 0
 
-static SpinLock *trackFileStatLockPtr = nullptr;
-
+// Created once, thread-safely, and never freed; the library constructor creates it
+// before other threads exist. A forked child reinitializes it in place.
 SpinLock &trackFileStatLock() {
-    if (!trackFileStatLockPtr)
-        trackFileStatLockPtr = new SpinLock();
-    return *trackFileStatLockPtr;
+    static auto *lock = new SpinLock();
+    return *lock;
 }
 
 // Empties a trace map in a forked child without freeing the parent's entries: freeing
-// writes to every page they occupy, which the child would then have to copy. The
-// entries move into a heap object that is leaked instead.
+// writes to every page they occupy, which the child would then have to copy, and the
+// child may not use the heap at all (see monitorForkChild in Lib.cpp). A new empty
+// map is constructed over the old one, so the entries are abandoned.
 template <class Map> static void dropInheritedTraces(Map &traces) {
-    new Map(std::move(traces));
-    traces.clear(); // a moved-from map is valid but unspecified
+    new (&traces) Map();
 }
 
 void trackFileForkChildReset() {
-    // May be held by a thread that does not exist in the child; replace, don't acquire.
-    trackFileStatLockPtr = new SpinLock();
+    // May be held by a thread that does not exist in the child; reinitialize, don't acquire.
+    new (&trackFileStatLock()) SpinLock();
 
     // Start the child's block statistics and traces empty, so its trace files cover
     // only its own accesses, as its timer output does.
@@ -288,7 +288,7 @@ ssize_t TrackFile::read(int fd, void *buf, size_t count, uint32_t index, off_t o
 #ifdef GATHERSTAT
     if (bytes_read > -1) {
         auto blockSize = Config::blockSizeForStat;
-        auto file_pos = (offset == -1) ? _filePos[index] : offset; // Use offset for `pread`
+        auto file_pos = (offset == -1) ? _filePos[index].load() : offset; // Use offset for `pread`
         uint32_t start_block = file_pos / blockSize;
         uint32_t end_block = (file_pos + bytes_read) / blockSize;
 
@@ -438,7 +438,7 @@ ssize_t TrackFile::write(int fd, const void *buf, size_t count, uint32_t index, 
 #ifdef GATHERSTAT
     if (bytes_written > 0) {
         // Determine the file position
-        off_t file_position = (offset >= 0) ? offset : _filePos[index];
+        off_t file_position = (offset >= 0) ? offset : _filePos[index].load();
         uint32_t start_block = file_position / _blkSize;
         uint32_t end_block = (file_position + bytes_written) / _blkSize;
 
@@ -478,7 +478,7 @@ int TrackFile::vfprintf(unsigned int pos, int count) {
 #ifdef GATHERSTAT
   std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
   if (count > -1) {
-    auto diff = _filePos[pos]; //  - _filePos[0];
+    auto diff = _filePos[pos].load(); //  - _filePos[0];
     auto precNumBlocks = diff / _blkSize;
     uint32_t startBlockForStat = precNumBlocks; 
     uint32_t endBlockForStat = (diff + count) / _blkSize; 

@@ -18,6 +18,29 @@
 #include "Loggable.h"
 #include "Trackable.h"
 
+// The positions of a file's descriptors, one per MonitorFile::newFilePosIndex().
+// Another thread can open the file, adding one, while I/O through the others
+// updates theirs, so they live in chunks that never move: chunk k holds 64 << k.
+class FilePositions {
+  public:
+    FilePositions();
+    ~FilePositions();
+    FilePositions(const FilePositions &) = delete;
+    FilePositions &operator=(const FilePositions &) = delete;
+
+    std::atomic<uint64_t> &operator[](uint32_t index);
+    // Adds a position, starting at 0, and returns its index. Calls must not overlap.
+    uint32_t add();
+
+  private:
+    static uint32_t chunkOf(uint32_t index);
+    static uint64_t chunkStart(uint32_t chunk);
+    static uint64_t chunkSize(uint32_t chunk);
+
+    std::atomic<std::atomic<uint64_t> *> _chunks[32];
+    uint32_t _size;
+};
+
 class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *> {
   public:
     enum Type { //Input = 0,
@@ -74,7 +97,7 @@ class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *
     std::string _metaName;
 
     std::mutex _fpMutex;
-    std::vector<uint64_t> _filePos;
+    FilePositions _filePos;
     std::vector<bool> _eof;
 
     //Properties from meta data file

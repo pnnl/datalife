@@ -135,9 +135,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    /* A rare crashed child is tolerated: libmonitor's child fork handler allocates,
-       which can fail in a child forked while the signal interrupted malloc. */
-    if (hung || failed || crashed * 100 > forked || fork_errors || io_errors) {
+    if (hung || failed || crashed || fork_errors || io_errors) {
         fprintf(stderr, "%d of %d children hung, %d crashed, %d failed; %d fork errors, %d I/O errors\n",
                 hung, (int)forked, crashed, failed, (int)fork_errors, io_errors);
         return 1;
