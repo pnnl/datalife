@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/uio.h> // gives readv and writev below C linkage, so they replace libc's
 #include <unistd.h>
 #include <fnmatch.h>
 #include <fnmatch.h>
@@ -549,9 +550,9 @@ int __lxstat64(int version, const char *filename, struct stat64 *buf) ADD_THROW;
 int monitorFsync(MonitorFile *file, unsigned int fp, int fd);
 int fsync(int fd);
 
-template <typename Func, typename FuncLocal>
-ssize_t monitorVector(const char *name, Timer::Metric metric, Func monitorFun, FuncLocal localFun, int fd, const struct iovec *iov, int iovcnt);
+ssize_t monitorReadv(MonitorFile *file, unsigned int fp, int fd, const struct iovec *iov, int iovcnt);
 ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
+ssize_t monitorWritev(MonitorFile *file, unsigned int fp, int fd, const struct iovec *iov, int iovcnt);
 ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
 /*Streaming**************************************************************************************************/
 
