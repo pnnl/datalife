@@ -762,34 +762,58 @@ int __lxstat64(int version, const char *filename, struct stat64 *buf) ADD_THROW 
 }
 
 int monitorFsync(MonitorFile *file, unsigned int fp, int fd) {
-    return 0;
+    // Monitored files are local files: the caller relies on its data being on disk.
+    return (*unixfsync)(fd);
 }
 
 int fsync(int fd) {
     return outerWrapper("fsync", fd, Timer::Metric::stat, monitorFsync, unixfsync, fd);
 }
 
-template <typename Func, typename FuncLocal>
-ssize_t monitorVector(const char *name, Timer::Metric metric, Func monitorFun, FuncLocal localFun, int fd, const struct iovec *iov, int iovcnt) {
-    ssize_t ret = 0;
-    for (int i = 0; i < iovcnt && ret < iovcnt; i++) {
-        auto temp = outerWrapper(name, fd, metric, monitorFun, localFun, fd, iov[i].iov_base, iov[i].iov_len);
-        if (temp == (ssize_t)-1) {
-            ret = -1;
-            break;
+// readv and writev on a monitored file make the real call, so the transfer stays
+// one atomic call that can return short, then record its bytes as one read or
+// write ending at the descriptor's new offset.
+static void trackVector(MonitorFile *file, unsigned int fp, int fd, ssize_t bytes, bool isRead) {
+    off_t pos = (*unixlseek)(fd, 0, SEEK_CUR);
+    if (pos < 0) {
+        pos = file->filePos(fp) + bytes; // not seekable (a FIFO): advance as read() does
+    }
+    file->setFilePos(fp, pos);
+    if (auto *trackFile = dynamic_cast<TrackFile *>(file)) {
+        if (isRead) {
+            trackFile->trackRead(bytes, fp, pos);
+        } else {
+            trackFile->trackWrite(bytes, fp, pos);
         }
-        else
-            ret += temp;
+    }
+}
+
+ssize_t monitorReadv(MonitorFile *file, unsigned int fp, int fd, const struct iovec *iov, int iovcnt) {
+    MonitoredIOLock lock(file, false);
+    ssize_t ret = (*unixreadv)(fd, iov, iovcnt);
+    if (ret > 0) {
+        trackVector(file, fp, fd, ret, true);
+        timer->addAmt(Timer::MetricType::monitor, Timer::Metric::readv, ret);
     }
     return ret;
 }
 
 ssize_t readv(int fd, const struct iovec *iov, int iovcnt) {
-    return monitorVector("read", Timer::Metric::readv, monitorRead, unixread, fd, iov, iovcnt);
+    return outerWrapper("readv", fd, Timer::Metric::readv, monitorReadv, unixreadv, fd, iov, iovcnt);
+}
+
+ssize_t monitorWritev(MonitorFile *file, unsigned int fp, int fd, const struct iovec *iov, int iovcnt) {
+    MonitoredIOLock lock(file, true);
+    ssize_t ret = (*unixwritev)(fd, iov, iovcnt);
+    if (ret > 0) {
+        trackVector(file, fp, fd, ret, false);
+        timer->addAmt(Timer::MetricType::monitor, Timer::Metric::writev, ret);
+    }
+    return ret;
 }
 
 ssize_t writev(int fd, const struct iovec *iov, int iovcnt) {
-    return monitorVector("write", Timer::Metric::writev, monitorWrite, unixwrite, fd, iov, iovcnt);
+    return outerWrapper("writev", fd, Timer::Metric::writev, monitorWritev, unixwritev, fd, iov, iovcnt);
 }
 
 /*Streaming**************************************************************************************************/
