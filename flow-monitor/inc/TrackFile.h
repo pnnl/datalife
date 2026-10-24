@@ -39,14 +39,13 @@ public:
   ~TrackFile();
 
   void open();
-  void close();
+  void close(int fd);
   uint64_t fileSize();
 
   
-  ssize_t read(void *buf, size_t count, uint32_t index, off_t offset);
-  ssize_t write(const void *buf, size_t count, uint32_t filePosIndex);
-  ssize_t write(const void *buf, size_t count, uint32_t filePosIndex, off_t offset) override;
-  off_t seek(off_t offset, int whence, uint32_t index = 0);
+  ssize_t read(int fd, void *buf, size_t count, uint32_t index, off_t offset);
+  ssize_t write(int fd, const void *buf, size_t count, uint32_t filePosIndex, off_t offset) override;
+  off_t seek(int fd, off_t offset, int whence, uint32_t index = 0);
   int vfprintf(unsigned int pos, int count);
 
   // Tracking-only methods (no I/O) for FILE* operations to avoid buffering corruption
@@ -62,7 +61,6 @@ private:
   uint64_t _fileSize;
   uint32_t _numBlks;
   uint32_t _regFileIndex;
-  int _fd_orig;
   std::string _filename;
   std::hash<int64_t> hashed;
   std::chrono::high_resolution_clock::time_point open_file_start_time;

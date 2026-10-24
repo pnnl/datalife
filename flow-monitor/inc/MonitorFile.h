@@ -30,20 +30,23 @@ class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *
     virtual ~MonitorFile();
 
     virtual void open() = 0;
-    virtual void close() = 0;
+    // In close, read, write and seek, fd is the caller's descriptor. A file can be
+    // open through several at once, each with its own offset and flags, and the
+    // first may already be closed and its number reused for another file.
+    virtual void close(int fd) = 0;
     virtual uint64_t fileSize() = 0;
   //  virtual uint64_t numBlks() = 0;
   
     // virtual ssize_t read(void *buf, size_t count, uint32_t filePosIndex = 0) = 0;
     // virtual ssize_t write(const void *buf, size_t count, uint32_t filePosIndex = 0) = 0;
-    virtual ssize_t read(void *buf, size_t count, uint32_t filePosIndex = 0, off_t offset = -1) = 0;
-    virtual ssize_t write(const void *buf, size_t count, uint32_t filePosIndex, off_t offset) = 0;
+    virtual ssize_t read(int fd, void *buf, size_t count, uint32_t filePosIndex = 0, off_t offset = -1) = 0;
+    virtual ssize_t write(int fd, const void *buf, size_t count, uint32_t filePosIndex, off_t offset) = 0;
     virtual int vfprintf(unsigned int pos, int count) = 0;
 
     virtual uint32_t newFilePosIndex();
     virtual uint64_t filePos(uint32_t index);
     virtual void setFilePos(uint32_t index, uint64_t pos);
-    virtual off_t seek(off_t offset, int whence, uint32_t index = 0) = 0;
+    virtual off_t seek(int fd, off_t offset, int whence, uint32_t index = 0) = 0;
 
     static MonitorFile *addNewMonitorFile(MonitorFile::Type type, std::string fileName, std::string metaName, int fd, bool open = true);
     static bool removeMonitorFile(std::string fileName);
@@ -58,6 +61,9 @@ class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *
     bool prefetch();
     virtual bool active();
     bool eof(uint32_t index);
+    // Whether the file was a regular file when it was first opened. I/O on other
+    // kinds, such as FIFOs, can block until another thread acts.
+    bool regularFile();
   protected:
     std::string findMetaParam(std::string param, std::string server, bool required);
     bool readMetaInfo();
@@ -83,6 +89,7 @@ class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *
 
   private:
     int _fd;
+    bool _regularFile;
 };
 
 #endif /* MonitorFile_H_ */
