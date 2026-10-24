@@ -4,6 +4,7 @@
 #include <atomic>
 #include <fstream>
 #include <iostream>
+#include <new>
 #include <sstream>
 #include <stdlib.h>
 #include <string.h>
@@ -52,7 +53,24 @@ char const *metricName[] = {
     "destructor",
     "dummy"};
 
+// Created once, thread-safely, and never freed: the Timer is destroyed after
+// ordinary statics are gone. A forked child reinitializes them (resetAfterFork()).
+static std::map<std::string, Timer::FileSizeRecord> &fileSizeRegistry() {
+    static auto *registry = new std::map<std::string, Timer::FileSizeRecord>();
+    return *registry;
+}
+
+static std::mutex &fileSizeLock() {
+    static auto *lock = new std::mutex();
+    return *lock;
+}
+
 Timer::Timer() {
+    // Created here, before other threads exist, so no fork() can happen while
+    // another thread is creating them.
+    fileSizeRegistry();
+    fileSizeLock();
+
     for (int i = 0; i < lastMetric; i++) {
         for (int j = 0; j < last; j++) {
             _time[i][j] = 0;
@@ -262,31 +280,15 @@ uint64_t Timer::getCurrentTime() {
     return ret + Config::referenceTime;
 }
 
-// Heap-allocated and never freed: the Timer is destroyed after ordinary statics are
-// gone. Replaced wholesale in a forked child (resetAfterFork()).
-static std::map<std::string, Timer::FileSizeRecord> *fileSizeRegistryPtr = nullptr;
-static std::mutex *fileSizeLockPtr = nullptr;
-
-static std::map<std::string, Timer::FileSizeRecord> &fileSizeRegistry() {
-    if (!fileSizeRegistryPtr)
-        fileSizeRegistryPtr = new std::map<std::string, Timer::FileSizeRecord>();
-    return *fileSizeRegistryPtr;
-}
-
-static std::mutex &fileSizeLock() {
-    if (!fileSizeLockPtr)
-        fileSizeLockPtr = new std::mutex();
-    return *fileSizeLockPtr;
-}
-
 void Timer::resetAfterFork() {
     // Single-threaded here; locks may be held by threads that no longer exist, so
-    // replace them (leaking the old ones) rather than acquire them.
-    fileSizeLockPtr = new std::mutex();
-    fileSizeRegistryPtr = new std::map<std::string, FileSizeRecord>();
+    // reinitialize them rather than acquire them. The maps start empty; the parent's
+    // entries are abandoned, not freed. Nothing here allocates (see monitorForkChild).
+    new (&fileSizeLock()) std::mutex();
+    new (&fileSizeRegistry()) std::map<std::string, FileSizeRecord>();
 
-    _lock = new ReaderWriterLock();
-    _thread_timers = new std::unordered_map<std::thread::id, Timer::ThreadMetric*>;
+    _lock->resetAfterFork();
+    new (_thread_timers) std::unordered_map<std::thread::id, Timer::ThreadMetric*>();
 
     for (int i = 0; i < lastMetric; i++) {
         for (int j = 0; j < last; j++) {
@@ -296,7 +298,7 @@ void Timer::resetAfterFork() {
         }
     }
 
-    _io_busy_lock = new SpinLock();
+    new (_io_busy_lock) SpinLock();
     _io_inflight = 0;
     _io_busy_start_ns = 0;
     _io_busy_ns = 0;

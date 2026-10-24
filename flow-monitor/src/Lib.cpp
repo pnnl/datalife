@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <fcntl.h>
 #include <mutex>
+#include <new>
 #include <sstream>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -136,6 +137,9 @@ static void monitorForkParent(void) {
     leaveMonitorInternalIO();
 }
 
+// Allocates and frees nothing: a fork() from a signal handler can interrupt
+// malloc, leaving this child's heap mid-update. Locks are reinitialized in place
+// and the parent's data abandoned rather than freed.
 static void monitorForkChild(void) {
     if (skippedForks != 0) {
         --skippedForks;
@@ -146,7 +150,7 @@ static void monitorForkChild(void) {
              it != Trackable<FILE *, MonitorFileStream *>::end(); ++it) {
             it->second->getLock()->resetAfterFork();
         }
-        Loggable::mtx_cout = new std::mutex(); // the old one may be held; leaked
+        new (Loggable::mtx_cout) std::mutex(); // the old one may be held
         if (timer) {
             timer->resetAfterFork();
         }
@@ -164,6 +168,9 @@ void __attribute__((constructor)) monitorInit(void) {
         timer = new Timer();
         timer->start();
         Loggable::mtx_cout = new std::mutex();
+        // Created before other threads exist, so no fork() can happen while another
+        // thread is creating it.
+        trackFileStatLock();
         //InputFile::_time_of_last_read = new std::chrono::time_point<std::chrono::high_resolution_clock>();
         //InputFile::_cache = new Cache(BASECACHENAME, CacheType::base);
         //InputFile::_transferPool = new PriorityThreadPool<std::packaged_task<std::shared_future<Request *>()>>(1,"infile tx pool") ;

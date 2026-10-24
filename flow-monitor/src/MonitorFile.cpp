@@ -39,6 +39,47 @@ inline const char* get_basename(const char* pathname) {
 
 extern int removeStr(char *s, const char *r);
 
+FilePositions::FilePositions() : _size(0) {
+    for (auto &chunk : _chunks) {
+        chunk.store(nullptr, std::memory_order_relaxed);
+    }
+}
+
+FilePositions::~FilePositions() {
+    for (auto &chunk : _chunks) {
+        delete[] chunk.load(std::memory_order_relaxed);
+    }
+}
+
+// Chunk k starts at index 64 * (2^k - 1).
+uint32_t FilePositions::chunkOf(uint32_t index) {
+    return 31 - __builtin_clz(index / 64 + 1);
+}
+
+uint64_t FilePositions::chunkStart(uint32_t chunk) {
+    return 64 * ((uint64_t(1) << chunk) - 1);
+}
+
+uint64_t FilePositions::chunkSize(uint32_t chunk) {
+    return uint64_t(64) << chunk;
+}
+
+std::atomic<uint64_t> &FilePositions::operator[](uint32_t index) {
+    uint32_t chunk = chunkOf(index);
+    return _chunks[chunk].load(std::memory_order_acquire)[index - chunkStart(chunk)];
+}
+
+uint32_t FilePositions::add() {
+    uint32_t index = _size;
+    uint32_t chunk = chunkOf(index);
+    if (!_chunks[chunk].load(std::memory_order_relaxed)) {
+        // Value-initialized, so every position starts at 0; indexes are never reused.
+        _chunks[chunk].store(new std::atomic<uint64_t>[chunkSize(chunk)](), std::memory_order_release);
+    }
+    _size = index + 1;
+    return index;
+}
+
 static bool isRegularFile(int fd) {
     struct stat st;
     return fd >= 0 && fstat(fd, &st) == 0 && S_ISREG(st.st_mode);
@@ -49,7 +90,6 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
     _type(type),
     _name(name),
     _metaName(metaName),
-    _filePos(0),
     _eof(false),
     _compress(false),
     _prefetch(false),
@@ -292,8 +332,7 @@ bool MonitorFile::regularFile() {
 uint32_t MonitorFile::newFilePosIndex() {
     uint32_t ret;
     std::unique_lock<std::mutex> lock(_fpMutex);
-    ret = _filePos.size();
-    _filePos.push_back(0);
+    ret = _filePos.add();
     _eof.push_back(false);
     lock.unlock();
     return ret;
