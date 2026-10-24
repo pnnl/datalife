@@ -26,6 +26,7 @@
 //#include "OutputFile.h"
 #include "RSocketAdapter.h"
 #include "Request.h"
+#include "HeldLocks.h"
 #include "ReaderWriterLock.h"
 #include "MonitorFile.h"
 #include "MonitorFileDescriptor.h"
@@ -91,6 +92,8 @@ static Timer* timer;
 
 std::once_flag log_flag;
 bool init = false;
+// Taken around the whole read, write, lseek, fsync, readv and writev call, except
+// for DataLife's own I/O (see the fork handlers in Lib.cpp).
 ReaderWriterLock vLock;
 
 std::unordered_set<std::string>* track_files = NULL; //this is a pointer cause we access in ((attribute)) constructor and initialization isnt guaranteed
@@ -167,7 +170,7 @@ pwrite_t unixpwrite = NULL;
 pread64_t unixpread64 = NULL;
 pwrite64_t unixpwrite64 = NULL;
 std::unordered_map<int, std::string> fdToFileMap;
-std::mutex fdToFileMapMutex;
+CountedMutex fdToFileMapMutex;
 
 
 bool write_printf = false;

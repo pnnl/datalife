@@ -20,12 +20,14 @@
 #include "TrackFile.h"
 #include "Timer.h"
 #include "UnixIO.h"
+#include "MonitorPathPolicy.h"
 
 //#define TIMEON(...) __VA_ARGS__
 #define TIMEON(...)
 // #define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
 #define DPRINTF(...)
-#define MYDPRINTF(...) fprintf(stderr, __VA_ARGS__)
+// Marked as the library's own I/O, like DPRINTF in TrackFile.cpp.
+#define MYDPRINTF(...) do { ScopedMonitorInternalIO dprintf_io; fprintf(stderr, __VA_ARGS__); } while (0)
 #define TRACKFILECHANGES 1
 
 // Helper function to extract basename from a pathname without modifying the input

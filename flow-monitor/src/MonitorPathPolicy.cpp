@@ -62,14 +62,22 @@ bool isMonitorInternalIO() {
     return monitorInternalIODepth != 0;
 }
 
-ScopedMonitorInternalIO::ScopedMonitorInternalIO() {
+void enterMonitorInternalIO() {
     ++monitorInternalIODepth;
 }
 
-ScopedMonitorInternalIO::~ScopedMonitorInternalIO() {
+void leaveMonitorInternalIO() {
     if (monitorInternalIODepth != 0) {
         --monitorInternalIODepth;
     }
+}
+
+ScopedMonitorInternalIO::ScopedMonitorInternalIO() {
+    enterMonitorInternalIO();
+}
+
+ScopedMonitorInternalIO::~ScopedMonitorInternalIO() {
+    leaveMonitorInternalIO();
 }
 
 bool isMonitorOwnedPath(const char* path, const std::string& outputRoot) {

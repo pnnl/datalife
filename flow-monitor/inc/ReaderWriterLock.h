@@ -22,6 +22,7 @@ class ReaderWriterLock {
     bool cowardlyUpdgradeWriterLock();
 
     void print();
+    void resetAfterFork();
 
     ReaderWriterLock();
     ~ReaderWriterLock();

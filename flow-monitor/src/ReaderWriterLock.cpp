@@ -1,5 +1,6 @@
 #include "ReaderWriterLock.h"
 #include "AtomicHelper.h"
+#include "HeldLocks.h"
 #include "Request.h"
 #include "Loggable.h"
 #include <cstring>
@@ -22,8 +23,18 @@ ReaderWriterLock::~ReaderWriterLock() {
     }
 }
 
+// In a fork() child: the threads holding this lock were not copied, so return
+// it to the unlocked state of a new lock.
+void ReaderWriterLock::resetAfterFork() {
+    _readers.store(0);
+    _writers.store(0);
+    _cnt.store(0);
+    _cur.store(0);
+}
+
 unsigned int ReaderWriterLock::readerLock() {
     unsigned int ret;
+    heldLockAcquire();
     while (1) {
         while (_writers.load()) {
             std::this_thread::yield();
@@ -38,11 +49,14 @@ unsigned int ReaderWriterLock::readerLock() {
 }
 
 unsigned int ReaderWriterLock::readerUnlock() {
-    return _readers.fetch_sub(1);
+    unsigned int ret = _readers.fetch_sub(1);
+    heldLockRelease();
+    return ret;
 }
 
 void ReaderWriterLock::writerLock() {
     unsigned int check = 1;
+    heldLockAcquire();
     while (_writers.exchange(check) == 1) {
         std::this_thread::yield();
     }
@@ -53,6 +67,7 @@ void ReaderWriterLock::writerLock() {
 
 void ReaderWriterLock::fairWriterLock() {
     unsigned int check = 1;
+    heldLockAcquire();
     auto my_cnt = _cnt.fetch_add(1);
     while (my_cnt == _cur.load() || _writers.exchange(check) == 1) {
         std::this_thread::yield();
@@ -64,37 +79,45 @@ void ReaderWriterLock::fairWriterLock() {
 
 void ReaderWriterLock::writerUnlock() {
     _writers.store(0);
+    heldLockRelease();
 }
 
 void ReaderWriterLock::fairWriterUnlock() {
     _writers.store(0);
     _cur.fetch_add(1);
+    heldLockRelease();
 }
 
 bool ReaderWriterLock::tryWriterLock() {
     unsigned int check = 1;
+    heldLockAcquire();
     if (_writers.exchange(check) == 0) {
         while (_readers.load()) {
             std::this_thread::yield();
         }
         return true;
     }
+    heldLockRelease();
     return false;
 }
 
 bool ReaderWriterLock::cowardlyTryWriterLock() {
     unsigned int check = 1;
+    heldLockAcquire();
     if (_writers.exchange(check) == 0) {
         if (_readers.load()) {
             _writers.store(0);
+            heldLockRelease();
             return false;
         }
         return true;
     }
+    heldLockRelease();
     return false;
 }
 
 //JS: Never use this to block.  Will lead to deadlock!
+// The reader lock it converts is already in heldLocks(), so the count stays.
 bool ReaderWriterLock::cowardlyUpdgradeWriterLock() {
     unsigned int one = 1;
     unsigned int zero = 0;
@@ -107,13 +130,16 @@ bool ReaderWriterLock::cowardlyUpdgradeWriterLock() {
 }
 
 bool ReaderWriterLock::tryReaderLock() {
+    heldLockAcquire();
     if (!_writers.load()) {
         _readers.fetch_add(1);
         if (!_writers.load())
             return true;
         _readers.fetch_sub(1);
+        heldLockRelease();
         return false;
     }
+    heldLockRelease();
     return false;
 }
 
