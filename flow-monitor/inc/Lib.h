@@ -123,8 +123,6 @@ std::map<std::string, std::vector<int> > trace_write_blk_seq;
 // For JOSN tracing
 std::unordered_map<std::string, TraceData> trace_read_blk_order;
 std::unordered_map<std::string, TraceData> trace_write_blk_order;
-int first_access_block = -1;
-int largest_access_block = -1;
 
 unixopen_t unixopen = NULL;
 unixopen_t unixopen64 = NULL;
@@ -151,6 +149,11 @@ unixfseek_t unixfseek = NULL;
 unixrewind_t unixrewind = NULL;
 unixfgetc_t unixfgetc = NULL;
 unixfgets_t unixfgets = NULL;
+unixfread_t unixfread_unlocked = NULL;
+unixfgets_t unixfgets_unlocked = NULL;
+// glibc's checked fgets variants read less than fgets() when the buffer is too small.
+unixfgets_chk_t unix__fgets_chk = NULL;
+unixfgets_chk_t unix__fgets_unlocked_chk = NULL;
 unixfputc_t unixfputc = NULL;
 unixfputs_t unixfputs = NULL;
 unixflockfile_t unixflockfile = NULL;
@@ -580,6 +583,9 @@ int fgetc(FILE *fp);
 
 char *monitorFgets(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, int n, FILE *__restrict fp);
 char *fgets(char *__restrict s, int n, FILE *__restrict fp);
+
+size_t fread_unlocked(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp);
+char *fgets_unlocked(char *__restrict s, int n, FILE *__restrict fp);
 
 int monitorFputc(MonitorFile *file, unsigned int pos, int fd, int c, FILE *fp);
 int fputc(int c, FILE *fp);

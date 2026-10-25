@@ -7,6 +7,7 @@
 #include <new>
 #include <sstream>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -169,8 +170,8 @@ void __attribute__((constructor)) monitorInit(void) {
         timer->start();
         Loggable::mtx_cout = new std::mutex();
         // Created before other threads exist, so no fork() can happen while another
-        // thread is creating it.
-        trackFileStatLock();
+        // thread is creating them.
+        trackFileInit();
         //InputFile::_time_of_last_read = new std::chrono::time_point<std::chrono::high_resolution_clock>();
         //InputFile::_cache = new Cache(BASECACHENAME, CacheType::base);
         //InputFile::_transferPool = new PriorityThreadPool<std::packaged_task<std::shared_future<Request *>()>>(1,"infile tx pool") ;
@@ -222,6 +223,10 @@ void __attribute__((constructor)) monitorInit(void) {
         unixrewind = (unixrewind_t)dlsym(RTLD_NEXT, "rewind");
         unixfgetc = (unixfgetc_t)dlsym(RTLD_NEXT, "fgetc");
         unixfgets = (unixfgets_t)dlsym(RTLD_NEXT, "fgets");
+        unixfread_unlocked = (unixfread_t)dlsym(RTLD_NEXT, "fread_unlocked");
+        unixfgets_unlocked = (unixfgets_t)dlsym(RTLD_NEXT, "fgets_unlocked");
+        unix__fgets_chk = (unixfgets_chk_t)dlsym(RTLD_NEXT, "__fgets_chk");
+        unix__fgets_unlocked_chk = (unixfgets_chk_t)dlsym(RTLD_NEXT, "__fgets_unlocked_chk");
         unixfputc = (unixfputc_t)dlsym(RTLD_NEXT, "fputc");
         unixfputs = (unixfputs_t)dlsym(RTLD_NEXT, "fputs");
         unixflockfile = (unixflockfile_t)dlsym(RTLD_NEXT, "flockfile");
@@ -927,10 +932,8 @@ int fclose(FILE *fp) {
     return outerWrapper("fclose", fp, Timer::Metric::close, monitorFclose, unixfclose, fp);
 }
 
-size_t monitorFread(MonitorFile *file, unsigned int pos, int fd, void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
-  DPRINTF("Lib.cpp: In monitor fread \n");
-    // auto read_bytes = (size_t)file->read(ptr, size * n, pos);
-    auto items_read = (*unixfread)(ptr, size, n, fp);
+// After a real fread()-like call read items_read items of size bytes from fp.
+static size_t trackFread(size_t items_read, size_t size, MonitorFile *file, unsigned int pos, FILE *fp) {
     auto read_bytes = items_read * size;
 
     // Update the timer with the number of bytes read
@@ -951,12 +954,25 @@ size_t monitorFread(MonitorFile *file, unsigned int pos, int fd, void *__restric
     return items_read;
 }
 
+size_t monitorFread(MonitorFile *file, unsigned int pos, int fd, void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
+  DPRINTF("Lib.cpp: In monitor fread \n");
+    return trackFread((*unixfread)(ptr, size, n, fp), size, file, pos, fp);
+}
+
+size_t monitorFreadUnlocked(MonitorFile *file, unsigned int pos, int fd, void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
+    return trackFread((*unixfread_unlocked)(ptr, size, n, fp), size, file, pos, fp);
+}
+
 size_t fread(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
   DPRINTF("Lib.cpp: Invoking fread \n");
   auto ret_val = outerWrapper("fread", fp, Timer::Metric::read, 
 			      monitorFread, unixfread, ptr, size, n, fp);
   DPRINTF("Lib.cpp: fread return value %d\n", ret_val);
   return ret_val;
+}
+
+size_t fread_unlocked(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
+  return outerWrapper("fread_unlocked", fp, Timer::Metric::read, monitorFreadUnlocked, unixfread_unlocked, ptr, size, n, fp);
 }
 
 size_t monitorFwrite(MonitorFile *file, unsigned int pos, int fd, const void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
@@ -1058,32 +1074,8 @@ int fgetc(FILE *fp) {
     return outerWrapper("fgetc", fp, Timer::Metric::fgetc, monitorFgetc, unixfgetc, fp);
 }
 
-char *monitorFgets(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, int n, FILE *__restrict fp) {
-    // char *ret = NULL;
-    // if (!file->eof(pos)) {
-    //     int prior = file->filePos(pos);
-    //     size_t res = read(fd, s, n - 1);
-    //     if (res) {
-    //         unsigned int index;
-    //         for (index = 0; index < res; index++) {
-    //             if (s[index] == '\n') {
-    //                 index++;
-    //                 break;
-    //             }
-    //         }
-
-    //         if (index < res) {
-    //             file->seek(prior + index, SEEK_SET, pos);
-    //         }
-
-    //         s[index] = '\0';
-    //         ret = s;
-    //     }
-    // }
-    // return ret;
-
-    char *result = (*unixfgets)(s, n, fp);
-
+// After a real fgets()-like call on fp returned result.
+static char *trackFgets(char *result, MonitorFile *file, unsigned int pos, FILE *fp) {
     if (result != NULL) {
         long new_pos = (*unixftell)(fp);
         if (new_pos >= 0) {
@@ -1093,15 +1085,34 @@ char *monitorFgets(MonitorFile *file, unsigned int pos, int fd, char *__restrict
             if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
                 trackFile->trackRead(new_pos - prev_pos, pos, new_pos);
             }
-
         }
     }
 
     return result;
 }
 
+char *monitorFgets(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, int n, FILE *__restrict fp) {
+    return trackFgets((*unixfgets)(s, n, fp), file, pos, fp);
+}
+
+char *monitorFgetsUnlocked(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, int n, FILE *__restrict fp) {
+    return trackFgets((*unixfgets_unlocked)(s, n, fp), file, pos, fp);
+}
+
+char *monitorFgetsChk(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, size_t size, int n, FILE *__restrict fp) {
+    return trackFgets((*unix__fgets_chk)(s, size, n, fp), file, pos, fp);
+}
+
+char *monitorFgetsUnlockedChk(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, size_t size, int n, FILE *__restrict fp) {
+    return trackFgets((*unix__fgets_unlocked_chk)(s, size, n, fp), file, pos, fp);
+}
+
 char *fgets(char *__restrict s, int n, FILE *__restrict fp) {
     return outerWrapper("fgets", fp, Timer::Metric::fgets, monitorFgets, unixfgets, s, n, fp);
+}
+
+char *fgets_unlocked(char *__restrict s, int n, FILE *__restrict fp) {
+    return outerWrapper("fgets_unlocked", fp, Timer::Metric::fgets, monitorFgetsUnlocked, unixfgets_unlocked, s, n, fp);
 }
 
 int monitorFputc(MonitorFile *file, unsigned int pos, int fd, int c, FILE *fp) {
@@ -1320,3 +1331,62 @@ ssize_t pwrite64(int fd, const void *buf, size_t count, off64_t offset) {
                             monitorPwrite64, unixpwrite64, fd, buf, count, offset);
     return ret;
 }
+
+/* Fortified reads ***************************************************************************************/
+
+// With _FORTIFY_SOURCE, the default when optimizing on most distributions, a
+// program calls these instead of read(), pread(), fread(), fgets() and their
+// unlocked variants whenever the compiler knows the buffer's size but not the
+// request's. They check as glibc's do, then read through the wrappers above.
+extern "C" {
+
+void __chk_fail(void) __attribute__((noreturn));
+
+ssize_t __read_chk(int fd, void *buf, size_t nbytes, size_t buflen) {
+    if (nbytes > buflen) {
+        __chk_fail();
+    }
+    return read(fd, buf, nbytes);
+}
+
+ssize_t __pread_chk(int fd, void *buf, size_t nbytes, off_t offset, size_t buflen) {
+    if (nbytes > buflen) {
+        __chk_fail();
+    }
+    return pread(fd, buf, nbytes, offset);
+}
+
+ssize_t __pread64_chk(int fd, void *buf, size_t nbytes, off64_t offset, size_t buflen) {
+    if (nbytes > buflen) {
+        __chk_fail();
+    }
+    return pread64(fd, buf, nbytes, offset);
+}
+
+static void checkFread(size_t ptrlen, size_t size, size_t n) {
+    if ((size != 0 && n > SIZE_MAX / size) || size * n > ptrlen) {
+        __chk_fail();
+    }
+}
+
+size_t __fread_chk(void *__restrict ptr, size_t ptrlen, size_t size, size_t n, FILE *__restrict fp) {
+    checkFread(ptrlen, size, n);
+    return fread(ptr, size, n, fp);
+}
+
+size_t __fread_unlocked_chk(void *__restrict ptr, size_t ptrlen, size_t size, size_t n, FILE *__restrict fp) {
+    checkFread(ptrlen, size, n);
+    return fread_unlocked(ptr, size, n, fp);
+}
+
+// glibc's __fgets_chk reads at most size bytes and fails only if the line needs
+// more, so the real call does the reading and the checking.
+char *__fgets_chk(char *__restrict s, size_t size, int n, FILE *__restrict fp) {
+    return outerWrapper("__fgets_chk", fp, Timer::Metric::fgets, monitorFgetsChk, unix__fgets_chk, s, size, n, fp);
+}
+
+char *__fgets_unlocked_chk(char *__restrict s, size_t size, int n, FILE *__restrict fp) {
+    return outerWrapper("__fgets_unlocked_chk", fp, Timer::Metric::fgets, monitorFgetsUnlockedChk, unix__fgets_unlocked_chk, s, size, n, fp);
+}
+
+} // extern "C"

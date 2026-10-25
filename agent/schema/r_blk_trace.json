@@ -9,7 +9,7 @@
       "type": "array",
       "items": {"type": "integer"},
       "minItems": 2,
-      "description": "Flat array of block range pairs [start, end, start, end, ...]. Each pair describes a contiguous range of blocks accessed."
+      "description": "This process's access pattern for the file, in 4096-byte blocks with inclusive ends: [first block accessed, last block accessed, largest block accessed, -1 while every access started at or after the end of the previous one, -2 once one did not]. Builds with BLK_IDX instead list one [start, end] pair per access."
     },
     "task_name": {
       "type": "string",
