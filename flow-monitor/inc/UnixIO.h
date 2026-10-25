@@ -34,6 +34,7 @@ typedef void (*unixrewind_t)(FILE *__stream);
 
 typedef int (*unixfgetc_t)(FILE *fp);
 typedef char *(*unixfgets_t)(char *__restrict s, int n, FILE *__restrict fp);
+typedef char *(*unixfgets_chk_t)(char *__restrict s, size_t size, int n, FILE *__restrict fp); // __fgets_chk
 typedef int (*unixfputc_t)(int __c, FILE *__stream);
 typedef int (*unixfputs_t)(const char *__restrict __s, FILE *__restrict __stream);
 
