@@ -23,12 +23,13 @@ extern std::map<std::string, std::vector<int> > trace_write_blk_seq;
 using TraceData = std::vector<int>;
 extern std::unordered_map<std::string, TraceData> trace_read_blk_order;
 extern std::unordered_map<std::string, TraceData> trace_write_blk_order;
-extern int first_access_block;
-extern int largest_access_block;
 
 // Guards the maps above and the per-file trace state, which several threads update
 // concurrently. Held for bookkeeping only, never across a syscall or output write.
 SpinLock &trackFileStatLock();
+// Creates the lock above and the legacy output state; called by the library
+// constructor, before other threads exist.
+void trackFileInit();
 // pthread_atfork child handler: reinitializes the stat lock and drops the parent's block
 // statistics and traces, without allocating.
 void trackFileForkChildReset();
@@ -56,6 +57,9 @@ private:
 // bool trackRead(size_t count, uint32_t index, uint32_t startBlock, uint32_t endBlock);
 //    uint64_t copyBlock(char *buf, char *blkBuf, uint32_t blk, uint32_t startBlock, uint32_t endBlock, uint32_t fpIndex, uint64_t count);
 
+  // Records one access to the block histogram and the JSON access pattern.
+  void recordAccess(bool isWrite, off_t pos, ssize_t bytes);
+
   std::mutex _openCloseLock;
   // std::atomic<uint64_t> 
   uint64_t _fileSize;
@@ -68,11 +72,12 @@ private:
   std::chrono::seconds total_time_spent_read;
   std::chrono::seconds total_time_spent_write;
 
-  // For JSON Tracing: keep track of previous blocks
-  int prev_start_block = -1;
-  int prev_end_block = -1;
+  // For JSON tracing: this file's access pattern so far (see recordAccess())
+  int first_access_block = -1;
+  int largest_access_block = -1;
+  off_t prev_end_offset = -1; // the byte after the previous access
   bool has_been_random = false;
-  friend void trackFileForkChildReset(); // resets the three above in a forked child
+  friend void trackFileForkChildReset(); // resets the four above in a forked child
 };
 
 

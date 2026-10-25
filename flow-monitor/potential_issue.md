@@ -209,6 +209,13 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
 }
 ```
 
+#### 3. Block Statistics Sample Only Half of the Blocks of Files Over 2 MiB
+
+*   **Location:** `flow-monitor/src/TrackFile.cpp`, `TrackFile::recordAccess()` (`USE_HASH`), with `Config::hashtableSizeForStat` in `flow-monitor/inc/Config.h`
+*   **Description:** With `USE_HASH` (hard-coded on), a block is counted only if `hash(block) % hashtableSizeForStat` is below `hashtableSizeForStat / 2`, with `hashtableSizeForStat = 1000`. `std::hash` of an integer is the identity in libstdc++, so blocks 500-999, 1500-1999, ... are never counted: every file over 2 MiB has half of its blocks missing from the histograms, in 2 MiB stripes.
+*   **Impact:** For such files, `access_frequency` and `data_volume` in the JSON traces and the legacy `*_r_stat`/`*_w_stat` histograms cover about half of the actual I/O (measured 2026-10-24: an 8 MiB file read once in 1 MiB reads gave `data_volume` 4,300,800 of 8,388,608 bytes). The README does not mention sampling.
+*   **Status:** Left as is on 2026-10-24, pending a decision: either remove the sampling (the cost it saves is small) or document it, use a real hash so the sample is random rather than striped, and scale the reported totals.
+
 ### Original Code Region
 This part of the bugs are in the region of code Candice did not make modification in this fork repo, thus implementation should be same as the master branch.
 
