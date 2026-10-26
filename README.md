@@ -2,8 +2,7 @@
 <!-- $Id$ -->
 
 
-DataLife
-=============================================================================
+# DataLife
 
 **Home**:
   - [DataLife](https://github.com/pnnl/DataLife), part of [DataFlowDrs](https://github.com/pnnl/DataFlowDrs)
@@ -61,12 +60,14 @@ identify and rank opportunities for improving task and data placement
 and resource assignment.
 
 ------------------------------------------------------------------------------
+
 # Getting Started
 
 See: [README-Install.txt](/README-Install.txt)
 
 
 ------------------------------------------------------------------------------
+
 ## Contacts
 
 **Contacts**: (_firstname_._lastname_@pnnl.gov)
@@ -90,8 +91,8 @@ See: [README-Install.txt](/README-Install.txt)
   - Hyungro Lee ([www](https://lee212.github.io/))
 
 
-References
------------------------------------------------------------------------------
+## References
+
 - **Overview**: Nathan R. Tallent, Meng Tang, Zhen Peng, Jesun Firoz, Luanzheng Guo, Anthony Kougkas, and Xian-He Sun. "DataFlowDrs: Automating Performance Optimization of Data Flow Within HPC Workflows." IEEE Transactions on Parallel and Distributed Systems, Vol. 37, pp. 2619-2636, December 2026. ([doi: 10.1109/TPDS.2026.3722592](https://doi.org/10.1109/TPDS.2026.3722592))
 
 * **Specific**: Hyungro Lee, Luanzheng Guo, Meng Tang, Jesun Firoz, Nathan Tallent, Anthony Kougkas, and Xian-He Sun. "Data Flow Lifecycles for Optimizing Workflow Coordination." Proc. of the Intl. Conf. for High Performance Computing, Networking, Storage and Analysis (SuperComputing), SC '23, Association for Computing Machinery, November 2023. ([doi: 10.1145/3581784.3607104](https://doi.org/10.1145/3581784.3607104))
@@ -104,8 +105,7 @@ References
 BSD 2-clause license: [README-License.txt](/README-License.txt)
 
 
-Acknowledgements
------------------------------------------------------------------------------
+## Acknowledgements
 
 This work was supported by the U.S. Department of Energy's Office of
 Advanced Scientific Computing Research:
