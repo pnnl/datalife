@@ -93,9 +93,9 @@ See: [README-Install.txt](/README-Install.txt)
 
 ## References
 
-- **Overview**: Nathan R. Tallent, Meng Tang, Zhen Peng, Jesun Firoz, Luanzheng Guo, Anthony Kougkas, and Xian-He Sun. "DataFlowDrs: Automating Performance Optimization of Data Flow Within HPC Workflows." IEEE Transactions on Parallel and Distributed Systems, Vol. 37, pp. 2619-2636, December 2026. ([doi: 10.1109/TPDS.2026.3722592](https://doi.org/10.1109/TPDS.2026.3722592))
+- **Overview Citation**: Nathan R. Tallent, Meng Tang, Zhen Peng, Jesun Firoz, Luanzheng Guo, Anthony Kougkas, and Xian-He Sun. "DataFlowDrs: Automating Performance Optimization of Data Flow Within HPC Workflows." IEEE Transactions on Parallel and Distributed Systems, Vol. 37, pp. 2619-2636, December 2026. ([doi: 10.1109/TPDS.2026.3722592](https://doi.org/10.1109/TPDS.2026.3722592))
 
-* **Specific**: Hyungro Lee, Luanzheng Guo, Meng Tang, Jesun Firoz, Nathan Tallent, Anthony Kougkas, and Xian-He Sun. "Data Flow Lifecycles for Optimizing Workflow Coordination." Proc. of the Intl. Conf. for High Performance Computing, Networking, Storage and Analysis (SuperComputing), SC '23, Association for Computing Machinery, November 2023. ([doi: 10.1145/3581784.3607104](https://doi.org/10.1145/3581784.3607104))
+- **Specific**: Hyungro Lee, Luanzheng Guo, Meng Tang, Jesun Firoz, Nathan Tallent, Anthony Kougkas, and Xian-He Sun. "Data Flow Lifecycles for Optimizing Workflow Coordination." Proc. of the Intl. Conf. for High Performance Computing, Networking, Storage and Analysis (SuperComputing), SC '23, Association for Computing Machinery, November 2023. ([doi: 10.1145/3581784.3607104](https://doi.org/10.1145/3581784.3607104))
 
 - For all related references, see [DataFlowDrs](https://github.com/pnnl/DataFlowDrs)
 
@@ -111,4 +111,3 @@ This work was supported by the U.S. Department of Energy's Office of
 Advanced Scientific Computing Research:
 
 - Orchestration for Distributed & Data-Intensive Scientific Exploration
-
