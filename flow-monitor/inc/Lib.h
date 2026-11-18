@@ -139,13 +139,19 @@ unixxstat64_t unixxstat64 = NULL;
 unixxstat_t unixlxstat = NULL;
 unixxstat64_t unixlxstat64 = NULL;
 unixfsync_t unixfsync = NULL;
+unixrename_t unixrename = NULL;
+unixrenameat_t unixrenameat = NULL;
+unixrenameat2_t unixrenameat2 = NULL; // NULL before glibc 2.28
 unixfopen_t unixfopen = NULL;
 unixfopen_t unixfopen64 = NULL;
+unixfdopen_t unixfdopen = NULL;
 unixfclose_t unixfclose = NULL;
 unixfread_t unixfread = NULL;
 unixfwrite_t unixfwrite = NULL;
 unixftell_t unixftell = NULL;
 unixfseek_t unixfseek = NULL;
+unixfseeko_t unixfseeko = NULL;
+unixfseeko64_t unixfseeko64 = NULL;
 unixrewind_t unixrewind = NULL;
 unixfgetc_t unixfgetc = NULL;
 unixfgets_t unixfgets = NULL;
@@ -161,6 +167,9 @@ unixftrylockfile_t unixftrylockfile = NULL;
 unixfunlockfile_t unixfunlockfile = NULL;
 unixfflush_t unixfflush = NULL;
 unixfeof_t unixfeof = NULL;
+unixuflow_t unix__uflow = NULL;
+unixuflow_t unix__underflow = NULL;
+unixoverflow_t unix__overflow = NULL;
 unixreadv_t unixreadv = NULL;
 unixwritev_t unixwritev = NULL;
 unixexit_t unixexit = NULL;
@@ -181,12 +190,20 @@ CountedMutex fdToFileMapMutex;
 bool write_printf = false;
 bool open_printf = false;
 
-int removeStr(char *s, const char *r);
 
 /*Templating*************************************************************************************************/
 
 inline bool checkMeta(const char *pathname, std::string &path, std::string &file, MonitorFile::Type &type) {
-
+    // Only a regular file can be a meta file, and only one can be looked into
+    // behind the program's back: opening a FIFO waits for its other end, and
+    // reading from one takes data the program was to read.
+    {
+        ScopedMonitorInternalIO internal_io; // stat() is the intercepted __xstat() before glibc 2.33
+        struct stat st;
+        if (stat(pathname, &st) != 0 || !S_ISREG(st.st_mode)) {
+            return false;
+        }
+    }
 
   DPRINTF("Checkmeta calling open on file %s\n", pathname);
     int fd = (*unixopen)(pathname, O_RDONLY);
@@ -305,18 +322,23 @@ inline auto innerWrapper(FILE *fp, bool &isMonitorFile, Func monitorFun, FuncLoc
         ReaderWriterLock *lock = NULL;
         int fd = MonitorFileStream::lookupStream(fp, lock);
         if (fd != -1) {
-            isMonitorFile = true;
             lock->writerLock();
             MonitorFile *file = NULL;
             unsigned int pos = 0;
-            MonitorFileDescriptor::lookupMonitorFileDescriptor(fd, file, pos);
-	    // if (write_printf == true) {
-	    //   DPRINTF("[MONITOR] in innerwrapper 2 for write calling Monitorfun\n");
-	    // }
-            auto ret = monitorFun(file, pos, fd, args...);
+            if (MonitorFileDescriptor::lookupMonitorFileDescriptor(fd, file, pos)) {
+                isMonitorFile = true;
+	        // if (write_printf == true) {
+	        //   DPRINTF("[MONITOR] in innerwrapper 2 for write calling Monitorfun\n");
+	        // }
+                auto ret = monitorFun(file, pos, fd, args...);
+                lock->writerUnlock();
+                removeFileStream(localFun, fp);
+                return ret;
+            }
+            // The program closed the descriptor itself, with close(fileno(fp)):
+            // the file is no longer monitored and the stream is an ordinary one.
             lock->writerUnlock();
             removeFileStream(localFun, fp);
-            return ret;
         }
     }
   return localFun(args...);
@@ -526,6 +548,7 @@ int monitorOpen(std::string name, std::string metaName, MonitorFile::Type type, 
 int open(const char *pathname, int flags, ...);
 int open64(const char *pathname, int flags, ...);
 int openat(int dirfd, const char *pathname, int flags, ...);
+int openat64(int dirfd, const char *pathname, int flags, ...);
 
 int monitorClose(MonitorFile *file, unsigned int fp, int fd);
 int close(int fd);

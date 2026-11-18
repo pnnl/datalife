@@ -69,12 +69,24 @@ class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *
     virtual uint32_t newFilePosIndex();
     virtual uint64_t filePos(uint32_t index);
     virtual void setFilePos(uint32_t index, uint64_t pos);
+    // For a stream on this descriptor: -1 until a call that reads or writes is
+    // seen on it, then how many of the bytes the program has taken from the
+    // stream's buffer, or put in it, are recorded (see trackUnseenStreamIO() in
+    // Lib.cpp).
+    long streamRecorded(uint32_t index);
+    void setStreamRecorded(uint32_t index, long bytes);
     virtual off_t seek(int fd, off_t offset, int whence, uint32_t index = 0) = 0;
 
     static MonitorFile *addNewMonitorFile(MonitorFile::Type type, std::string fileName, std::string metaName, int fd, bool open = true);
     static bool removeMonitorFile(std::string fileName);
     static bool removeMonitorFile(MonitorFile *file);
     static MonitorFile *lookUpMonitorFile(std::string fileName);
+    // After a rename of `from` to `to`: a file open under `from` goes by `to` from
+    // now on, unless one is open under `to` as well. Returns whether it does;
+    // open says whether a file was open under `from`.
+    static bool renameMonitorFile(const std::string &from, const std::string &to, bool &open);
+    // Whether the base name of path matches one of DATALIFE_FILE_PATTERNS.
+    static bool matchesPatterns(const std::string &path);
 
     MonitorFile::Type type();
     std::string name();
@@ -87,7 +99,17 @@ class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *
     // Whether the file was a regular file when it was first opened. I/O on other
     // kinds, such as FIFOs, can block until another thread acts.
     bool regularFile();
+    // Whether close() reports this file: its name matches a pattern, or did
+    // before the file was renamed.
+    bool traced();
   protected:
+    // Gives the file its new name, and what was recorded under the old one.
+    // Called with the registry of files locked.
+    virtual void renameTo(const std::string &name) = 0;
+
+    // The names change when the file is renamed, with the registry of files
+    // and trackFileStatLock() (TrackFile.h) both locked. Read them with either
+    // locked, or through name() and metaName(), which lock the second.
     std::string findMetaParam(std::string param, std::string server, bool required);
     bool readMetaInfo();
     
@@ -95,9 +117,11 @@ class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *
     MonitorFile::Type _type;
     std::string _name;
     std::string _metaName;
+    bool _traced; // matched a pattern under a name it no longer has
 
     std::mutex _fpMutex;
     FilePositions _filePos;
+    FilePositions _streamRecorded; // for each position, streamRecorded() + 1
     std::vector<bool> _eof;
 
     //Properties from meta data file

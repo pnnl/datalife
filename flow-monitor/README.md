@@ -44,6 +44,8 @@ The monitor's behavior can be configured through the following environment varia
         ```sh
         export DATALIFE_FILE_PATTERNS="*.dat,*.log"
         ```
+    *   **Matching**: A pattern is matched against the base name of a file (the part after the last `/`), not its path. A file that a tool writes under another name is traced only if a pattern matches that name too. `fasterq-dump`, for example, writes its output to temporary chunks named `<accession>.<host>.<pid>.<n>.<m>` before it assembles the FASTQ file, so `*.fastq` alone misses them and a pattern such as `SRR*` is needed as well.
+    *   **Renamed files**: When the process that reads or writes a traced file renames it (`rename`, `renameat`, `renameat2`), what was recorded under the old name is reported under the new one, added to anything recorded there, and the trace files already written for the old name are replaced by ones for the new name. A temporary file that becomes the result is therefore reported as the result. Each such rename is listed under `renames` in the process's `monitor_timer.*.json` (or on a `[MONITOR] rename` line when the library is built without `TIMER_JSON`), with `"followed": true`. A rename the monitor cannot follow is listed with `"followed": false` when either name matches a pattern: a file written by one process and renamed by another (`mv`, for example), or a file renamed onto one that is still open. Names are compared as the program spells them, and a renamed directory is not followed.
 
 *   #### `DATALIFE_JSON_OUTPUT`
     *   **Purpose**: Enables JSON-only output mode when set to `1`. When enabled, the monitor will generate trace data in JSON format without creating additional stat files.

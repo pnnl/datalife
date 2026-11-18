@@ -20,9 +20,14 @@ typedef int (*unixxstat_t)(int version, const char *filename, struct stat *buf);
 typedef int (*unixxstat64_t)(int version, const char *filename, struct stat64 *buf);
 
 typedef int (*unixfsync_t)(int fd);
+
+typedef int (*unixrename_t)(const char *oldpath, const char *newpath);
+typedef int (*unixrenameat_t)(int olddirfd, const char *oldpath, int newdirfd, const char *newpath);
+typedef int (*unixrenameat2_t)(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags);
 typedef int (*unixfdatasync_t)(int fd);
 
 typedef FILE *(*unixfopen_t)(__const char *__restrict __filename, __const char *__restrict __modes);
+typedef FILE *(*unixfdopen_t)(int fd, const char *modes);
 typedef int (*unixfclose_t)(FILE *fp);
 
 typedef size_t (*unixfread_t)(void *ptr, size_t size, size_t nmemb, FILE *stream);
@@ -30,6 +35,8 @@ typedef size_t (*unixfwrite_t)(const void *ptr, size_t size, size_t nmemb, FILE 
 
 typedef long int (*unixftell_t)(FILE *__stream);
 typedef int (*unixfseek_t)(FILE *__stream, long int __off, int __whence);
+typedef int (*unixfseeko_t)(FILE *__stream, off_t __off, int __whence);
+typedef int (*unixfseeko64_t)(FILE *__stream, off64_t __off, int __whence);
 typedef void (*unixrewind_t)(FILE *__stream);
 
 typedef int (*unixfgetc_t)(FILE *fp);
@@ -44,6 +51,9 @@ typedef int (*unixftrylockfile_t)(FILE *fp);
 typedef int (*unixfunlockfile_t)(FILE *fp);
 
 typedef int (*unixfflush_t)(FILE *fp);
+// glibc's slow paths behind the inlined getc_unlocked() and putc_unlocked()
+typedef int (*unixuflow_t)(FILE *fp);            // __uflow, __underflow
+typedef int (*unixoverflow_t)(FILE *fp, int ch); // __overflow
 typedef int (*unixfeof_t)(FILE *fp);
 
 typedef ssize_t (*unixreadv_t)(int fd, const struct iovec *iov, int iovcnt);

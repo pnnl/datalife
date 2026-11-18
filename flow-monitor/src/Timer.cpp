@@ -65,11 +65,18 @@ static std::mutex &fileSizeLock() {
     return *lock;
 }
 
+// Guarded by fileSizeLock().
+static std::vector<Timer::RenameRecord> &renameRegistry() {
+    static auto *registry = new std::vector<Timer::RenameRecord>();
+    return *registry;
+}
+
 Timer::Timer() {
     // Created here, before other threads exist, so no fork() can happen while
     // another thread is creating them.
     fileSizeRegistry();
     fileSizeLock();
+    renameRegistry();
 
     for (int i = 0; i < lastMetric; i++) {
         for (int j = 0; j < last; j++) {
@@ -190,6 +197,17 @@ Timer::~Timer() {
             jsonOutput[myprogname]["files"][entry.first] = item;
         }
 
+        // The renames of traced files, in order.
+        jsonOutput[myprogname]["renames"] = nlohmann::json::array();
+        for (const auto &rec : renames()) {
+            jsonOutput[myprogname]["renames"].push_back({
+                {"from", rec.from},
+                {"to", rec.to},
+                {"epoch_ns", rec.epoch_ns},
+                {"followed", rec.followed},
+            });
+        }
+
         // Ensure dataLifeOutputPath is not empty
         if (Config::dataLifeOutputPath.empty()) {
             std::cerr << "Error: DATALIFE_OUTPUT_PATH is not set!" << std::endl;
@@ -210,7 +228,9 @@ Timer::~Timer() {
         if (!log_file) {
             std::cerr << "Failed to open " << fullPath << std::endl;
         } else {
-            log_file << jsonOutput.dump(4); // Pretty print with an indent of 4 spaces
+            // Pretty print with an indent of 4 spaces. A file name need not be
+            // UTF-8: its other bytes are replaced, not refused.
+            log_file << jsonOutput.dump(4, ' ', false, nlohmann::json::error_handler_t::replace);
             log_file.close();
         }
 
@@ -258,6 +278,8 @@ Timer::~Timer() {
         }
         for (const auto &entry : fileSizes())
             ss << "[MONITOR] file " << entry.first << " file_size_bytes " << entry.second.size_bytes << " file_alloc_bytes " << entry.second.alloc_bytes << " file_size_source " << entry.second.source << " closes " << entry.second.closes << std::endl;
+        for (const auto &rec : renames())
+            ss << "[MONITOR] rename " << rec.from << " to " << rec.to << " followed " << rec.followed << " epoch_ns " << rec.epoch_ns << std::endl;
         ss << "[MONITOR] task pid " << getpid() << " start_pid " << _task_start_pid << " host " << host_name << " wall_time_s " << task_wall_s << " io_time_s " << io_time_s << " io_busy_time_s " << io_busy_s << " compute_time_s " << compute_time_s << " start_epoch_ns " << _task_start_epoch_ns << " end_epoch_ns " << task_end_epoch_ns << std::endl;
         dprintf(stdoutcp, "[MONITOR] %s\n%s\n", myprogname.c_str(), ss.str().c_str());
     }
@@ -286,6 +308,7 @@ void Timer::resetAfterFork() {
     // entries are abandoned, not freed. Nothing here allocates (see monitorForkChild).
     new (&fileSizeLock()) std::mutex();
     new (&fileSizeRegistry()) std::map<std::string, FileSizeRecord>();
+    new (&renameRegistry()) std::vector<RenameRecord>();
 
     _lock->resetAfterFork();
     new (_thread_timers) std::unordered_map<std::thread::id, Timer::ThreadMetric*>();
@@ -321,6 +344,32 @@ void Timer::recordFileSize(const std::string &path, int64_t size_bytes, int64_t 
 std::map<std::string, Timer::FileSizeRecord> Timer::fileSizes() {
     std::lock_guard<std::mutex> guard(fileSizeLock());
     return fileSizeRegistry();
+}
+
+void Timer::recordRename(const std::string &from, const std::string &to, bool followed) {
+    std::lock_guard<std::mutex> guard(fileSizeLock());
+    renameRegistry().push_back({from, to, epochNs(), followed});
+    if (!followed) {
+        return;
+    }
+    // The size recorded when `from` was last closed is the size of `to` now.
+    auto &sizes = fileSizeRegistry();
+    auto source = sizes.find(from);
+    if (source == sizes.end()) {
+        return;
+    }
+    FileSizeRecord rec = source->second;
+    sizes.erase(source);
+    auto replaced = sizes.find(to);
+    if (replaced != sizes.end()) {
+        rec.closes += replaced->second.closes;
+    }
+    sizes[to] = rec;
+}
+
+std::vector<Timer::RenameRecord> Timer::renames() {
+    std::lock_guard<std::mutex> guard(fileSizeLock());
+    return renameRegistry();
 }
 
 uint64_t Timer::epochNs() {
