@@ -400,6 +400,19 @@ off_t TrackFile::seek(int fd, off_t offset, int whence, uint32_t index) {
   return actual_pos;
 }
 
+// The accesses and bytes in the block statistics of `name`: each block's accesses,
+// and those times the bytes of its first one. Called with the stat lock held.
+static void blockTotals(const std::string &name, bool is_read, uint64_t &access_frequency, uint64_t &data_volume) {
+    auto &stat = (is_read ? track_file_blk_r_stat : track_file_blk_w_stat)[name];
+    auto &stat_size = (is_read ? track_file_blk_r_stat_size : track_file_blk_w_stat_size)[name];
+    access_frequency = 0;
+    data_volume = 0; /// data_volume = access_frequency * access_size
+    for (auto &blk_info : stat) {
+        access_frequency += blk_info.second;
+        data_volume += blk_info.second * stat_size[blk_info.first];
+    }
+}
+
 // Helper function for JSON trace output
 void write_trace_data(const std::string& filename, const std::string &data_name, TraceData& blk_trace_info, const std::string &pid, const std::string &_name, bool is_read,
                       int64_t file_size_bytes, int64_t file_alloc_bytes, const char *file_size_source) {
@@ -448,18 +461,8 @@ void write_trace_data(const std::string& filename, const std::string &data_name,
 
   /// Calculate statistical values
   uint64_t accumu_access_frequency = 0;
-  uint64_t accumu_data_volume = 0;  /// data_volume = access_frequency * access_size
-  if (is_read) {
-    for (auto& blk_info  : track_file_blk_r_stat[_name]) {
-      accumu_access_frequency += blk_info.second;
-      accumu_data_volume += blk_info.second * track_file_blk_r_stat_size[_name][blk_info.first];
-    }
-  } else { /// is write
-    for (auto& blk_info : track_file_blk_w_stat[_name]) {
-        accumu_access_frequency += blk_info.second;
-        accumu_data_volume += blk_info.second * track_file_blk_w_stat_size[_name][blk_info.first];
-    }
-  }
+  uint64_t accumu_data_volume = 0;
+  blockTotals(_name, is_read, accumu_access_frequency, accumu_data_volume);
   jsonOutput["access_frequency"] = accumu_access_frequency;
   jsonOutput["data_volume"] = accumu_data_volume;
   // Authoritative file size from fstat() at close; separate from data_volume and
@@ -486,7 +489,7 @@ void write_trace_data(const std::string& filename, const std::string &data_name,
       return;
   }
 
-  file << jsonOutput.dump(4); // Pretty print with an indent of 4 spaces
+  file << jsonOutput.dump(4, ' ', false, nlohmann::json::error_handler_t::replace); // Pretty print with an indent of 4 spaces
   DPRINTF("write_trace_data(): blk_trace_info written to file %s", fullPath.c_str());
   file.close();
 }
@@ -576,13 +579,232 @@ static void appendLegacySequence(const std::string &path, const std::vector<int>
     ::close(fd);
 }
 
+// Copies the block histograms of `name`. Called with the stat lock held.
+static void snapshotHistograms(const std::string &name, std::map<int, int64_t> &r_stat, std::map<int, int64_t> &r_stat_size,
+                               std::map<int, int64_t> &w_stat, std::map<int, int64_t> &w_stat_size) {
+    for (auto const& blk_info : track_file_blk_r_stat[name])
+        r_stat[blk_info.first] = blk_info.second.load();
+    for (auto const& blk_info : track_file_blk_r_stat_size[name])
+        r_stat_size[blk_info.first] = blk_info.second.load();
+    for (auto const& blk_info : track_file_blk_w_stat[name])
+        w_stat[blk_info.first] = blk_info.second.load();
+    for (auto const& blk_info : track_file_blk_w_stat_size[name])
+        w_stat_size[blk_info.first] = blk_info.second.load();
+}
+
+/* Renamed files *********************************************************************************************/
+
+// Everything recorded for a file is kept under its name, so a file written under
+// one name and renamed (a temporary file that becomes the result, like the first
+// chunk of fasterq-dump's output) would leave its I/O under a name that no longer
+// exists and none under the name the next task reads. After a rename, what was
+// recorded under the old name is therefore moved to the new one and added to
+// what is there: the result is what it would be had the program used the new
+// name all along.
+
+typedef std::map<std::string, std::map<int, std::atomic<int64_t> > > BlockStats;
+
+// add: the values are access counts, which add up. Otherwise they are the bytes
+// of each block's first access, and the destination's stay.
+static void moveBlockStats(BlockStats &stats, const std::string &from, const std::string &to, bool add) {
+    auto source = stats.find(from);
+    if (source == stats.end()) {
+        return;
+    }
+    auto &destination = stats[to];
+    for (auto &blk_info : source->second) {
+        auto existing = destination.find(blk_info.first);
+        if (existing == destination.end()) {
+            destination[blk_info.first] = blk_info.second.load();
+        } else if (add) {
+            existing->second += blk_info.second.load();
+        }
+    }
+    stats.erase(source);
+}
+
+static void moveBlockSequence(std::map<std::string, std::vector<int> > &sequences, const std::string &from, const std::string &to) {
+    auto source = sequences.find(from);
+    if (source == sequences.end()) {
+        return;
+    }
+    auto &destination = sequences[to];
+    destination.insert(destination.end(), source->second.begin(), source->second.end());
+    sequences.erase(source);
+}
+
+// The accesses not yet written to a JSON trace. The entry under `from` stays,
+// empty: close() holds references to these entries without the lock.
+static void moveTraceOrder(std::unordered_map<std::string, TraceData> &traces, const std::string &from, const std::string &to) {
+    auto source = traces.find(from);
+    if (source == traces.end() || source->second.empty()) {
+        return;
+    }
+    TraceData moved;
+    moved.swap(source->second);
+    auto &destination = traces[to];
+#ifdef BLK_IDX
+    destination.insert(destination.end(), moved.begin(), moved.end());
+#else
+    destination.swap(moved); // a summary of the file's accesses: the renamed file's replaces it
+#endif
+}
+
+// Called with the stat lock held.
+static void moveTrackStats(const std::string &from, const std::string &to) {
+    moveBlockStats(track_file_blk_r_stat, from, to, true);
+    moveBlockStats(track_file_blk_r_stat_size, from, to, false);
+    moveBlockStats(track_file_blk_w_stat, from, to, true);
+    moveBlockStats(track_file_blk_w_stat_size, from, to, false);
+    moveBlockSequence(trace_read_blk_seq, from, to);
+    moveBlockSequence(trace_write_blk_seq, from, to);
+    moveTraceOrder(trace_read_blk_order, from, to);
+    moveTraceOrder(trace_write_blk_order, from, to);
+}
+
+void TrackFile::renameTo(const std::string &name) {
+    const bool matched = matchesPatterns(_name); // no other thread renames: the registry is locked
+    std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
+    _traced = _traced || matched;
+    moveTrackStats(_name, name);
+    _name = name;
+    _metaName = name;
+    _filename = name;
+}
+
+// The name of a trace file is the traced file's name without its directories, as
+// in write_trace_data().
+static std::string traceBaseName(const std::string &name) {
+    size_t lastSlash = name.find_last_of("/\\");
+    return (lastSlash != std::string::npos) ? name.substr(lastSlash + 1) : name;
+}
+
+// The JSON traces this process wrote for `from` when it closed it become those of
+// `to`, with the totals now recorded under `to`.
+static void followRenameJson(const std::string &from, const std::string &to, const std::string &pid) {
+    char hostname[256];
+    const std::string host_name = (gethostname(hostname, sizeof(hostname)) == 0) ? hostname : "unknown_host";
+    for (bool is_read : {true, false}) {
+        const std::string suffix = "." + pid + "-" + host_name + (is_read ? ".r_blk_trace.json" : ".w_blk_trace.json");
+        const std::string old_path = Config::dataLifeOutputPath + "/" + traceBaseName(from) + suffix;
+        const std::string new_path = Config::dataLifeOutputPath + "/" + traceBaseName(to) + suffix;
+        if (old_path == new_path) {
+            continue; // renamed into another directory: the trace is named the same
+        }
+        std::ifstream old_file(old_path);
+        if (!old_file) {
+            continue; // not closed yet, or no access of this kind
+        }
+        nlohmann::json trace = nlohmann::json::parse(old_file, nullptr, false);
+        old_file.close();
+        if (!trace.is_object()) {
+            continue;
+        }
+        uint64_t access_frequency = 0;
+        uint64_t data_volume = 0;
+        {
+            std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
+            blockTotals(to, is_read, access_frequency, data_volume);
+        }
+        trace["file_name"] = traceBaseName(to);
+        trace["access_frequency"] = access_frequency;
+        trace["data_volume"] = data_volume;
+        std::ofstream new_file(new_path, std::ios::out | std::ios::trunc);
+        if (!new_file) {
+            continue;
+        }
+        // A file name need not be UTF-8: its other bytes are replaced, not refused.
+        new_file << trace.dump(4, ' ', false, nlohmann::json::error_handler_t::replace);
+        new_file.close();
+        ::unlink(old_path.c_str());
+    }
+}
+
+// Appends the file at `from` to the one at `to` and removes it. Returns whether
+// there was one.
+static bool appendAndRemove(const std::string &from, const std::string &to) {
+    std::ifstream source(from, std::ios::in | std::ios::binary);
+    if (!source) {
+        return false;
+    }
+    std::ofstream destination(to, std::ios::out | std::ios::app | std::ios::binary);
+    if (destination && source.peek() != std::ifstream::traits_type::eof()) {
+        destination << source.rdbuf();
+    }
+    source.close();
+    ::unlink(from.c_str());
+    return true;
+}
+
+// The same for the legacy output: the access sequences written for `from` are
+// appended to those of `to`, and its histograms replaced by those of `to`, which
+// now include them.
+static void followRenameLegacy(const std::string &from, const std::string &to, const std::string &pid) {
+    const std::string old_prefix = Config::dataLifeOutputPath + "/" + get_basename_str(from) + "_" + pid;
+    const std::string new_prefix = Config::dataLifeOutputPath + "/" + get_basename_str(to) + "_" + pid;
+    if (old_prefix == new_prefix) {
+        return;
+    }
+    std::lock_guard<std::mutex> legacy_guard(legacyStatLock());
+    bool written = false;
+    for (const char *suffix : {"_r_trace_stat", "_w_trace_stat"}) {
+        written = appendAndRemove(old_prefix + suffix, new_prefix + suffix) || written;
+    }
+    for (const char *suffix : {"_r_stat", "_w_stat"}) {
+        written = (::unlink((old_prefix + suffix).c_str()) == 0) || written;
+        legacyTableStart().erase(old_prefix + suffix);
+    }
+    if (!written) {
+        return; // `from` was not closed yet: its statistics are written when `to` is
+    }
+    std::map<int, int64_t> r_stat, r_stat_size, w_stat, w_stat_size;
+    {
+        std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
+        snapshotHistograms(to, r_stat, r_stat_size, w_stat, w_stat_size);
+    }
+    writeLegacyHistogram(new_prefix + "_r_stat", to, r_stat, r_stat_size);
+    writeLegacyHistogram(new_prefix + "_w_stat", to, w_stat, w_stat_size);
+}
+
+bool trackFileRenamed(const std::string &from, const std::string &to) {
+    if (from == to || isMonitorInternalIO()) {
+        return false;
+    }
+    ScopedMonitorInternalIO internal_io;
+
+    bool open = false;
+    if (!MonitorFile::renameMonitorFile(from, to, open)) {
+        if (open || MonitorFile::lookUpMonitorFile(to)) {
+            return false; // open under both names, or renamed onto an open file
+        }
+        // Not open now: its statistics are all there is to move.
+        std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
+        if (track_file_blk_r_stat.find(from) == track_file_blk_r_stat.end()) {
+            return false;
+        }
+        moveTrackStats(from, to);
+    }
+
+    if (!Config::dataLifeOutputPath.empty()) {
+        const std::string pid = std::to_string(getpid());
+        if (Config::enableJsonOutput) {
+            followRenameJson(from, to, pid);
+        } else {
+            followRenameLegacy(from, to, pid);
+        }
+    }
+    return true;
+}
+
 void TrackFile::close(int fd) {
     if (isMonitorInternalIO()) {
         return;
     }
     ScopedMonitorInternalIO internal_io;
 
-    DPRINTF("Calling TrackFile close: %s\n", _name.c_str());
+    // The file's name now: a rename on another thread changes it.
+    const std::string filename = name();
+    DPRINTF("Calling TrackFile close: %s\n", filename.c_str());
 
     auto pid = std::to_string(getpid());
     close_file_end_time = high_resolution_clock::now();
@@ -599,7 +821,7 @@ void TrackFile::close(int fd) {
         file_alloc_bytes = (int64_t)st.st_blocks * 512;
         file_size_source = "posix_fstat_at_close";
     }
-    Timer::recordFileSize(_name, file_size_bytes, file_alloc_bytes, file_size_source);
+    Timer::recordFileSize(filename, file_size_bytes, file_alloc_bytes, file_size_source);
 
     // JSON mode: write JSON trace files
     if (Config::enableJsonOutput) {
@@ -611,31 +833,31 @@ void TrackFile::close(int fd) {
         char hostname[256]; // Buffer to store the host name
         std::string host_name = (gethostname(hostname, sizeof(hostname)) == 0) ? hostname : "unknown_host";
 
-        DPRINTF("Writing r blk access order stat with prefix %s\n", _filename.c_str());
-        std::string file_name_trace_r = _filename + "." + pid + "-" + host_name + ".r_blk_trace.json";
+        DPRINTF("Writing r blk access order stat with prefix %s\n", filename.c_str());
+        std::string file_name_trace_r = filename + "." + pid + "-" + host_name + ".r_blk_trace.json";
 
-        auto& blk_trace_info_r = traceEntry(trace_read_blk_order, _filename);
+        auto& blk_trace_info_r = traceEntry(trace_read_blk_order, filename);
         auto future_r = std::async(std::launch::async,
                                    write_trace_data,
                                    file_name_trace_r,
-                                   _filename,
+                                   filename,
                                    std::ref(blk_trace_info_r),
                                    pid,
-                                   _name,
+                                   filename,
                                    /*is_read=*/true,
                                    file_size_bytes, file_alloc_bytes, file_size_source);
 
-        DPRINTF("Writing w blk access order stat with prefix %s\n", _filename.c_str());
-        std::string file_name_trace_w = _filename + "." + pid + "-" + host_name + ".w_blk_trace.json";
+        DPRINTF("Writing w blk access order stat with prefix %s\n", filename.c_str());
+        std::string file_name_trace_w = filename + "." + pid + "-" + host_name + ".w_blk_trace.json";
 
-        auto& blk_trace_info_w = traceEntry(trace_write_blk_order, _filename);
+        auto& blk_trace_info_w = traceEntry(trace_write_blk_order, filename);
         auto future_w = std::async(std::launch::async,
                                    write_trace_data,
                                    file_name_trace_w,
-                                   _filename,
+                                   filename,
                                    std::ref(blk_trace_info_w),
                                    pid,
-                                   _name,
+                                   filename,
                                    /*is_read=*/false,
                                    file_size_bytes, file_alloc_bytes, file_size_source);
                                    
@@ -656,22 +878,15 @@ void TrackFile::close(int fd) {
     std::vector<int> blk_trace_info_r, blk_trace_info_w;
     {
         std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
-        for (auto const& blk_info : track_file_blk_r_stat[_name])
-            r_stat[blk_info.first] = blk_info.second.load();
-        for (auto const& blk_info : track_file_blk_r_stat_size[_name])
-            r_stat_size[blk_info.first] = blk_info.second.load();
-        for (auto const& blk_info : track_file_blk_w_stat[_name])
-            w_stat[blk_info.first] = blk_info.second.load();
-        for (auto const& blk_info : track_file_blk_w_stat_size[_name])
-            w_stat_size[blk_info.first] = blk_info.second.load();
+        snapshotHistograms(filename, r_stat, r_stat_size, w_stat, w_stat_size);
         // The accesses since the previous close: written out below and dropped here.
-        blk_trace_info_r.swap(trace_read_blk_seq[_name]);
-        blk_trace_info_w.swap(trace_write_blk_seq[_name]);
+        blk_trace_info_r.swap(trace_read_blk_seq[filename]);
+        blk_trace_info_w.swap(trace_write_blk_seq[filename]);
     }
-    const std::string prefix = Config::dataLifeOutputPath + "/" + get_basename_str(_filename) + "_" + pid;
+    const std::string prefix = Config::dataLifeOutputPath + "/" + get_basename_str(filename) + "_" + pid;
     DPRINTF("Writing r/w blk access stats with prefix %s\n", prefix.c_str());
-    writeLegacyHistogram(prefix + "_r_stat", _filename, r_stat, r_stat_size);
-    writeLegacyHistogram(prefix + "_w_stat", _filename, w_stat, w_stat_size);
+    writeLegacyHistogram(prefix + "_r_stat", filename, r_stat, r_stat_size);
+    writeLegacyHistogram(prefix + "_w_stat", filename, w_stat, w_stat_size);
     appendLegacySequence(prefix + "_r_trace_stat", blk_trace_info_r);
     appendLegacySequence(prefix + "_w_trace_stat", blk_trace_info_w);
     } // end if (!Config::enableJsonOutput)

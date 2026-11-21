@@ -84,10 +84,18 @@ class Trackable {
     }
 
     static bool RemoveTrackable(Key k, unsigned int dec = 1) {
+        return RemoveTrackableBy([&]() { return k; }, dec);
+    }
+
+    // The same for the key keyOf() returns once the registry is locked. For a key
+    // that RekeyTrackable() can change: read before the lock is taken, it may by
+    // then be the key of another entry.
+    static bool RemoveTrackableBy(std::function<Key()> keyOf, unsigned int dec = 1) {
         // DPRINTF("in remove trackable %d\n",_active.count(k));
         bool ret = false;
         ScopedMonitorInternalIO internal_io;
         _activeMutex.writerLock();
+        Key k = keyOf();
         if (_active.count(k)) {
             Value toDelete = _active[k];
             if (toDelete->decUsers(dec)) {
@@ -100,6 +108,27 @@ class Trackable {
         }
         _activeMutex.writerUnlock();
         return ret;
+    }
+
+    // Moves the entry under `from` to `to` and calls update on it, all under the
+    // writer lock. Changes nothing and returns false if there is no entry under
+    // `from` (found is false) or there already is one under `to` (found is true).
+    static bool RekeyTrackable(Key from, Key to, std::function<void(Value)> update, bool &found) {
+        bool moved = false;
+        ScopedMonitorInternalIO internal_io;
+        _activeMutex.writerLock();
+        auto it = _active.find(from);
+        found = (it != _active.end());
+        if (found && !_active.count(to)) {
+            Value value = it->second;
+            _active.erase(it);
+            _active[to] = value;
+            if (update)
+                update(value);
+            moved = true;
+        }
+        _activeMutex.writerUnlock();
+        return moved;
     }
 
     static Value LookupTrackable(Key k) {

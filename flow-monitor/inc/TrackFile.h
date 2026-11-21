@@ -33,6 +33,13 @@ void trackFileInit();
 // pthread_atfork child handler: reinitializes the stat lock and drops the parent's block
 // statistics and traces, without allocating.
 void trackFileForkChildReset();
+// A rename of `from` to `to` succeeded. If this process monitored a file under
+// `from`, what it recorded there (statistics, the open file, the trace files
+// already written) goes by `to` from now on, added to what it recorded under
+// `to`, and the function returns true. It returns false if it recorded nothing
+// under `from`, or if a monitored file is open under `to`: the two then keep
+// their records.
+bool trackFileRenamed(const std::string &from, const std::string &to);
 
 class TrackFile : public MonitorFile {
 public:
@@ -52,7 +59,10 @@ public:
   // Tracking-only methods (no I/O) for FILE* operations to avoid buffering corruption
   void trackRead(size_t count, uint32_t index, off_t filePos);
   void trackWrite(size_t count, uint32_t index, off_t filePos);
-  
+
+protected:
+  void renameTo(const std::string &name) override;
+
 private:
 // bool trackRead(size_t count, uint32_t index, uint32_t startBlock, uint32_t endBlock);
 //    uint64_t copyBlock(char *buf, char *blkBuf, uint32_t blk, uint32_t startBlock, uint32_t endBlock, uint32_t fpIndex, uint64_t count);

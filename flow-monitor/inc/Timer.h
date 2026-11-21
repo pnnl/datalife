@@ -82,6 +82,20 @@ class Timer {
     static void recordFileSize(const std::string &path, int64_t size_bytes, int64_t alloc_bytes, const char *source);
     static std::map<std::string, FileSizeRecord> fileSizes();
 
+    // A rename this process made of a file it monitored, or whose old or new name
+    // matches a pattern. followed: what was recorded under `from`, its size
+    // included, is now reported under `to` (see trackFileRenamed()). Otherwise the
+    // record is all that ties the two names: the file was written by another
+    // process, for example, and renamed by this one.
+    struct RenameRecord {
+        std::string from;
+        std::string to;
+        uint64_t epoch_ns;
+        bool followed;
+    };
+    static void recordRename(const std::string &from, const std::string &to, bool followed);
+    static std::vector<RenameRecord> renames();
+
     // pthread_atfork child handler: drop inherited counters/registry, restart the caliper.
     void resetAfterFork();
 

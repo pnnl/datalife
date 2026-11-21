@@ -37,8 +37,6 @@ inline const char* get_basename(const char* pathname) {
     return base ? base + 1 : pathname;
 }
 
-extern int removeStr(char *s, const char *r);
-
 FilePositions::FilePositions() : _size(0) {
     for (auto &chunk : _chunks) {
         chunk.store(nullptr, std::memory_order_relaxed);
@@ -90,6 +88,7 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
     _type(type),
     _name(name),
     _metaName(metaName),
+    _traced(false),
     _eof(false),
     _compress(false),
     _prefetch(false),
@@ -102,14 +101,7 @@ MonitorFile::MonitorFile(MonitorFile::Type type, std::string name, std::string m
 
 #ifdef TRACKFILECHANGES
 
-    bool matched = false;
-    for (const auto& pattern : patterns) {
-        DPRINTF("Checking file: %s against pattern: %s\n", name.c_str(), pattern.c_str());
-        if (fnmatch(pattern.c_str(), get_basename(name.c_str()), 0) == 0) {
-            matched = true;
-            break;
-        }
-    }
+    bool matched = matchesPatterns(name);
 
 
     if (matched) {
@@ -298,11 +290,34 @@ MonitorFile::Type MonitorFile::type() {
 }
 
 std::string MonitorFile::name() {
+    std::lock_guard<SpinLock> name_guard(trackFileStatLock());
     return _name;
 }
 
 std::string MonitorFile::metaName() {
+    std::lock_guard<SpinLock> name_guard(trackFileStatLock());
     return _metaName;
+}
+
+bool MonitorFile::matchesPatterns(const std::string &path) {
+    for (const auto &pattern : patterns) {
+        if (fnmatch(pattern.c_str(), get_basename(path.c_str()), 0) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MonitorFile::traced() {
+    std::string current;
+    {
+        std::lock_guard<SpinLock> name_guard(trackFileStatLock());
+        if (_traced) {
+            return true;
+        }
+        current = _name;
+    }
+    return matchesPatterns(current);
 }
 
 uint64_t MonitorFile::blkSize() {
@@ -333,6 +348,7 @@ uint32_t MonitorFile::newFilePosIndex() {
     uint32_t ret;
     std::unique_lock<std::mutex> lock(_fpMutex);
     ret = _filePos.add();
+    _streamRecorded.add();
     _eof.push_back(false);
     lock.unlock();
     return ret;
@@ -346,6 +362,14 @@ uint64_t MonitorFile::filePos(uint32_t index) {
 void MonitorFile::setFilePos(uint32_t index, uint64_t pos) {
     //no lock here... we are assuming the fp index is inbounds...
     _filePos[index] = pos;
+}
+
+long MonitorFile::streamRecorded(uint32_t index) {
+    return (long)_streamRecorded[index].load() - 1;
+}
+
+void MonitorFile::setStreamRecorded(uint32_t index, long bytes) {
+    _streamRecorded[index] = (uint64_t)(bytes + 1);
 }
 
 //fileName is the metafile
@@ -434,36 +458,28 @@ MonitorFile *MonitorFile::addNewMonitorFile(MonitorFile::Type type, std::string 
     return NULL;
 }
 
-//fileName is the metaFile
+// fileName is the name the file was added under. A name is never altered to find
+// its entry: one that held ".tmp" used to be looked up without it, so closing
+// "out.tmp" released the entry of "out", still open, or none at all.
 bool MonitorFile::removeMonitorFile(std::string fileName) {
-  DPRINTF("Removing Monitorfile %s\n", fileName.c_str());  
-  if (strstr(fileName.c_str(), ".tmp") != NULL) {
-        char temp[1000];
-        strcpy(temp, fileName.c_str());
-        removeStr(temp, ".tmp");
-        // std::cout<<" remove monitor 1: "<<fileName<<std::endl;
-        return Trackable<std::string, MonitorFile *>::RemoveTrackable(temp);
-    }
-    else {
-        // std::cout<<" remove monitor 2: "<<fileName<<std::endl;
-        return Trackable<std::string, MonitorFile *>::RemoveTrackable(fileName);
-    }
+    DPRINTF("Removing Monitorfile %s\n", fileName.c_str());
+    return Trackable<std::string, MonitorFile *>::RemoveTrackable(fileName);
 }
 
 bool MonitorFile::removeMonitorFile(MonitorFile *file) {
   DPRINTF("Removing Monitorfile %s\n", file->_metaName.c_str());
     // std::cout<<" remove: "<<file->_name<<" "<<file->_metaName<<std::endl;
-    return removeMonitorFile(file->_metaName);
+    // The file's name now, read with the registry locked: a rename on another
+    // thread changes it under that lock, and the old name may already be that
+    // of another file.
+    return Trackable<std::string, MonitorFile *>::RemoveTrackableBy([file]() { return file->_metaName; });
+}
+
+bool MonitorFile::renameMonitorFile(const std::string &from, const std::string &to, bool &open) {
+    return Trackable<std::string, MonitorFile *>::RekeyTrackable(
+        from, to, [&](MonitorFile *file) { file->renameTo(to); }, open);
 }
 
 MonitorFile *MonitorFile::lookUpMonitorFile(std::string fileName) {
-    if (strstr(fileName.c_str(), ".tmp") != NULL) {
-        char temp[1000];
-        strcpy(temp, fileName.c_str());
-        removeStr(temp, ".tmp");
-        return Trackable<std::string, MonitorFile *>::LookupTrackable(temp);
-    }
-    else {
-        return Trackable<std::string, MonitorFile *>::LookupTrackable(fileName);
-    }
+    return Trackable<std::string, MonitorFile *>::LookupTrackable(fileName);
 }
