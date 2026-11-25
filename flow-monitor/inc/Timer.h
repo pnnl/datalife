@@ -50,6 +50,7 @@ class Timer {
         rewind,
         constructor,
         destructor,
+        trace_output, // the library writing a file's traces: its own work, like the two above
         dummy, //use to match calls to start...
         last
     };
@@ -60,6 +61,25 @@ class Timer {
     void start();
     void end(MetricType type, Metric metric);
     void addAmt(MetricType type, Metric metric, uint64_t amt);
+
+    // While one of these exists on a thread, the library is doing work of its
+    // own there: writing a file's traces, which it does from inside the
+    // program's close() of the file. That time is not the call's, and neither
+    // the program's I/O nor its computing. It is taken out of the time of the
+    // call being timed on the thread, if one is, out of the I/O busy time and
+    // out of the compute time, and reported as `monitor trace_output`. Does
+    // nothing before the library's timer exists or after it is gone.
+    class OwnWork {
+      public:
+        OwnWork() { begin(); }
+        ~OwnWork() { end(); }
+        OwnWork(const OwnWork &) = delete;
+        OwnWork &operator=(const OwnWork &) = delete;
+
+      private:
+        static void begin();
+        static void end();
+    };
 
     static uint64_t getCurrentTime();
     static char *printTime();
@@ -140,6 +160,15 @@ class Timer {
     uint64_t _io_busy_ns;
     void ioBusyBegin();
     void ioBusyEnd(Metric metric);
+    // Own busy time: wall-clock time with >= 1 thread in an OwnWork and none
+    // inside an intercepted call, so that it and the I/O busy time never
+    // overlap. Guarded by _io_busy_lock like the I/O busy time.
+    uint32_t _own_inflight;
+    bool _own_busy_open;
+    uint64_t _own_busy_start_ns;
+    uint64_t _own_busy_ns;
+    void ownBusyBegin();
+    void ownBusyEnd();
 };
 
 #endif /* TIMER_H */

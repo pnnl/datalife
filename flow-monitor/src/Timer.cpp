@@ -20,6 +20,12 @@ extern char *__progname;
 thread_local uint64_t _depth = 0;
 thread_local uint64_t _current = 0;
 
+// For Timer::OwnWork: the library's timer, when the work on this thread began,
+// and how many OwnWork are open on it (only the outermost counts).
+static std::atomic<Timer *> ownWorkTimer{nullptr};
+thread_local uint64_t _own_work_start = 0;
+thread_local uint64_t _own_work_depth = 0;
+
 char const *metricTypeName[] = {
     "monitor",
     "local",
@@ -51,6 +57,7 @@ char const *metricName[] = {
     "rewind",
     "constructor",
     "destructor",
+    "trace_output",
     "dummy"};
 
 // Created once, thread-safely, and never freed: the Timer is destroyed after
@@ -97,31 +104,40 @@ Timer::Timer() {
     _io_inflight = 0;
     _io_busy_start_ns = 0;
     _io_busy_ns = 0;
+    _own_inflight = 0;
+    _own_busy_open = false;
+    _own_busy_start_ns = 0;
+    _own_busy_ns = 0;
 
     // Task caliper start: the Timer is created in the library constructor.
     _task_start_epoch_ns = epochNs();
     _task_start_steady_ns = steadyNs();
     _task_start_pid = getpid();
+    ownWorkTimer.store(this);
 }
 
 Timer::~Timer() {
+    ownWorkTimer.store(nullptr);
     // Task caliper end: the Timer is deleted in the library destructor.
     const uint64_t task_end_epoch_ns = epochNs();
     const double task_wall_s = (steadyNs() - _task_start_steady_ns) / billion;
     uint64_t io_busy_ns = 0;
+    uint64_t own_busy_ns = 0;
     {
         std::lock_guard<SpinLock> busy_guard(*_io_busy_lock);
         io_busy_ns = _io_busy_ns;
+        own_busy_ns = _own_busy_ns;
     }
     const double io_busy_s = io_busy_ns / billion;
-    const double compute_time_s = task_wall_s - io_busy_s;
-    // Per-call I/O time summed over all threads (excludes constructor/destructor/dummy);
+    // What is neither the program's I/O nor the library writing traces.
+    const double compute_time_s = task_wall_s - io_busy_s - own_busy_ns / billion;
+    // Per-call I/O time summed over all threads (excludes constructor/destructor/trace_output/dummy);
     // exceeds wall time under concurrent I/O, hence compute time uses io_busy_s instead.
     double io_time_s = 0.0;
     uint64_t io_calls = 0;
     for (int i = 0; i < lastMetric; i++) {
         for (int j = 0; j < last; j++) {
-            if (j == constructor || j == destructor || j == dummy)
+            if (j == constructor || j == destructor || j == trace_output || j == dummy)
                 continue;
             io_time_s += _time[i][j].load(std::memory_order_relaxed) / billion;
             io_calls += _cnt[i][j].load(std::memory_order_relaxed);
@@ -327,6 +343,10 @@ void Timer::resetAfterFork() {
     _io_inflight = 0;
     _io_busy_start_ns = 0;
     _io_busy_ns = 0;
+    _own_inflight = 0;
+    _own_busy_open = false;
+    _own_busy_start_ns = 0;
+    _own_busy_ns = 0;
 
     // Caliper restarts at the fork; _task_start_pid keeps the parent's pid.
     _task_start_epoch_ns = epochNs();
@@ -399,6 +419,11 @@ void Timer::ioBusyBegin() {
     std::lock_guard<SpinLock> busy_guard(*_io_busy_lock);
     if (_io_inflight++ == 0) {
         _io_busy_start_ns = steadyNs();
+        if (_own_busy_open) { // from here on the time is I/O busy time
+            _own_busy_open = false;
+            if (_io_busy_start_ns > _own_busy_start_ns)
+                _own_busy_ns += _io_busy_start_ns - _own_busy_start_ns;
+        }
     }
 }
 
@@ -408,12 +433,37 @@ void Timer::ioBusyEnd(Metric metric) {
         return; // unbalanced end(); never underflow
     }
     if (--_io_inflight == 0) {
+        const uint64_t now = steadyNs();
         // Not I/O; excluded as in io_time_s.
-        if (metric != constructor && metric != destructor && metric != dummy) {
-            const uint64_t now = steadyNs();
+        if (metric != constructor && metric != destructor && metric != trace_output && metric != dummy) {
             if (now > _io_busy_start_ns)
                 _io_busy_ns += now - _io_busy_start_ns;
         }
+        if (_own_inflight != 0) { // a thread is still writing traces
+            _own_busy_open = true;
+            _own_busy_start_ns = now;
+        }
+    }
+}
+
+void Timer::ownBusyBegin() {
+    std::lock_guard<SpinLock> busy_guard(*_io_busy_lock);
+    if (_own_inflight++ == 0 && _io_inflight == 0) {
+        _own_busy_open = true;
+        _own_busy_start_ns = steadyNs();
+    }
+}
+
+void Timer::ownBusyEnd() {
+    std::lock_guard<SpinLock> busy_guard(*_io_busy_lock);
+    if (_own_inflight == 0) {
+        return; // after a fork that reset the counts
+    }
+    if (--_own_inflight == 0 && _own_busy_open) {
+        _own_busy_open = false;
+        const uint64_t now = steadyNs();
+        if (now > _own_busy_start_ns)
+            _own_busy_ns += now - _own_busy_start_ns;
     }
 }
 
@@ -467,6 +517,48 @@ void Timer::end(MetricType type, Metric metric) {
 #ifdef TIMER_JSON
     // TODO: Remove the last comma from the monitor_timer.datalife.json file
 #endif
+}
+
+// The call being timed on this thread, if there is one, stops counting as I/O
+// in progress here and counts again in end(), which also moves its start
+// forward by the time between the two.
+void Timer::OwnWork::begin() {
+    Timer *timer = ownWorkTimer.load();
+    if (!timer || _own_work_depth++ != 0) {
+        return;
+    }
+    _own_work_start = getCurrentTime();
+    if (_depth) {
+        timer->ioBusyEnd(Timer::close); // any metric that is I/O: the time so far was
+    }
+    timer->ownBusyBegin();
+}
+
+void Timer::OwnWork::end() {
+    Timer *timer = ownWorkTimer.load();
+    if (!timer || _own_work_depth == 0 || --_own_work_depth != 0) {
+        return;
+    }
+    const uint64_t spent = getCurrentTime() - _own_work_start;
+    timer->_time[monitor][trace_output].fetch_add(spent, std::memory_order_relaxed);
+    timer->_cnt[monitor][trace_output].fetch_add(1, std::memory_order_relaxed);
+    timer->ownBusyEnd();
+    if (_depth) {
+        _current += spent;
+        timer->ioBusyBegin();
+    }
+    if (Config::ThreadStats) {
+        timer->_lock->readerLock();
+        auto thread_timer = timer->_thread_timers->find(std::this_thread::get_id());
+        if (thread_timer != timer->_thread_timers->end()) {
+            thread_timer->second->time[monitor][trace_output]->fetch_add(spent, std::memory_order_relaxed);
+            thread_timer->second->cnt[monitor][trace_output]->fetch_add(1, std::memory_order_relaxed);
+            if (thread_timer->second->depth->load(std::memory_order_relaxed)) {
+                thread_timer->second->current->fetch_add(spent, std::memory_order_relaxed);
+            }
+        }
+        timer->_lock->readerUnlock();
+    }
 }
 
 void Timer::addAmt(MetricType type, Metric metric, uint64_t amt) {

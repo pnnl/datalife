@@ -72,6 +72,8 @@ A stream is traced when its descriptor is, however it came by it: `fopen`, `fdop
 
 In the timer output, the bytes of a traced file are under `read` and `write` of `monitor`, and under `readv` and `writev` for the calls that take vectors of buffers.
 
+The library writes a file's trace files when the program closes the file, from inside that call. The time this takes is the library's own and is reported as `trace_output` of `monitor`: it is not in the time of `close`, nor in the task's `io_time_s`, `io_busy_time_s` and `compute_time_s`.
+
 Not recorded:
 
 *   I/O through a descriptor the program did not open itself: a file the shell put on `stdin` or `stdout` (`program < input > output`), or one inherited from the process that started it.
@@ -89,6 +91,7 @@ Limits of what is recorded:
 *   A descriptor and its copies (`dup`, `dup2`, ...) are one open file with one offset, and are recorded at one position; a stream on each (a log, and `stdout` and `stderr` put on it with `dup2`) is recorded with its own buffer. Two streams on the same descriptor (`fdopen` twice on one number) share one record of what is in their buffers, and I/O through both is counted more than once.
 *   An `_unlocked` call (`fwrite_unlocked`, `putc_unlocked`, ...) on a stream that another thread holds with `flockfile` at that moment is made without waiting, as the C library makes it, and is not recorded as a call: what it leaves in the stream's buffer is recorded with the next call on the stream, and what it reads or flushes is not.
 *   A child process made with `clone` or `_Fork`, without the handlers `fork` runs, is traced as a process of its own where the kernel offers `kcmp`. Elsewhere the library takes it for a `vfork` child, and records nothing it opens or closes.
+*   Whether a file is under `DATALIFE_OUTPUT_PATH`, and so not traced, is asked at every open. The output directory is resolved once (unless it is given relative to the working directory), and a directory in which a thread has opened a file is not resolved again for the next file the thread opens in it. A directory that is replaced by another, or by a link, while the program runs is taken for what it was.
 *   The wrappers are not safe to call from a signal handler in the way `open` and `close` themselves are: they allocate memory. A handler that only calls `read` or `write` on descriptors that are not traced, as handlers that wake a main loop through a pipe do, is safe.
 
 ## Minimal Example

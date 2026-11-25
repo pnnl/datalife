@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <system_error>
 #include <thread>
+#include <future>
 #include <unistd.h>
 #include <algorithm>
 #include <cassert>
@@ -813,6 +814,9 @@ void TrackFile::close(int fd) {
         return;
     }
     ScopedMonitorInternalIO internal_io;
+    // Writing the traces is not part of the program's close(), which is being
+    // timed around this.
+    Timer::OwnWork own_work;
 
     // The file's name now: a rename on another thread changes it.
     const std::string filename = name();
@@ -849,7 +853,20 @@ void TrackFile::close(int fd) {
         std::string file_name_trace_r = filename + "." + pid + "-" + host_name + ".r_blk_trace.json";
 
         auto& blk_trace_info_r = traceEntry(trace_read_blk_order, filename);
-        auto future_r = std::async(std::launch::async,
+        auto& blk_trace_info_w = traceEntry(trace_write_blk_order, filename);
+        // What was recorded since the traces were last written, which emptied
+        // these. For one with nothing new write_trace_data() leaves its file as
+        // it is, so it is not called: it would cost a thread for nothing at
+        // every close of a file that is opened or copied often and seldom used.
+        bool write_r, write_w;
+        {
+            std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
+            write_r = !blk_trace_info_r.empty();
+            write_w = !blk_trace_info_w.empty();
+        }
+        std::future<void> future_r, future_w;
+        if (write_r) {
+            future_r = std::async(std::launch::async,
                                    write_trace_data,
                                    file_name_trace_r,
                                    filename,
@@ -858,12 +875,13 @@ void TrackFile::close(int fd) {
                                    filename,
                                    /*is_read=*/true,
                                    file_size_bytes, file_alloc_bytes, file_size_source);
+        }
 
         DPRINTF("Writing w blk access order stat with prefix %s\n", filename.c_str());
         std::string file_name_trace_w = filename + "." + pid + "-" + host_name + ".w_blk_trace.json";
 
-        auto& blk_trace_info_w = traceEntry(trace_write_blk_order, filename);
-        auto future_w = std::async(std::launch::async,
+        if (write_w) {
+            future_w = std::async(std::launch::async,
                                    write_trace_data,
                                    file_name_trace_w,
                                    filename,
@@ -872,10 +890,15 @@ void TrackFile::close(int fd) {
                                    filename,
                                    /*is_read=*/false,
                                    file_size_bytes, file_alloc_bytes, file_size_source);
-                                   
-        // Wait for both async tasks to complete
-        future_r.get();
-        future_w.get();
+        }
+
+        // Wait for the tasks to complete
+        if (future_r.valid()) {
+            future_r.get();
+        }
+        if (future_w.valid()) {
+            future_w.get();
+        }
     }
 
 #ifdef GATHERSTAT
@@ -888,14 +911,21 @@ void TrackFile::close(int fd) {
     std::lock_guard<std::mutex> legacy_guard(legacyStatLock());
     std::map<int, int64_t> r_stat, r_stat_size, w_stat, w_stat_size;
     std::vector<int> blk_trace_info_r, blk_trace_info_w;
+    const std::string prefix = Config::dataLifeOutputPath + "/" + get_basename_str(filename) + "_" + pid;
     {
         std::lock_guard<SpinLock> stat_guard(trackFileStatLock());
+        // No access since the previous close, which wrote the tables: they
+        // would be written again as they are, and nothing added to the
+        // sequences. Every access that changes a table is also in a sequence.
+        if (trace_read_blk_seq[filename].empty() && trace_write_blk_seq[filename].empty()
+            && legacyTableStart().count(prefix + "_r_stat") && legacyTableStart().count(prefix + "_w_stat")) {
+            return;
+        }
         snapshotHistograms(filename, r_stat, r_stat_size, w_stat, w_stat_size);
         // The accesses since the previous close: written out below and dropped here.
         blk_trace_info_r.swap(trace_read_blk_seq[filename]);
         blk_trace_info_w.swap(trace_write_blk_seq[filename]);
     }
-    const std::string prefix = Config::dataLifeOutputPath + "/" + get_basename_str(filename) + "_" + pid;
     DPRINTF("Writing r/w blk access stats with prefix %s\n", prefix.c_str());
     writeLegacyHistogram(prefix + "_r_stat", filename, r_stat, r_stat_size);
     writeLegacyHistogram(prefix + "_w_stat", filename, w_stat, w_stat_size);
