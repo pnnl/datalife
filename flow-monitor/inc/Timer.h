@@ -62,6 +62,9 @@ class Timer {
     void addAmt(MetricType type, Metric metric, uint64_t amt);
 
     static uint64_t getCurrentTime();
+    // Remove [since, now) from the I/O call being timed on this thread (DataLife's own
+    // work inside a wrapped call, e.g. writing trace files at close).
+    static void excludeFromCurrentCall(uint64_t since);
     static char *printTime();
     static int64_t getTimestamp();
     // Wall clock (system_clock) in ns since the epoch: comparable across processes and nodes.

@@ -801,6 +801,13 @@ void TrackFile::close(int fd) {
         return;
     }
     ScopedMonitorInternalIO internal_io;
+    // Everything below is DataLife's own bookkeeping (fstat, trace and stat files);
+    // keep it out of the timed close() of the traced program.
+    const uint64_t own_work_start = Timer::getCurrentTime();
+    struct ExcludeOwnWork {
+        uint64_t since;
+        ~ExcludeOwnWork() { Timer::excludeFromCurrentCall(since); }
+    } exclude_own_work{own_work_start};
 
     // The file's name now: a rename on another thread changes it.
     const std::string filename = name();
