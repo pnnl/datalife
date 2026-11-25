@@ -28,6 +28,13 @@ class Trackable {
   // For the fork handlers in Lib.cpp, which hold it across fork().
   static ReaderWriterLock &registryLock() { return _activeMutex; }
 
+    // One more user of an entry. Outside this class, only of one that cannot
+    // go away meanwhile: the caller is a user of it, or has locked a registry
+    // whose entries are.
+    void incUsers() {
+        _users.fetch_add(1);
+    }
+
   protected:
     Trackable() : _id(_total.fetch_add(1)),
                   _users(0) {
@@ -35,18 +42,25 @@ class Trackable {
 
     ~Trackable() {}
 
-    void incUsers() {
-        _users.fetch_add(1);
-    }
-
     bool decUsers(unsigned int dec) {
         return (1 == _users.fetch_sub(dec));
     }
 
+    // One user fewer, without locking the registry, unless this is the last:
+    // that one leaves through RemoveTrackable(), which removes the entry too.
+    bool dropUser() {
+        unsigned int users = _users.load();
+        while (users > 1) {
+            if (_users.compare_exchange_weak(users, users - 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // createNew, reuseOld and the destructors in the Remove functions run under the
     // writer lock. Their I/O (debug prints, logging) is marked as the library's own
-    // so it skips the stdio wrappers: those take the stream registry lock, and the
-    // fork prepare handler in Lib.cpp takes that lock before this one.
+    // so it skips the wrappers, which look in the registries.
     static Value AddTrackable(Key k, std::function<Value(void)> createNew, std::function<void(Value)> reuseOld, bool &created) {
         Value ret = NULL;
         ScopedMonitorInternalIO internal_io;
@@ -110,6 +124,28 @@ class Trackable {
         return ret;
     }
 
+    // Puts replacement under k, or nothing if it is NULL, and returns the entry
+    // that was there, out of the registry and whatever its users, for the caller
+    // to delete; NULL if there was none. One step for the lookups: they find the
+    // old entry or the new. changed is called with the registry still locked.
+    template <typename Changed>
+    static Value ReplaceTrackable(Key k, Value replacement, Changed changed) {
+        Value old = NULL;
+        _activeMutex.writerLock();
+        auto it = _active.find(k);
+        if (it != _active.end()) {
+            old = it->second;
+            _active.erase(it);
+        }
+        if (replacement) {
+            _active[k] = replacement;
+            replacement->incUsers();
+        }
+        changed();
+        _activeMutex.writerUnlock();
+        return old;
+    }
+
     // Moves the entry under `from` to `to` and calls update on it, all under the
     // writer lock. Changes nothing and returns false if there is no entry under
     // `from` (found is false) or there already is one under `to` (found is true).
@@ -129,6 +165,20 @@ class Trackable {
         }
         _activeMutex.writerUnlock();
         return moved;
+    }
+
+    // Calls found on the entry under k, with the registry locked so that the
+    // entry stays, and returns whether there is one.
+    template <typename Found>
+    static bool WithTrackable(Key k, Found found) {
+        _activeMutex.readerLock();
+        auto it = _active.find(k);
+        const bool exists = (it != _active.end());
+        if (exists) {
+            found(it->second);
+        }
+        _activeMutex.readerUnlock();
+        return exists;
     }
 
     static Value LookupTrackable(Key k) {

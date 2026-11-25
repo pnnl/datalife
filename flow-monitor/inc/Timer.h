@@ -122,6 +122,10 @@ class Timer {
 
     int stdoutcp;
     std::string myprogname;
+    // The timer's own copies of Config's: read when the library is unloaded,
+    // which can be after Config's strings are destroyed.
+    std::string _output_path;
+    std::string _task_name;
 
     // Task caliper: library init to library teardown (restarted at fork in a child).
     uint64_t _task_start_epoch_ns;

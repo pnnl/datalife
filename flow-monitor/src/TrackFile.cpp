@@ -297,10 +297,10 @@ ssize_t TrackFile::read(int fd, void *buf, size_t count, uint32_t index, off_t o
     DPRINTF("bytes_read: %ld fd: %d _name: %s\n", bytes_read, fd, _name.c_str());
 
     // read() reads at this descriptor's position and advances it; pread() reads at offset.
-    off_t pos = (offset == -1) ? (off_t)_filePos[index].load() : offset;
+    off_t pos = (offset == -1) ? (off_t)offsetAt(index).load() : offset;
     recordAccess(false, pos, bytes_read);
     if (bytes_read > 0 && offset == -1) {
-        _filePos[index] += bytes_read;
+        offsetAt(index) += bytes_read;
     }
 
 #ifdef WRITE_STAT_EACH
@@ -329,8 +329,7 @@ ssize_t TrackFile::write(int fd, const void *buf, size_t count, uint32_t index, 
     }
 
     if (bytes_written < 0) {
-        perror("Write failed");
-        return bytes_written;
+        return bytes_written; // with the errno of the write, for the program
     }
 
     auto end_time = high_resolution_clock::now();
@@ -339,25 +338,38 @@ ssize_t TrackFile::write(int fd, const void *buf, size_t count, uint32_t index, 
     DPRINTF("Bytes written: %ld, FD: %d, File: %s\n", bytes_written, fd, _name.c_str());
 
     // write() writes at this descriptor's position and advances it; pwrite() writes at offset.
-    off_t pos = (offset >= 0) ? offset : (off_t)_filePos[index].load();
+    off_t pos = (offset >= 0) ? offset : (off_t)offsetAt(index).load();
+    if (bytes_written > 0 && appends(index)) {
+        // A descriptor that appends writes at the end of the file, whatever
+        // the call and the offset. write() leaves the descriptor there.
+        const int saved_errno = errno;
+        if (offset >= 0) {
+            const off_t start = appendedAt(fd, bytes_written);
+            pos = start >= 0 ? start : pos;
+        } else {
+            unixlseek_t unixLseek = (unixlseek_t)dlsym(RTLD_NEXT, "lseek");
+            const off_t end = (*unixLseek)(fd, 0, SEEK_CUR);
+            if (end >= bytes_written) {
+                pos = end - bytes_written;
+                offsetAt(index) = pos;
+            }
+        }
+        errno = saved_errno;
+    }
     recordAccess(true, pos, bytes_written);
     if (bytes_written > 0 && offset < 0) {
-        _filePos[index] += bytes_written;
+        offsetAt(index) += bytes_written;
     }
 
     return bytes_written;
 }
 
-/*POSIX ends */
-
-int TrackFile::vfprintf(unsigned int pos, int count) {
-  DPRINTF("In trackfile vfprintf\n");
-  if (count > 0) {
-    recordAccess(true, (off_t)_filePos[pos].load(), count);
-    _filePos[pos] += count;
-  }
-  return count;
+off_t TrackFile::appendedAt(int fd, size_t count) {
+    struct stat st;
+    return (::fstat(fd, &st) == 0 && st.st_size >= (off_t)count) ? st.st_size - (off_t)count : -1;
 }
+
+/*POSIX ends */
 
 uint64_t TrackFile::fileSize() {
         return _fileSize;
@@ -394,7 +406,7 @@ off_t TrackFile::seek(int fd, off_t offset, int whence, uint32_t index) {
   auto actual_pos = (*unixLseek)(fd, offset, whence);
 
   if (actual_pos != (off_t)-1) {
-    _filePos[index] = actual_pos;
+    offsetAt(index) = actual_pos;
   }
 
   return actual_pos;
@@ -810,7 +822,7 @@ void TrackFile::close(int fd) {
     close_file_end_time = high_resolution_clock::now();
 
     // Capture the file's size while the descriptor is still open: monitorClose() /
-    // monitorFclose() call this before the real close(). st_size is the logical
+    // fclose() call this before the real close(). st_size is the logical
     // size, st_blocks*512 the allocated bytes (differs for sparse files).
     int64_t file_size_bytes = -1;
     int64_t file_alloc_bytes = -1;
@@ -900,8 +912,12 @@ void TrackFile::trackRead(size_t count, uint32_t index, off_t filePos) {
     if (count == 0) return;
 
     // Update file position
-    _filePos[index] = filePos;
+    offsetAt(index) = filePos;
     recordAccess(false, filePos - (off_t)count, (ssize_t)count);
+}
+
+void TrackFile::trackAt(bool isWrite, size_t count, off_t offset) {
+    recordAccess(isWrite, offset, (ssize_t)count);
 }
 
 // Tracking-only method for FILE* write operations
@@ -909,6 +925,6 @@ void TrackFile::trackWrite(size_t count, uint32_t index, off_t filePos) {
     if (count == 0) return;
 
     // Update file position
-    _filePos[index] = filePos;
+    offsetAt(index) = filePos;
     recordAccess(true, filePos - (off_t)count, (ssize_t)count);
 }

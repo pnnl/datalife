@@ -1,3 +1,4 @@
+#include "HeldLocks.h"
 #include "MonitorPathPolicy.h"
 
 #include <cstdlib>
@@ -58,8 +59,11 @@ bool isUnderOutputRoot(const std::string& candidate, const std::string& outputRo
 
 }  // namespace
 
+// Also true in a signal handler that interrupted this thread while it held one
+// of the library's locks, or was taking one: a wrapper that waited for the lock
+// there would wait for good, so the handler's calls go straight to the C library.
 bool isMonitorInternalIO() {
-    return monitorInternalIODepth != 0;
+    return monitorInternalIODepth != 0 || heldLocks() != 0;
 }
 
 void enterMonitorInternalIO() {

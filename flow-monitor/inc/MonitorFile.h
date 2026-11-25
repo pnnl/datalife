@@ -64,9 +64,22 @@ class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *
     // virtual ssize_t write(const void *buf, size_t count, uint32_t filePosIndex = 0) = 0;
     virtual ssize_t read(int fd, void *buf, size_t count, uint32_t filePosIndex = 0, off_t offset = -1) = 0;
     virtual ssize_t write(int fd, const void *buf, size_t count, uint32_t filePosIndex, off_t offset) = 0;
-    virtual int vfprintf(unsigned int pos, int count) = 0;
 
-    virtual uint32_t newFilePosIndex();
+    // A position for a descriptor of the file that was just opened: fd, which
+    // also tells whether the descriptor appends.
+    virtual uint32_t newFilePosIndex(int fd = -1);
+    // A position for a copy of the descriptor whose position is at `index`
+    // (dup() and the like). The two are one open file: they have one offset and
+    // one set of flags, so filePos() and appends() of the copy are those of the
+    // original, whichever of the two a call goes through. What a stream has
+    // recorded is the copy's own: each descriptor can have a stream on it (a
+    // log, and stdout or stderr put on it with dup2()), each with its buffer.
+    uint32_t newFilePosIndexSharing(uint32_t index);
+    // The descriptor whose position was at `index` is gone. The position of a
+    // copy serves the next copy, so that a program that copies a descriptor
+    // over and over (a shell around every redirection) does not add one each
+    // time; another stays, as copies may share it.
+    void releaseFilePosIndex(uint32_t index);
     virtual uint64_t filePos(uint32_t index);
     virtual void setFilePos(uint32_t index, uint64_t pos);
     // For a stream on this descriptor: -1 until a call that reads or writes is
@@ -75,10 +88,17 @@ class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *
     // Lib.cpp).
     long streamRecorded(uint32_t index);
     void setStreamRecorded(uint32_t index, long bytes);
+    // Whether what is written through the descriptor goes to the end of the
+    // file, wherever its offset is: it was opened with O_APPEND, or given the
+    // flag since.
+    bool appends(uint32_t index);
+    void setAppends(uint32_t index, bool appends);
     virtual off_t seek(int fd, off_t offset, int whence, uint32_t index = 0) = 0;
 
     static MonitorFile *addNewMonitorFile(MonitorFile::Type type, std::string fileName, std::string metaName, int fd, bool open = true);
     static bool removeMonitorFile(std::string fileName);
+    // One user of the file fewer: a descriptor that is closed, or a call that is
+    // done with the file. The last one deletes it.
     static bool removeMonitorFile(MonitorFile *file);
     static MonitorFile *lookUpMonitorFile(std::string fileName);
     // After a rename of `from` to `to`: a file open under `from` goes by `to` from
@@ -119,9 +139,16 @@ class MonitorFile : public Loggable, public Trackable<std::string, MonitorFile *
     std::string _metaName;
     bool _traced; // matched a pattern under a name it no longer has
 
+    // The offset of the descriptor at index: its own, or for a copy that of the
+    // descriptor it was copied from.
+    std::atomic<uint64_t> &offsetAt(uint32_t index) { return _filePos[(uint32_t)_shares[index].load()]; }
+
     std::mutex _fpMutex;
-    FilePositions _filePos;
+    FilePositions _filePos;        // read and written through offsetAt()
+    FilePositions _shares;         // for each position, the index of the one that holds its offset and flags
+    std::vector<uint32_t> _freeCopies; // positions of copies whose descriptors are gone, under _fpMutex
     FilePositions _streamRecorded; // for each position, streamRecorded() + 1
+    FilePositions _appends;        // for each position, 1 if its descriptor appends
     std::vector<bool> _eof;
 
     //Properties from meta data file

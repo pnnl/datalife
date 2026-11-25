@@ -67,6 +67,7 @@ typedef void (*unix_exit_group_t)(int status);
 typedef int (*unix_vfprintf_t)(FILE * stream, const char * format, va_list arg);
 
 typedef void *(*mmap_t)(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+typedef void *(*mmap64_t)(void *addr, size_t length, int prot, int flags, int fd, off64_t offset);
 
 // Typedefs for pread, pwrite, pread64, and pwrite64
 typedef ssize_t (*pread_t)(int fd, void *buf, size_t count, off_t offset);

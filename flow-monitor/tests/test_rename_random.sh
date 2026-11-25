@@ -16,19 +16,26 @@ test_root=$(mktemp -d "${TMPDIR:-/tmp}/datalife-rename-random.XXXXXX")
 trap 'rm -rf "$test_root"' EXIT
 
 # Random sequences of opens, whole blocks written and read, closes, renames and
-# unlinks over a few names, through descriptors and streams. The program keeps
-# the books the library should keep: what was written and read under each name,
-# moved to the new name by every rename the library follows (the file was
-# monitored, and no monitored file is open under the new name), whether the file
-# is open or closed, to a name that matches a pattern or not, onto a name with a
-# record of its own or not. In the end the library must report exactly that, for
-# each block of each file, and list each rename with whether it followed it.
+# unlinks over a few names, through descriptors and streams, with descriptors
+# copied by dup(), dup2(), dup3() and fcntl() onto new numbers and onto ones in
+# use, blocks read and written where a descriptor and its copies are, in vectors
+# of buffers, and from one descriptor to another by sendfile() and
+# copy_file_range(). The program keeps the books the library should keep: what
+# was written and read under each name, moved to the new name by every rename
+# the library follows (the file was monitored, and no monitored file is open
+# under the new name), whether the file is open or closed, to a name that
+# matches a pattern or not, onto a name with a record of its own or not. In the
+# end the library must report exactly that, for each block of each file, and
+# list each rename with whether it followed it.
 cat >"$test_root/rename_random.c" <<'EOF_C'
 #define _GNU_SOURCE
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/sendfile.h>
+#include <sys/stat.h>
+#include <sys/uio.h>
 #include <unistd.h>
 
 #define BLOCK 4096
@@ -66,10 +73,39 @@ static struct object {
 static int object_count;
 static int open_object[NAMES]; /* the object that goes by each name, or -1 */
 
+/* What descriptors that are copies of one another share: where they are in the file, in blocks,
+   and whether what they write goes to the end of the file instead (O_APPEND). */
+static long offsets[1000];
+static int appending[1000];
+static int offset_count;
+
 static struct handle {
     int used, fd, object; /* object: -1 if the library does not monitor it */
+    int offset;           /* of a descriptor: its entry in offsets */
     FILE *fp;
 } handles[HANDLES];
+
+/* The block a descriptor that appends writes next: the one after the last of its file. */
+static long end_block(int fd) {
+    struct stat st;
+    return fstat(fd, &st) == 0 ? (long)(st.st_size / BLOCK) : BLOCKS;
+}
+
+/* One block written or read through a handle the library monitors. */
+static void recorded(struct handle *h, int writing, long b) {
+    if (h->object >= 0) {
+        struct record *r = &records[objects[h->object].name];
+        (writing ? r->written : r->read)[b]++;
+    }
+}
+
+/* A handle is closed: by close(), by fclose(), or by a copy made on its descriptor. */
+static void closed(struct handle *h) {
+    h->used = 0;
+    if (h->object >= 0 && --objects[h->object].users == 0) {
+        open_object[objects[h->object].name] = -1;
+    }
+}
 
 static char block[BLOCK];
 static FILE *expected;
@@ -121,8 +157,9 @@ int main(int argc, char **argv) {
 
     int operations = 30 + pick(170);
     for (int i = 0; i < operations; i++) {
-        int what = pick(100);
+        int what = pick(130);
         struct handle *h = &handles[pick(HANDLES)];
+        struct handle *other = &handles[pick(HANDLES)];
         if (what < 25) { /* open, through a descriptor or a stream */
             if (h->used) {
                 continue;
@@ -138,11 +175,14 @@ int main(int argc, char **argv) {
                 }
                 h->fd = -1;
             } else {
-                h->fd = open(names[name], O_RDWR | O_CREAT, 0644);
+                appending[offset_count] = pick(4) == 0;
+                h->fd = open(names[name], O_RDWR | O_CREAT | (appending[offset_count] ? O_APPEND : 0), 0644);
                 if (h->fd < 0) {
                     return 3;
                 }
                 h->fp = NULL;
+                offsets[offset_count] = 0;
+                h->offset = offset_count++;
             }
             h->used = 1;
             h->object = -1;
@@ -163,6 +203,12 @@ int main(int argc, char **argv) {
             int b = pick(BLOCKS), writing = what < 50;
             off_t offset = (off_t)b * BLOCK;
             ssize_t done;
+            if (!h->fp && writing && appending[h->offset]) { /* at the end of the file, whatever the offset given */
+                b = (int)end_block(h->fd);
+                if (b >= BLOCKS) {
+                    continue;
+                }
+            }
             if (h->fp) {
                 if (fseeko(h->fp, offset, SEEK_SET) != 0) {
                     return 3;
@@ -177,9 +223,8 @@ int main(int argc, char **argv) {
             if (done != 0 && done != BLOCK) {
                 return 3; /* the files hold whole blocks only */
             }
-            if (done == BLOCK && h->object >= 0) {
-                struct record *r = &records[objects[h->object].name];
-                (writing ? r->written : r->read)[b]++;
+            if (done == BLOCK) {
+                recorded(h, writing, b);
             }
         } else if (what < 80) { /* close */
             if (!h->used) {
@@ -188,10 +233,7 @@ int main(int argc, char **argv) {
             if ((h->fp ? fclose(h->fp) : close(h->fd)) != 0) {
                 return 3;
             }
-            h->used = 0;
-            if (h->object >= 0 && --objects[h->object].users == 0) {
-                open_object[objects[h->object].name] = -1;
-            }
+            closed(h);
         } else if (what < 97) { /* rename, whether or not either file is open */
             int from = pick(NAMES), to = pick(NAMES);
             if (from == to) {
@@ -212,8 +254,107 @@ int main(int argc, char **argv) {
             if (result == 0) {
                 renamed(from, to);
             }
-        } else {
+        } else if (what < 100) {
             unlink(names[pick(NAMES)]);
+        } else if (what < 108) { /* a copy of a descriptor, on a new number or on one that is open */
+            if (!h->used || h->fp || other == h || other->fp) {
+                continue;
+            }
+            int copy;
+            if (other->used) {
+                copy = pick(2) ? dup2(h->fd, other->fd) : dup3(h->fd, other->fd, 0);
+                if (copy != other->fd) {
+                    return 3;
+                }
+                closed(other);
+            } else {
+                copy = pick(2) ? dup(h->fd) : fcntl(h->fd, pick(2) ? F_DUPFD : F_DUPFD_CLOEXEC, 20);
+                if (copy < 0) {
+                    return 3;
+                }
+            }
+            *other = *h; /* the same file, at the same place in it */
+            other->fd = copy;
+            if (other->object >= 0) {
+                objects[other->object].users++;
+            }
+        } else if (what < 118) { /* a block where the descriptor is, which its copies move with it */
+            if (!h->used || h->fp) {
+                continue;
+            }
+            long *at = &offsets[h->offset];
+            if (*at >= BLOCKS || pick(8) == 0) {
+                *at = pick(BLOCKS);
+                if (lseek(h->fd, (off_t)*at * BLOCK, SEEK_SET) < 0) {
+                    return 3;
+                }
+            }
+            int writing = pick(2);
+            long b = *at;
+            if (writing && appending[h->offset]) { /* at the end of the file, where it leaves the descriptor */
+                b = end_block(h->fd);
+                if (b >= BLOCKS) {
+                    continue;
+                }
+            }
+            ssize_t done = writing ? write(h->fd, block, BLOCK) : read(h->fd, block, BLOCK);
+            if (done != 0 && done != BLOCK) {
+                return 3;
+            }
+            if (done == BLOCK) {
+                recorded(h, writing, b);
+                *at = b + 1;
+            }
+        } else if (what < 124) { /* a block in a vector of buffers */
+            if (!h->used || h->fp) {
+                continue;
+            }
+            int b = pick(BLOCKS), writing = pick(2);
+            off_t offset = (off_t)b * BLOCK;
+            struct iovec parts[2] = {{block, BLOCK / 4}, {block + BLOCK / 4, BLOCK - BLOCK / 4}};
+            if (writing && appending[h->offset]) {
+                b = (int)end_block(h->fd);
+                if (b >= BLOCKS) {
+                    continue;
+                }
+            }
+            ssize_t done = writing ? pwritev(h->fd, parts, 2, offset) : preadv(h->fd, parts, 2, offset);
+            if (done != 0 && done != BLOCK) {
+                return 3;
+            }
+            if (done == BLOCK) {
+                recorded(h, writing, b);
+            }
+        } else { /* a block from one descriptor to another, in the kernel */
+            if (!h->used || h->fp || !other->used || other->fp || other == h) {
+                continue;
+            }
+            int from = pick(BLOCKS), to = pick(BLOCKS);
+            off_t in = (off_t)from * BLOCK, out = (off_t)to * BLOCK;
+            ssize_t done;
+            if (pick(2)) {
+                done = copy_file_range(h->fd, &in, other->fd, &out, BLOCK, 0);
+            } else { /* sendfile() writes where the descriptor is */
+                long *at = &offsets[other->offset];
+                if (*at >= BLOCKS) {
+                    *at = 0;
+                    if (lseek(other->fd, 0, SEEK_SET) < 0) {
+                        return 3;
+                    }
+                }
+                to = (int)*at;
+                done = sendfile(other->fd, h->fd, &in, BLOCK);
+                if (done == BLOCK) {
+                    (*at)++;
+                }
+            }
+            if (done > 0 && done != BLOCK) {
+                return 3;
+            }
+            if (done == BLOCK) {
+                recorded(h, 0, from);
+                recorded(other, 1, to);
+            }
         }
     }
     for (int i = 0; i < HANDLES; i++) {

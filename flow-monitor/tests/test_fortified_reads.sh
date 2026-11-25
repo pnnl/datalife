@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 }
 EOF
 
-cc -Wall -Wextra -Werror -O2 -D_FORTIFY_SOURCE=3 "$test_root/fortified_reads.c" -o "$test_root/fortified_reads"
+cc -Wall -Wextra -Werror -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 "$test_root/fortified_reads.c" -o "$test_root/fortified_reads"
 
 # The program must really use the checked variants, or the test proves nothing.
 imports=$(nm -D --undefined-only "$test_root/fortified_reads" | awk '{print $2}' | sed 's/@.*//')
@@ -126,10 +126,10 @@ for mode in 1 0; do
     fi
 
     # read, pread, fread and fread_unlocked all count as monitor reads: 14 calls, 57344 bytes;
-    # the 8 fgets calls as fgets.
+    # the 8 fgets calls as fgets, their 8 lines of 4095 bytes with the bytes read.
     got=$(timer_entry "$mode" monitor read)
-    if [[ -n $got && $got != "14 57344" ]]; then
-        echo "monitored reads of the fortified program: '$got' (calls bytes), expected '14 57344' (DATALIFE_JSON_OUTPUT=$mode)" >&2
+    if [[ -n $got && $got != "14 90104" ]]; then
+        echo "monitored reads of the fortified program: '$got' (calls bytes), expected '14 90104' (DATALIFE_JSON_OUTPUT=$mode)" >&2
         exit 1
     fi
     got=$(timer_entry "$mode" monitor fgets)

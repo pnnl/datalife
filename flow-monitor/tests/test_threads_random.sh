@@ -23,10 +23,6 @@ trap 'rm -rf "$test_root"' EXIT
 # under three names while renaming them onto one another. Whatever the order the
 # threads run in, the program must finish, and the library must have recorded
 # exactly the bytes the threads read and wrote between them.
-#
-# Not here: a call with a wrapper made on a stream the thread has locked with
-# flockfile(), while another thread uses the same stream. The two threads block
-# each other, with or without this test.
 cat >"$test_root/threads_random.c" <<'EOF_C'
 #define _GNU_SOURCE
 #include <fcntl.h>
@@ -175,9 +171,18 @@ static void *work(void *arg) {
             funlockfile(shared_out);
             bytes_written += put;
         } else if (what < 62) { /* the shared stream, with calls that lock it themselves */
-            switch (pick(&r, 3)) {
+            const char *volatile line = "a line through fputs\n"; /* volatile: or the compiler calls fwrite() */
+            switch (pick(&r, 6)) {
             case 0: bytes_written += fwrite(buf, 1, 1 + pick(&r, 6000), shared_out); break;
-            case 1: { const char *volatile line = "a line through fputs\n"; fputs(line, shared_out); break; } /* not in the timer's bytes; volatile, or the compiler calls fwrite() */
+            case 1: if (fputs(line, shared_out) != EOF) bytes_written += 21; break;
+            case 2: { int printed = fprintf(shared_out, "%d %s", pick(&r, 1000000), line); if (printed > 0) bytes_written += printed; break; }
+            case 3: for (int k = 1 + pick(&r, 6000); k > 0; k--) { if (putc('c', shared_out) != EOF) bytes_written++; } break;
+            case 4: /* the same calls on the stream while the thread holds its lock */
+                flockfile(shared_out);
+                bytes_written += fwrite(buf, 1, 1 + pick(&r, 6000), shared_out);
+                if (fputs(line, shared_out) != EOF) bytes_written += 21;
+                funlockfile(shared_out);
+                break;
             default: fflush(shared_out); break;
             }
         } else if (what < 75) { /* the shared input, locked, with the macros */
@@ -188,10 +193,10 @@ static void *work(void *arg) {
             funlockfile(shared_in);
             bytes_read += got;
         } else if (what < 85) {
-            if (pick(&r, 4)) {
-                bytes_read += fread(buf, 1, 1 + pick(&r, 6000), shared_in);
-            } else {
-                rewind(shared_in);
+            switch (pick(&r, 5)) {
+            case 0: rewind(shared_in); break;
+            case 1: for (int k = 1 + pick(&r, 6000); k > 0; k--) { if (getc(shared_in) != EOF) bytes_read++; } break;
+            default: bytes_read += fread(buf, 1, 1 + pick(&r, 6000), shared_in); break;
             }
         } else {
             ring(&r, buf);
@@ -237,8 +242,10 @@ int main(int argc, char **argv) {
 }
 EOF_C
 
-# Optimized, for the macros; not fortified, as in test_stream_inline_io.sh.
-cc -Wall -Wextra -Werror -O2 -U_FORTIFY_SOURCE -pthread "$test_root/threads_random.c" -o "$test_root/threads_random"
+# Optimized, where getc_unlocked() and putc_unlocked() are macros, and not, where
+# they are calls; not fortified, as in test_stream_inline_io.sh.
+cc -Wall -Wextra -Werror -O2 -U_FORTIFY_SOURCE -pthread "$test_root/threads_random.c" -o "$test_root/threads_random-macros"
+cc -Wall -Wextra -Werror -O0 -U_FORTIFY_SOURCE -pthread "$test_root/threads_random.c" -o "$test_root/threads_random-calls"
 
 # Prints "read written", the bytes of the timer's monitor read and write entries,
 # from the [MONITOR] lines on stdout (builds without TIMER_JSON) or the timer's
@@ -259,7 +266,8 @@ print(timer["monitor"]["read"][2], timer["monitor"]["write"][2])' "$json"
     fi
 }
 
-for seed in $(seq 1 40); do
+for seed in $(seq 1 30); do
+  for build in macros calls; do
     mode=$((seed % 2))
     rm -rf "$test_root/work" "$test_root/traces"
     mkdir -p "$test_root/work" "$test_root/traces"
@@ -270,24 +278,25 @@ for seed in $(seq 1 40); do
             DATALIFE_OUTPUT_PATH="$test_root/traces" \
             DATALIFE_FILE_PATTERNS='data-*' \
             DATALIFE_JSON_OUTPUT="$mode" \
-            "$test_root/threads_random" "$seed" "$test_root/work" "$test_root/totals" \
+            "$test_root/threads_random-$build" "$seed" "$test_root/work" "$test_root/totals" \
             >"$test_root/output" 2>&1 || status=$?
     } 2>/dev/null
     if [[ $status -eq 124 ]]; then
-        echo "sequence $seed did not finish: threads block each other (DATALIFE_JSON_OUTPUT=$mode)" >&2
+        echo "sequence $seed ($build) did not finish: threads block each other (DATALIFE_JSON_OUTPUT=$mode)" >&2
         exit 1
     fi
     if [[ $status -ne 0 ]]; then
-        echo "sequence $seed failed with status $status (DATALIFE_JSON_OUTPUT=$mode)" >&2
+        echo "sequence $seed ($build) failed with status $status (DATALIFE_JSON_OUTPUT=$mode)" >&2
         grep -av '^\[MONITOR\]' "$test_root/output" | tail -n 20 >&2
         exit 1
     fi
     want=$(cat "$test_root/totals")
     got=$(timer_bytes)
     if [[ -n $got && $got != "$want" ]]; then
-        echo "sequence $seed: the library recorded '$got' bytes (read written), the threads read and wrote '$want' (DATALIFE_JSON_OUTPUT=$mode)" >&2
+        echo "sequence $seed ($build): the library recorded '$got' bytes (read written), the threads read and wrote '$want' (DATALIFE_JSON_OUTPUT=$mode)" >&2
         exit 1
     fi
+  done
 done
 
 echo "random sequences of operations on several threads are recorded byte for byte"

@@ -17,9 +17,12 @@ trap 'rm -rf "$test_root"' EXIT
 
 # Random sequences of stream operations on one file: streams opened in every
 # mode, with fopen() or open() and fdopen(), buffered in every way; characters
-# taken and put with the inlined getc_unlocked() and putc_unlocked() between
-# fread(), fwrite(), seeks, flushes, ungetc() and another stream appending to
-# the file. Whatever the sequence, the program must do the same with the library
+# taken and put with getc_unlocked() and putc_unlocked() between fread(),
+# fwrite(), fgetc(), fputc(), fgets(), getline(), fputs(), fprintf(), seeks
+# (fsetpos() among them), flushes, ungetc() and another stream appending to the
+# file. The program is
+# built twice: optimized, where the two are macros that work in the stream's
+# buffer, and not, where they are calls. Whatever the sequence, the program must do the same with the library
 # as without it, and the library must record exactly the bytes the program read
 # and wrote: no arrangement of buffers and positions may lose or repeat any.
 cat >"$test_root/stream_random.c" <<'EOF_C'
@@ -47,9 +50,7 @@ int main(int argc, char **argv) {
     state = strtoull(argv[1], NULL, 10) * 2654435761ULL + 12345;
     const char *path = argv[2];
 
-    /* What the timer must show: the bytes fread() and fwrite() returned and the
-       characters taken and put with the macros. The other calls are recorded,
-       but not in the timer's bytes. */
+    /* What the timer must show: every byte read and written. */
     long bytes_read = 0, bytes_written = 0;
 
     FILE *fp = NULL;
@@ -60,6 +61,9 @@ int main(int argc, char **argv) {
        file, so a character the macro took and ungetc() put back was not read; a
        call with a wrapper is recorded for what it returns, as it always was. */
     int put_back = 0, last_char = EOF, macro_read = 0, just_read = 0;
+    /* A position of the stream kept with fgetpos(), for fsetpos() to go back to. */
+    fpos_t saved_position;
+    int position_saved = 0;
 
     int operations = 20 + pick(150);
     for (int i = 0; i < operations; i++) {
@@ -97,7 +101,7 @@ int main(int argc, char **argv) {
 
         int may_put_back = just_read;
         just_read = 0;
-        int what = pick(116);
+        int what = pick(128);
         if (what < 45 && can_read) {
             if (last == 2) {
                 fseek(fp, 0, SEEK_CUR);
@@ -151,11 +155,20 @@ int main(int argc, char **argv) {
             last = 2;
         } else if (what < 90) { /* a seek */
             long offset = pick(pick(3) ? 20000 : 200000);
-            switch (pick(5)) {
+            switch (pick(7)) {
             case 0: rewind(fp); break;
             case 1: fseek(fp, offset, SEEK_SET); break;
             case 2: fseeko(fp, offset, SEEK_SET); break;
             case 3: fseek(fp, -(long)pick(3000), SEEK_END); break;
+            case 4: /* fsetpos() to a position kept before, or to this one: a seek all the same */
+            case 5:
+                if (!position_saved || pick(3) == 0) {
+                    position_saved = fgetpos(fp, &saved_position) == 0;
+                }
+                if (position_saved) {
+                    fsetpos(fp, &saved_position);
+                }
+                break;
             default: fseeko(fp, (long)pick(2000) - 1000, SEEK_CUR); break;
             }
             last = put_back = 0;
@@ -170,6 +183,7 @@ int main(int argc, char **argv) {
         } else if (what < 100) {
             fclose(fp);
             fp = NULL;
+            position_saved = 0;
         } else if (what < 104 && can_read) { /* fgetc() */
             if (last == 2) {
                 fseek(fp, 0, SEEK_CUR);
@@ -177,6 +191,7 @@ int main(int argc, char **argv) {
             }
             int c = fgetc(fp);
             if (c != EOF) {
+                bytes_read++;
                 last_char = c;
                 put_back = macro_read = 0;
                 just_read = 1;
@@ -193,13 +208,44 @@ int main(int argc, char **argv) {
                 put_back = 0;
             }
             if (pick(2)) {
-                fputc('q', fp);
+                bytes_written += fputc('q', fp) != EOF;
             } else {
                 const char *volatile text = "some text\n"; /* volatile: or the compiler calls fwrite() */
-                fputs(text, fp);
+                if (fputs(text, fp) != EOF) {
+                    bytes_written += 10;
+                }
             }
             last = 2;
-        } else if (what >= 112) { /* another stream makes the file longer */
+        } else if (what >= 116 && what < 124 && can_read && !put_back) { /* a line */
+            if (last == 2) {
+                fseek(fp, 0, SEEK_CUR);
+            }
+            if (what < 120) { /* fgets() does not tell its length if the line holds a NUL: the position does */
+                long before = ftell(fp);
+                if (fgets(buf, 2 + pick(5000), fp)) {
+                    bytes_read += ftell(fp) - before;
+                }
+            } else {
+                static char *line;
+                static size_t room;
+                ssize_t got = getline(&line, &room, fp);
+                if (got > 0) {
+                    bytes_read += got;
+                }
+            }
+            macro_read = 0;
+            last = 1;
+        } else if (what >= 124 && can_write) { /* fprintf() */
+            if (last == 1) {
+                fseek(fp, 0, SEEK_CUR);
+                put_back = 0;
+            }
+            int printed = fprintf(fp, "%u %s\n", pick(100000), "words");
+            if (printed > 0) {
+                bytes_written += printed;
+            }
+            last = 2;
+        } else if (what >= 112 && what < 116) { /* another stream makes the file longer */
             FILE *other = fopen(path, "a");
             size_t count = 1 + pick(3000);
             memset(buf, '#', count);
@@ -222,12 +268,19 @@ int main(int argc, char **argv) {
 }
 EOF_C
 
-# Optimized, for the macros; not fortified, as in test_stream_inline_io.sh.
-cc -Wall -Wextra -Werror -O2 -U_FORTIFY_SOURCE "$test_root/stream_random.c" -o "$test_root/stream_random"
+# Optimized, for the macros, and not, for the calls; not fortified, as in
+# test_stream_inline_io.sh.
+cc -Wall -Wextra -Werror -O2 -U_FORTIFY_SOURCE "$test_root/stream_random.c" -o "$test_root/stream_random-macros"
+cc -Wall -Wextra -Werror -O0 -U_FORTIFY_SOURCE "$test_root/stream_random.c" -o "$test_root/stream_random-calls"
 
-imports=$(nm -D --undefined-only "$test_root/stream_random" | awk '{print $2}' | sed 's/@.*//')
+imports=$(nm -D --undefined-only "$test_root/stream_random-macros" | awk '{print $2}' | sed 's/@.*//')
 if ! grep -qx __uflow <<<"$imports" || ! grep -qx __overflow <<<"$imports" || grep -qxE 'getc_unlocked|putc_unlocked' <<<"$imports"; then
     echo "this compiler does not inline getc_unlocked and putc_unlocked; nothing to test" >&2
+    exit 0
+fi
+imports=$(nm -D --undefined-only "$test_root/stream_random-calls" | awk '{print $2}' | sed 's/@.*//')
+if ! grep -qx getc_unlocked <<<"$imports" || ! grep -qx putc_unlocked <<<"$imports"; then
+    echo "this compiler inlines getc_unlocked and putc_unlocked even without optimization; nothing to test" >&2
     exit 0
 fi
 
@@ -250,35 +303,49 @@ print(timer["monitor"]["read"][2], timer["monitor"]["write"][2])' "$json"
     fi
 }
 
+skipped=0
 for seed in $(seq 1 100); do
-    rm -rf "$test_root/plain" "$test_root/work" "$test_root/traces"
-    mkdir -p "$test_root/plain" "$test_root/work" "$test_root/traces"
+    for build in macros calls; do
+        program="$test_root/stream_random-$build"
+        rm -rf "$test_root/plain" "$test_root/work" "$test_root/traces"
+        mkdir -p "$test_root/plain" "$test_root/work" "$test_root/traces"
 
-    "$test_root/stream_random" "$seed" "$test_root/plain/data-random" "$test_root/plain/totals"
-    status=0
-    timeout 20 env \
-        LD_PRELOAD="$monitor_lib" \
-        DATALIFE_OUTPUT_PATH="$test_root/traces" \
-        DATALIFE_FILE_PATTERNS='data-*' \
-        DATALIFE_JSON_OUTPUT=1 \
-        "$test_root/stream_random" "$seed" "$test_root/work/data-random" "$test_root/work/totals" \
-        >"$test_root/output" 2>&1 || status=$?
-    if [[ $status -ne 0 ]]; then
-        echo "sequence $seed failed with status $status with the library" >&2
-        grep -av '^\[MONITOR\]' "$test_root/output" | tail -n 20 >&2
-        exit 1
-    fi
-    if ! cmp -s "$test_root/plain/totals" "$test_root/work/totals" ||
-        ! cmp -s "$test_root/plain/data-random" "$test_root/work/data-random"; then
-        echo "sequence $seed: the program read or wrote something else with the library than without it" >&2
-        exit 1
-    fi
-    want=$(cat "$test_root/work/totals")
-    got=$(timer_bytes)
-    if [[ -n $got && $got != "$want" ]]; then
-        echo "sequence $seed: the library recorded '$got' bytes (read written), the program read and wrote '$want'" >&2
-        exit 1
-    fi
+        # Without the library first. A sequence the C library itself fails on (a few
+        # do, in its handling of ungetc()) says nothing about the library.
+        if ! { "$program" "$seed" "$test_root/plain/data-random" "$test_root/plain/totals"; } >/dev/null 2>&1; then
+            skipped=$((skipped + 1))
+            continue
+        fi
+        status=0
+        timeout 20 env \
+            LD_PRELOAD="$monitor_lib" \
+            DATALIFE_OUTPUT_PATH="$test_root/traces" \
+            DATALIFE_FILE_PATTERNS='data-*' \
+            DATALIFE_JSON_OUTPUT=1 \
+            "$program" "$seed" "$test_root/work/data-random" "$test_root/work/totals" \
+            >"$test_root/output" 2>&1 || status=$?
+        if [[ $status -ne 0 ]]; then
+            echo "sequence $seed ($build) failed with status $status with the library" >&2
+            grep -av '^\[MONITOR\]' "$test_root/output" | tail -n 20 >&2
+            exit 1
+        fi
+        if ! cmp -s "$test_root/plain/totals" "$test_root/work/totals" ||
+            ! cmp -s "$test_root/plain/data-random" "$test_root/work/data-random"; then
+            echo "sequence $seed ($build): the program read or wrote something else with the library than without it" >&2
+            exit 1
+        fi
+        want=$(cat "$test_root/work/totals")
+        got=$(timer_bytes)
+        if [[ -n $got && $got != "$want" ]]; then
+            echo "sequence $seed ($build): the library recorded '$got' bytes (read written), the program read and wrote '$want'" >&2
+            exit 1
+        fi
+    done
 done
 
-echo "random sequences of stream operations are recorded byte for byte"
+if ((skipped > 20)); then
+    echo "$skipped of the 200 sequences fail without the library: too few are left to say anything" >&2
+    exit 1
+fi
+
+echo "random sequences of stream operations are recorded byte for byte ($((200 - skipped)) sequences)"

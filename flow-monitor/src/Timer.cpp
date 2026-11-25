@@ -88,6 +88,8 @@ Timer::Timer() {
 
     stdoutcp = dup(1);
     myprogname = __progname;
+    _output_path = Config::dataLifeOutputPathFromEnvironment();
+    _task_name = Config::taskNameFromEnvironment();
     _thread_timers = new std::unordered_map<std::thread::id, Timer::ThreadMetric*>;
     _lock = new ReaderWriterLock();
 
@@ -129,7 +131,7 @@ Timer::~Timer() {
     std::string host_name = (gethostname(hostname, sizeof(hostname)) == 0) ? hostname : "unknown_host";
 
 #ifdef TIMER_JSON
-    const bool task_name_set = !Config::task_name_env.empty() && Config::task_name_env != "task_name";
+    const bool task_name_set = !_task_name.empty() && _task_name != "task_name";
     std::unordered_map<std::thread::id, Timer::ThreadMetric*>::iterator itor;
     if (Config::printStats) {
         nlohmann::json jsonOutput;
@@ -168,7 +170,7 @@ Timer::~Timer() {
             {"start_pid", (int64_t)_task_start_pid},
             {"hostname", host_name},
             {"program", myprogname},
-            {"task_name", task_name_set ? Config::task_name_env : ""},
+            {"task_name", task_name_set ? _task_name : ""},
             {"start_epoch_ns", _task_start_epoch_ns},
             {"end_epoch_ns", task_end_epoch_ns},
             {"wall_time_s", task_wall_s},
@@ -209,14 +211,14 @@ Timer::~Timer() {
         }
 
         // Ensure dataLifeOutputPath is not empty
-        if (Config::dataLifeOutputPath.empty()) {
+        if (_output_path.empty()) {
             std::cerr << "Error: DATALIFE_OUTPUT_PATH is not set!" << std::endl;
             return;
         }        
 
         // Add task PID to file name 
         std::string jsonOutputFileName = "monitor_timer." + std::to_string(getpid()) + "-" + host_name + ".datalife.json";
-        std::string fullPath = Config::dataLifeOutputPath + "/" + jsonOutputFileName;
+        std::string fullPath = _output_path + "/" + jsonOutputFileName;
         std::cerr << "write_trace_data(): writing to " << fullPath << std::endl;
         
         // // Ensure the output directory exists

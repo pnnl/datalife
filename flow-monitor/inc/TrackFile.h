@@ -54,11 +54,17 @@ public:
   ssize_t read(int fd, void *buf, size_t count, uint32_t index, off_t offset);
   ssize_t write(int fd, const void *buf, size_t count, uint32_t filePosIndex, off_t offset) override;
   off_t seek(int fd, off_t offset, int whence, uint32_t index = 0);
-  int vfprintf(unsigned int pos, int count);
 
   // Tracking-only methods (no I/O) for FILE* operations to avoid buffering corruption
   void trackRead(size_t count, uint32_t index, off_t filePos);
   void trackWrite(size_t count, uint32_t index, off_t filePos);
+  // The same for a call that names the offset and leaves the descriptor where it
+  // is (preadv(), sendfile() with an offset, ...): count bytes at offset.
+  void trackAt(bool isWrite, size_t count, off_t offset);
+  // Where a write of count bytes that has just appended to the file began: at
+  // the file's size less count. For the calls that leave the descriptor's
+  // offset where it was (pwrite(), pwritev()); -1 if the size cannot be read.
+  static off_t appendedAt(int fd, size_t count);
 
 protected:
   void renameTo(const std::string &name) override;

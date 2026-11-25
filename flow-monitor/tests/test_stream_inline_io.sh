@@ -234,12 +234,12 @@ int main(int argc, char **argv) {
            "data-printf holds what was printed");
     syscall(SYS_close, fd);
 
-    /* A stream used only with calls the library does not see, here fprintf(), is
+    /* A stream used only with calls the library does not see, here putw(), is
        not reported at all, rather than with the little that is left in its
        buffer when it is closed. */
     fp = fopen("data-unseen", "w");
     for (int i = 0; fp && i < 2000; i++) {
-        fprintf(fp, "%d\n", i);
+        putw(i, fp);
     }
     expect(fp && fclose(fp) == 0, "fclose of data-unseen");
 
@@ -292,9 +292,8 @@ print(timer[sys.argv[2]][sys.argv[3]][2])' "$json" "$type" "$call"
 # Block touches and the bytes of each block's first access, per file:
 #   data-getc     one refill per block
 #   data-partial  block 0, and at the close bytes 4096-5999 of block 1
-#   data-mixed    bytes 0-99, 100-299 (fread), 300-399 (taken, then fgets) and
-#                 400-423 of block 0, 10 bytes of block 2 before the second seek,
-#                 block 4
+#   data-mixed    bytes 0-99, 100-299 (fread), 300-349, 350-399 (fgets) and 400-423
+#                 of block 0, 10 bytes of block 2 before the second seek, block 4
 #   data-putc     block 0 when the buffer fills, then bytes 4096-5999 (fflush),
 #                 6000-6999, 7000-7499 (fwrite) and 7500-8191 (fclose) of block 1
 #   data-unbuffered, data-lines  a character at a time
@@ -304,7 +303,7 @@ print(timer[sys.argv[2]][sys.argv[3]][2])' "$json" "$type" "$call"
 expected_rows=(
     "data-getc r 0 1 4096;1 1 4096;2 1 4096;3 1 4096;4 1 4096;"
     "data-partial r 0 1 4096;1 1 1904;"
-    "data-mixed r 0 4 100;2 1 10;4 1 4096;"
+    "data-mixed r 0 5 100;2 1 10;4 1 4096;"
     "data-putc w 0 1 4096;1 4 1904;"
     "data-unbuffered w 0 100 1;"
     "data-lines w 0 33 1;"
@@ -320,7 +319,7 @@ expected_rows=(
 expected_json=(
     "data-getc r 5 20480 20480"
     "data-partial r 2 6000 20480"
-    "data-mixed r 6 4506 20480"
+    "data-mixed r 7 4606 20480"
     "data-putc w 5 11712 8192"
     "data-unbuffered w 100 100 100"
     "data-lines w 33 33 33"
@@ -352,12 +351,9 @@ for mode in 1 0; do
         exit 1
     fi
 
-    # Bytes read: 20480 + 6000 + 4430 + 100 + 99 (the 100 bytes of data-mixed
-    # recorded by fgets() are in the block statistics only, like the lines of
-    # data-nul).
-    # Bytes written: 8192 + 100 + 33 + 6000 + 1200 (the 100 bytes of data-shared
-    # written with fputs() and the 11 printed to data-printf likewise).
-    for expected in "read 31109" "write 15525"; do
+    # Bytes read: 20480 + 6000 + 4530 + 100 + 99, and the 300 of data-nul.
+    # Bytes written: 8192 + 100 + 33 + 6100 + 1200, and the 11 of data-printf.
+    for expected in "read 31509" "write 15636"; do
         got=$(timer_bytes "$mode" monitor "${expected% *}")
         if [[ -n $got && $got != "${expected#* }" ]]; then
             echo "monitored ${expected% *} bytes: '$got', expected '${expected#* }' (DATALIFE_JSON_OUTPUT=$mode)" >&2
@@ -370,7 +366,7 @@ for mode in 1 0; do
     unseen=$(compgen -G "$test_root/traces-$mode/data-unseen.[0-9]*_blk_trace.json" || true)
     stat=$(compgen -G "$test_root/traces-$mode/data-unseen_[0-9]*_w_stat" | head -n 1 || true)
     if [[ -n $unseen || -n $(tail -n +2 "${stat:-/dev/null}") ]]; then
-        echo "a stream written only with fprintf() is reported with part of its bytes (DATALIFE_JSON_OUTPUT=$mode)" >&2
+        echo "a stream written only with putw() is reported with part of its bytes (DATALIFE_JSON_OUTPUT=$mode)" >&2
         exit 1
     fi
 

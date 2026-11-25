@@ -48,12 +48,29 @@ int main(int argc, char **argv) {
 EOF
 cc -Wall -Wextra -Werror "$test_root/load_now.c" -o "$test_root/load_now" -ldl
 
+# From a directory of its own: at the exit of a program that loaded the library
+# with dlopen(), the library's strings are destroyed before it writes the timer's
+# file, which must still go to the output directory and not, under a name made
+# of what was left of the path, to the current one.
+mkdir -p "$test_root/work"
 status=0
-DATALIFE_OUTPUT_PATH="$test_root/traces" "$test_root/load_now" "$monitor_lib" \
+(cd "$test_root/work" && DATALIFE_OUTPUT_PATH="$test_root/traces" "$test_root/load_now" "$monitor_lib") \
     >"$test_root/output" 2>&1 || status=$?
 if [[ $status -ne 0 ]]; then
     echo "dlopen(RTLD_NOW) of the library failed:" >&2
     grep -v '^\[MONITOR\]' "$test_root/output" | tail -n 20 >&2
+    exit 1
+fi
+if [[ -n $(ls -A "$test_root/work") ]]; then
+    echo "a program that loaded the library with dlopen() left a file in its directory:" >&2
+    ls -Ab "$test_root/work" >&2
+    exit 1
+fi
+# The timer's totals are on stdout, or with TIMER_JSON in a file of the output
+# directory.
+if ! grep -q '^\[MONITOR\] monitor read ' "$test_root/output" &&
+    ! compgen -G "$test_root/traces/monitor_timer.*.json" >/dev/null; then
+    echo "a program that loaded the library with dlopen() wrote no timer output" >&2
     exit 1
 fi
 

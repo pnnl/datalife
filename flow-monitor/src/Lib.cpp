@@ -37,7 +37,6 @@
 #include "ReaderWriterLock.h"
 #include "MonitorFile.h"
 #include "MonitorFileDescriptor.h"
-#include "MonitorFileStream.h"
 #include "MonitorPathPolicy.h"
 #include "Timer.h"
 #include "Trackable.h"
@@ -63,28 +62,6 @@
 
 #define TRACKFILECHANGES 1 // tmp-ly added
 
-class CleanupTrackFile {
-public:
-  CleanupTrackFile(){}
-  ~CleanupTrackFile() {
-  auto next_iter = Trackable<int, MonitorFileDescriptor *>::begin();
-  auto itered = Trackable<int, MonitorFileDescriptor *>::end();
-  while (next_iter != itered) {
-    next_iter = Trackable<int, MonitorFileDescriptor *>::next(next_iter);
-    if (next_iter == Trackable<int, MonitorFileDescriptor *>::end()) {
-      break;
-    }
-    auto fd_ = next_iter->first;
-    auto file_desc = next_iter->second;
-    auto file = file_desc->getFile();
-    DPRINTF("Lib.cpp: Calling CleanupTrackFile() \n");
-    file->close(fd_);
-    MonitorFile::removeMonitorFile(file);
-    MonitorFileDescriptor::removeMonitorFileDescriptor(fd_);
-  }
-  }
-};
-
 // pthread_atfork handlers. A forked child has only the forking thread, so a
 // lock another thread held at fork() stays held in the child, and the child's
 // next intercepted call that needs it hangs.
@@ -93,9 +70,8 @@ public:
 // the I/O paths nest them (mmap takes a registry under the fd map lock, open
 // takes the trace-stat lock under a registry lock). Each is held only for an
 // in-memory update, so fork() waits briefly and the child gets them unlocked,
-// with the maps they guard intact. vLock and the per-stream locks are held
-// across the real I/O call, which can take long, so fork() does not wait for
-// them; the child resets them instead.
+// with the maps they guard intact. vLock is held across the real I/O call, which
+// can take long, so fork() does not wait for it; the child resets it instead.
 //
 // fork() called from a signal handler can interrupt this thread while it holds
 // or is taking a DataLife lock, which only the interrupted code can release.
@@ -117,7 +93,6 @@ static void monitorForkPrepare(void) {
         return;
     }
     fdToFileMapMutex.lock();
-    Trackable<FILE *, MonitorFileStream *>::registryLock().writerLock();
     Trackable<std::string, MonitorFile *>::registryLock().writerLock();
     Trackable<int, MonitorFileDescriptor *>::registryLock().writerLock();
     trackFileStatLock().lock();
@@ -127,7 +102,6 @@ static void monitorForkRelease(void) {
     trackFileStatLock().unlock();
     Trackable<int, MonitorFileDescriptor *>::registryLock().writerUnlock();
     Trackable<std::string, MonitorFile *>::registryLock().writerUnlock();
-    Trackable<FILE *, MonitorFileStream *>::registryLock().writerUnlock();
     fdToFileMapMutex.unlock();
 }
 
@@ -144,15 +118,12 @@ static void monitorForkParent(void) {
 // malloc, leaving this child's heap mid-update. Locks are reinitialized in place
 // and the parent's data abandoned rather than freed.
 static void monitorForkChild(void) {
+    monitorPid = getpid();
     if (skippedForks != 0) {
         --skippedForks;
     } else {
         monitorForkRelease();
         vLock.resetAfterFork();
-        for (auto it = Trackable<FILE *, MonitorFileStream *>::begin();
-             it != Trackable<FILE *, MonitorFileStream *>::end(); ++it) {
-            it->second->getLock()->resetAfterFork();
-        }
         new (Loggable::mtx_cout) std::mutex(); // the old one may be held
         if (timer) {
             timer->resetAfterFork();
@@ -253,6 +224,7 @@ void __attribute__((constructor)) monitorInit(void) {
         unix_exit_group = (unix_exit_group_t)dlsym(RTLD_NEXT, "exit_group");
         unix_vfprintf = (unix_vfprintf_t)dlsym(RTLD_NEXT, "vfprintf");
         unixmmap = (mmap_t)dlsym(RTLD_NEXT, "mmap");
+        unixmmap64 = (mmap64_t)dlsym(RTLD_NEXT, "mmap64");
         // // Below added for HDF5 POSIX I/O
         unixpread = (pread_t)dlsym(RTLD_NEXT, "pread");
         unixpwrite = (pwrite_t)dlsym(RTLD_NEXT, "pwrite");
@@ -275,14 +247,17 @@ void __attribute__((constructor)) monitorInit(void) {
         timer->end(Timer::MetricType::monitor, Timer::Metric::constructor);
         //*InputFile::_time_of_last_read = std::chrono::high_resolution_clock::now();
     });
+    monitorPid = getpid();
     init = true;
 }
 
+static void recordStandardStreams(void);
+
 void __attribute__((destructor)) monitorCleanup(void) {
     // Removed the manual destructor call.
-    // static CleanupTrackFile cleanup;
 
     DPRINTF("Lib.cpp: monitorCleanup(void)\n");
+    recordStandardStreams();
 
     timer->start();
     init = false; //set to false because we can't ensure our static members have not already been deleted.
@@ -334,7 +309,7 @@ int trackFileOpen(std::string name, std::string metaName, MonitorFile::Type type
 
     MonitorFile *file = MonitorFile::addNewMonitorFile(type, name, name, fd, true);
     if (file) {
-        bool descriptorAdded = MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex());
+        bool descriptorAdded = MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex(fd));
         if (descriptorAdded) {
             file->open();
             DPRINTF("Lib.cpp: trackFileOpen() add new file success: %s , fd = %d\n", pathname, fd);
@@ -360,8 +335,8 @@ int monitorOpen(std::string name, std::string metaName, MonitorFile::Type type, 
   auto fd = (*unixopen64)(metaName.c_str(), O_RDONLY, 0);
   MonitorFile *file = MonitorFile::addNewMonitorFile(type, name, metaName, fd);
   if (file) {
-    // MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex());
-    bool descriptorAdded = MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex());
+    // MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex(fd));
+    bool descriptorAdded = MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex(fd));
     if (descriptorAdded) {
         file->open();
         DPRINTF("Lib.cpp: monitorOpen add new file success: %s , fd = %d\n", pathname, fd);
@@ -400,7 +375,7 @@ int open(const char *pathname, int flags, ...) {
         va_end(arg);
     }
 
-    if (isMonitorInternalIO() || isMonitorOwnedPath(pathname, Config::dataLifeOutputPath)) {
+    if (leavesRecordsAlone() || isMonitorOwnedPath(pathname, Config::dataLifeOutputPath)) {
         return (*unixopen)(pathname, flags, mode);
     }
 
@@ -413,7 +388,7 @@ int open(const char *pathname, int flags, ...) {
             int fd = outerWrapper("open", pathname, metric, trackFileOpen, unixopen, pathname, flags, mode);
 
 
-            if (fd >= 0) {
+            if (fd >= 0 && init) {
                 // Track the fd and pathname
                 std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
                 fdToFileMap[fd] = std::string(pathname);
@@ -428,7 +403,7 @@ int open(const char *pathname, int flags, ...) {
     DPRINTF("Lib.cpp: open() Firing off monitorOpen for %s\n", pathname);
     int fd = outerWrapper("open", pathname, metric, monitorOpen, unixopen, pathname, flags, mode);
 
-    if (fd >= 0) {
+    if (fd >= 0 && init) {
         // Track the fd and pathname
         std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
         fdToFileMap[fd] = std::string(pathname);
@@ -450,7 +425,7 @@ int open64(const char *pathname, int flags, ...) {
         va_end(arg);
     }
 
-    if (isMonitorInternalIO() || isMonitorOwnedPath(pathname, Config::dataLifeOutputPath)) {
+    if (leavesRecordsAlone() || isMonitorOwnedPath(pathname, Config::dataLifeOutputPath)) {
         return (*unixopen64)(pathname, flags, mode);
     }
 
@@ -461,7 +436,7 @@ int open64(const char *pathname, int flags, ...) {
         if (fnmatch(pattern.c_str(), get_basename(pathname), 0) == 0) {
             int fd = outerWrapper("open64", pathname, metric, trackFileOpen, unixopen64, pathname, flags, mode);
 
-            if (fd >= 0) {
+            if (fd >= 0 && init) {
                 // Track the fd and pathname
                 std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
                 fdToFileMap[fd] = std::string(pathname);
@@ -476,7 +451,7 @@ int open64(const char *pathname, int flags, ...) {
     DPRINTF("Lib.cpp: open64() Firing off monitorOpen for %s\n", pathname);
     int fd = outerWrapper("open64", pathname, metric, monitorOpen, unixopen64, pathname, flags, mode);
 
-    if (fd >= 0) {
+    if (fd >= 0 && init) {
         // Track the fd and pathname
         std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
         fdToFileMap[fd] = std::string(pathname);
@@ -500,7 +475,7 @@ int trackFileOpenat(std::string name, std::string metaName, MonitorFile::Type ty
   if (fd > 0) {  
     MonitorFile *file = MonitorFile::addNewMonitorFile(type, name, name, fd, true);
     if (file) {
-      MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex());
+      MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex(fd));
       DPRINTF("Lib.cpp: trackFileOpen add new  file success: %s , fd = %d\n", pathname, fd);
     } 
   } else {
@@ -510,7 +485,7 @@ int trackFileOpenat(std::string name, std::string metaName, MonitorFile::Type ty
 }
 
 static int openatImpl(int dirfd, const char *pathname, int flags, int mode) {
-  if (isMonitorInternalIO() || isMonitorOwnedPathAt(dirfd, pathname, Config::dataLifeOutputPath)) {
+  if (leavesRecordsAlone() || isMonitorOwnedPathAt(dirfd, pathname, Config::dataLifeOutputPath)) {
     return (*unixopenat)(dirfd, pathname, flags, mode);
   }
   
@@ -558,42 +533,23 @@ int openat64(int dirfd, const char *pathname, int flags, ...) {
 
 int monitorClose(MonitorFile *file, unsigned int fp, int fd) {
     DPRINTF("Lib.cpp: In monitor close for fd %d\n", fd);
-#ifdef TRACKFILECHANGES
-    if (file->traced()) {
-        file->close(fd);
-        DPRINTF("Lib.cpp: Successfully closed a file with fd %d\n", fd);
-    }
-#endif
-    
-
-    MonitorFile::removeMonitorFile(file);
-    MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
+    MonitorFileDescriptor::removeMonitorFileDescriptor(fd, fd);
     return (*unixclose)(fd);
 }
 
 int close(int fd) {
     DPRINTF("Lib.cpp: Trying to close file with fd %d\n", fd);
     // DataLife's own I/O can run inside the fork handlers, which hold the fd
-    // map and registry locks; outerWrapper passes it straight to libc.
-    if (isMonitorInternalIO()) {
-        return outerWrapper("close", fd, Timer::Metric::close, monitorClose, unixclose, fd);
+    // map and registry locks.
+    if (!init || leavesRecordsAlone()) {
+        unixclose_t realClose = unixclose ? unixclose : (unixclose_t)dlsym(RTLD_NEXT, "close");
+        return (*realClose)(fd);
     }
     {
         std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
         fdToFileMap.erase(fd);
     }
-
-    MonitorFile *file = nullptr;
-    unsigned int pos = 0;
-
-    if (MonitorFileDescriptor::lookupMonitorFileDescriptor(fd, file, pos)) {
-        DPRINTF("Lib.cpp: MonitorFile found for fd %d.\n", fd);
-    } else {
-        DPRINTF("Lib.cpp: No MonitorFile found for fd %d.\n", fd);
-    }
-    
     return outerWrapper("close", fd, Timer::Metric::close, monitorClose, unixclose, fd);
-
 }
 
 
@@ -745,7 +701,9 @@ ssize_t monitorRead(MonitorFile *file, unsigned int fp, int fd, void *buf, size_
   DPRINTF("Lib.cpp: In Monitor read\n");
   MonitoredIOLock lock(file, false);
   ssize_t ret = file->read(fd, buf, count, fp);
-  timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, ret);
+  if (ret > 0) {
+    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, ret);
+  }
   return ret;
 }
 
@@ -760,7 +718,9 @@ ssize_t monitorWrite(MonitorFile *file, unsigned int fp, int fd, const void *buf
     // auto ret = file->write(buf, count, fp);
     // Pass -1 for offset to indicate positional write
     auto ret = file->write(fd, buf, count, fp, -1);
-    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, ret);
+    if (ret > 0) {
+        timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, ret);
+    }
     DPRINTF("Lib.cpp: Returning from Monitor write\n");
     return ret;
 }
@@ -909,6 +869,322 @@ ssize_t writev(int fd, const struct iovec *iov, int iovcnt) {
     return outerWrapper("writev", fd, Timer::Metric::writev, monitorWritev, unixwritev, fd, iov, iovcnt);
 }
 
+/* More calls on descriptors **********************************************************************************/
+
+// The next definition of a symbol, libc's, looked up at the first call and kept
+// in `cache`, a static of the wrapper. Not a static that is initialized with
+// the lookup: its guard would stop for good a wrapper that a signal handler
+// calls during the lookup, or the child of a fork() made during it.
+template <typename Function>
+static Function nextSymbol(std::atomic<Function> &cache, const char *name) {
+    Function function = cache.load(std::memory_order_relaxed);
+    if (!function) {
+        function = (Function)dlsym(RTLD_NEXT, name);
+        cache.store(function, std::memory_order_relaxed);
+    }
+    return function;
+}
+#define NEXT_SYMBOL(Function, name)                    \
+    ([]() -> Function {                                \
+        static std::atomic<Function> cache{nullptr};   \
+        return nextSymbol(cache, name);                \
+    }())
+
+// Whether the C library has no such function: one older than the function. A
+// program can come by the wrapper all the same, with dlsym() or through a weak
+// reference, and must find what it would without the library.
+template <typename Function>
+static bool missing(Function real) {
+    if (real) {
+        return false;
+    }
+    errno = ENOSYS;
+    return true;
+}
+
+// Defines the function that programs call as `name`. In this file it goes by
+// another name: the C library's headers may already define `name` inline, make
+// it a macro, or have it stand for another symbol (scanf() for __isoc23_scanf()).
+#define INTERPOSE(type, name, parameters)                         \
+    extern "C" type monitor_##name parameters __asm__(#name);     \
+    type monitor_##name parameters
+
+INTERPOSE(int, creat, (const char *pathname, mode_t mode)) {
+    return open(pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
+}
+
+INTERPOSE(int, creat64, (const char *pathname, mode_t mode)) {
+    return open64(pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
+}
+
+// mkstemp() and its variants open a new file under a name they choose and
+// write that name over the template. The file is monitored if the name matches
+// a pattern, like a file opened by name; a program that renames it to its
+// result is followed there (see followRename()). `real` makes the call.
+template <typename Real>
+static int openTemporary(const char *name, Real real) {
+    if (!init || leavesRecordsAlone()) {
+        return real();
+    }
+    timer->start();
+    int fd = real();
+    bool monitored = false;
+    if (fd >= 0 && MonitorFile::matchesPatterns(name) && !isMonitorOwnedPath(name, Config::dataLifeOutputPath)) {
+        int saved_errno = errno;
+        MonitorFile *file = MonitorFile::addNewMonitorFile(MonitorFile::TrackLocal, name, name, fd);
+        if (file) {
+            MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex(fd));
+            monitored = true;
+        }
+        {
+            // mmap() finds the file of a descriptor by its name.
+            std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
+            fdToFileMap[fd] = std::string(name);
+        }
+        errno = saved_errno;
+    }
+    timer->end(monitored ? Timer::MetricType::monitor : Timer::MetricType::system, Timer::Metric::out_open);
+    return fd;
+}
+
+#define OPEN_TEMPORARY(name, parameters, arguments)                                          \
+    INTERPOSE(int, name, parameters) {                                                       \
+        auto real = NEXT_SYMBOL(int (*) parameters, #name);                                  \
+        return openTemporary(pattern, [&] { return (*real) arguments; });                    \
+    }
+OPEN_TEMPORARY(mkstemp, (char *pattern), (pattern))
+OPEN_TEMPORARY(mkstemp64, (char *pattern), (pattern))
+OPEN_TEMPORARY(mkostemp, (char *pattern, int flags), (pattern, flags))
+OPEN_TEMPORARY(mkostemp64, (char *pattern, int flags), (pattern, flags))
+OPEN_TEMPORARY(mkstemps, (char *pattern, int suffix), (pattern, suffix))
+OPEN_TEMPORARY(mkstemps64, (char *pattern, int suffix), (pattern, suffix))
+OPEN_TEMPORARY(mkostemps, (char *pattern, int suffix, int flags), (pattern, suffix, flags))
+OPEN_TEMPORARY(mkostemps64, (char *pattern, int suffix, int flags), (pattern, suffix, flags))
+
+typedef int (*unixfcntl_t)(int fd, int command, ...);
+
+// `copy` has become a copy of fd, by dup() or the like: the same open file, with
+// the same offset. It is monitored if fd is, and like it, at the same position
+// (see MonitorFile::newFilePosIndexSharing()): what goes through the one moves
+// the other. Only what a stream on it has recorded is the copy's own. The file
+// it was a descriptor of until now, for dup2() and dup3(), is closed. That one's size can
+// still be read through `kept`. The records change in one step, after the call,
+// so that what other threads do with `copy` meanwhile is recorded for one file
+// or the other.
+static void copiedDescriptor(int fd, int copy, int kept = -1) {
+    if (copy < 0 || copy == fd || !init || leavesRecordsAlone()) {
+        return;
+    }
+    int saved_errno = errno;
+    MonitorFile *closed;
+    {
+        MonitoredFile monitored(fd);
+        unsigned int pos = 0;
+        if (monitored) {
+            monitored.file->incUsers(); // for the copy
+            pos = monitored.file->newFilePosIndexSharing(monitored.pos);
+        }
+        closed = MonitorFileDescriptor::replaceMonitorFileDescriptor(copy, monitored.file, pos);
+        // mmap() finds the file of a descriptor by its name.
+        std::lock_guard<CountedMutex> lock(fdToFileMapMutex);
+        auto name = fdToFileMap.find(fd);
+        if (name != fdToFileMap.end()) {
+            fdToFileMap[copy] = std::string(name->second);
+        } else {
+            fdToFileMap.erase(copy);
+        }
+    }
+    MonitorFileDescriptor::closeMonitorFile(closed, kept);
+    errno = saved_errno;
+}
+
+INTERPOSE(int, dup, (int fd)) {
+    int copy = (*NEXT_SYMBOL(int (*)(int), "dup"))(fd);
+    copiedDescriptor(fd, copy);
+    return copy;
+}
+
+// dup2() and dup3() close the file of the descriptor they make the copy on. If
+// that file is monitored, a descriptor of it is kept until its traces are
+// written: they tell its size. Not one of the first three numbers, which a
+// program may be counting on for its next open().
+template <typename Real>
+static int copyOnto(int fd, int onto, Real real) {
+    unixfcntl_t control = NEXT_SYMBOL(unixfcntl_t, "fcntl");
+    int kept = -1;
+    if (init && fd != onto && MonitorFileDescriptor::mayBeMonitored(onto) && !leavesRecordsAlone()) {
+        int saved_errno = errno;
+        kept = (*control)(onto, F_DUPFD_CLOEXEC, 3);
+        errno = saved_errno;
+    }
+    int copy = real();
+    copiedDescriptor(fd, copy, kept);
+    if (kept >= 0) {
+        int saved_errno = errno;
+        unixclose_t realClose = unixclose ? unixclose : (unixclose_t)dlsym(RTLD_NEXT, "close");
+        (*realClose)(kept);
+        errno = saved_errno;
+    }
+    return copy;
+}
+
+INTERPOSE(int, dup2, (int fd, int onto)) {
+    auto real = NEXT_SYMBOL(int (*)(int, int), "dup2");
+    return copyOnto(fd, onto, [&] { return (*real)(fd, onto); });
+}
+
+INTERPOSE(int, dup3, (int fd, int onto, int flags)) {
+    auto real = NEXT_SYMBOL(int (*)(int, int, int), "dup3");
+    return copyOnto(fd, onto, [&] { return (*real)(fd, onto, flags); });
+}
+
+// fcntl() copies a descriptor too, and says whether one appends. Its third
+// argument is passed on as the C library itself reads it, whatever the command.
+static int descriptorControl(unixfcntl_t real, int fd, int command, void *argument) {
+    int result = (*real)(fd, command, argument);
+    if (command == F_DUPFD || command == F_DUPFD_CLOEXEC) {
+        copiedDescriptor(fd, result);
+    } else if (command == F_SETFL && result == 0) {
+        MonitoredFile monitored(fd);
+        if (monitored) {
+            monitored.file->setAppends(monitored.pos, ((long)argument & O_APPEND) != 0);
+        }
+    }
+    return result;
+}
+
+INTERPOSE(int, fcntl, (int fd, int command, ...)) {
+    va_list arguments;
+    va_start(arguments, command);
+    void *argument = va_arg(arguments, void *);
+    va_end(arguments);
+    return descriptorControl(NEXT_SYMBOL(unixfcntl_t, "fcntl"), fd, command, argument);
+}
+
+INTERPOSE(int, fcntl64, (int fd, int command, ...)) {
+    va_list arguments;
+    va_start(arguments, command);
+    void *argument = va_arg(arguments, void *);
+    va_end(arguments);
+    unixfcntl_t real = NEXT_SYMBOL(unixfcntl_t, "fcntl64"); // in glibc since 2.28
+    return descriptorControl(real ? real : NEXT_SYMBOL(unixfcntl_t, "fcntl"), fd, command, argument);
+}
+
+// preadv(), pwritev() and their variants: one call on a monitored descriptor,
+// recorded as one read or write, at the offset given or, for the variants that
+// take -1 for it, at the descriptor's. A write that appends (the descriptor
+// does, or the call says so: `appending`) goes to the end of the file whatever
+// the offset given, and leaves the descriptor's where it was.
+#ifndef RWF_APPEND
+#define RWF_APPEND 0x00000010
+#endif
+
+template <typename Real>
+static ssize_t vectorAt(int fd, bool isRead, off64_t offset, bool appending, Real real) {
+    MonitoredFile monitored(fd);
+    if (!monitored) {
+        return real();
+    }
+    const Timer::Metric metric = isRead ? Timer::Metric::readv : Timer::Metric::writev;
+    timer->start();
+    ssize_t done = real();
+    if (done > 0) {
+        int saved_errno = errno;
+        if (offset < 0) {
+            trackVector(monitored.file, monitored.pos, fd, done, isRead);
+        } else if (auto *trackFile = dynamic_cast<TrackFile *>(monitored.file)) {
+            if (!isRead && (appending || monitored.file->appends(monitored.pos))) {
+                const off_t start = TrackFile::appendedAt(fd, done);
+                offset = start >= 0 ? start : offset;
+            }
+            trackFile->trackAt(!isRead, done, offset);
+        }
+        timer->addAmt(Timer::MetricType::monitor, metric, done);
+        errno = saved_errno;
+    }
+    timer->end(Timer::MetricType::monitor, metric);
+    return done;
+}
+
+#define VECTOR_AT(name, isRead, offset_t)                                                           \
+    INTERPOSE(ssize_t, name, (int fd, const struct iovec *iov, int iovcnt, offset_t offset)) {      \
+        auto real = NEXT_SYMBOL(ssize_t (*)(int, const struct iovec *, int, offset_t), #name);      \
+        return vectorAt(fd, isRead, offset, false, [&] { return (*real)(fd, iov, iovcnt, offset); });      \
+    }
+#define VECTOR_AT_FLAGS(name, isRead, offset_t)                                                           \
+    INTERPOSE(ssize_t, name, (int fd, const struct iovec *iov, int iovcnt, offset_t offset, int flags)) { \
+        auto real = NEXT_SYMBOL(ssize_t (*)(int, const struct iovec *, int, offset_t, int), #name);       \
+        if (missing(real)) { /* in glibc since 2.26 */                                                    \
+            return -1;                                                                                    \
+        }                                                                                                 \
+        return vectorAt(fd, isRead, offset, (flags & RWF_APPEND) != 0,                                    \
+                        [&] { return (*real)(fd, iov, iovcnt, offset, flags); });     \
+    }
+VECTOR_AT(preadv, true, off_t)
+VECTOR_AT(preadv64, true, off64_t)
+VECTOR_AT(pwritev, false, off_t)
+VECTOR_AT(pwritev64, false, off64_t)
+VECTOR_AT_FLAGS(preadv2, true, off_t)
+VECTOR_AT_FLAGS(preadv64v2, true, off64_t)
+VECTOR_AT_FLAGS(pwritev2, false, off_t)
+VECTOR_AT_FLAGS(pwritev64v2, false, off64_t)
+
+// sendfile() and copy_file_range(): the kernel reads from one descriptor and
+// writes to another. Each side that is monitored is recorded, at the offset the
+// program gave for it or, with none, at the descriptor's.
+template <typename Offset>
+static void trackTransferSide(MonitoredFile &side, bool isRead, const Offset *start, ssize_t bytes) {
+    if (!side) {
+        return;
+    }
+    timer->addAmt(Timer::MetricType::monitor, isRead ? Timer::Metric::read : Timer::Metric::write, bytes);
+    if (!start) {
+        trackVector(side.file, side.pos, side.fd, bytes, isRead);
+    } else if (auto *trackFile = dynamic_cast<TrackFile *>(side.file)) {
+        trackFile->trackAt(!isRead, bytes, *start);
+    }
+}
+
+template <typename Offset, typename Real>
+static ssize_t transfer(int in_fd, Offset *in_offset, int out_fd, Offset *out_offset, Real real) {
+    MonitoredFile in(in_fd), out(out_fd);
+    if (!in && !out) {
+        return real();
+    }
+    const Offset in_start = in_offset ? *in_offset : 0;
+    const Offset out_start = out_offset ? *out_offset : 0;
+    timer->start();
+    ssize_t done = real();
+    if (done > 0) {
+        int saved_errno = errno;
+        trackTransferSide(in, true, in_offset ? &in_start : NULL, done);
+        trackTransferSide(out, false, out_offset ? &out_start : NULL, done);
+        errno = saved_errno;
+    }
+    timer->end(Timer::MetricType::monitor, in ? Timer::Metric::read : Timer::Metric::write);
+    return done;
+}
+
+INTERPOSE(ssize_t, sendfile, (int out_fd, int in_fd, off_t *offset, size_t count)) {
+    auto real = NEXT_SYMBOL(ssize_t (*)(int, int, off_t *, size_t), "sendfile");
+    return transfer(in_fd, offset, out_fd, (off_t *)NULL, [&] { return (*real)(out_fd, in_fd, offset, count); });
+}
+
+INTERPOSE(ssize_t, sendfile64, (int out_fd, int in_fd, off64_t *offset, size_t count)) {
+    auto real = NEXT_SYMBOL(ssize_t (*)(int, int, off64_t *, size_t), "sendfile64");
+    return transfer(in_fd, offset, out_fd, (off64_t *)NULL, [&] { return (*real)(out_fd, in_fd, offset, count); });
+}
+
+INTERPOSE(ssize_t, copy_file_range,
+          (int in_fd, off64_t *in_offset, int out_fd, off64_t *out_offset, size_t length, unsigned int flags)) {
+    auto real = NEXT_SYMBOL(ssize_t (*)(int, off64_t *, int, off64_t *, size_t, unsigned int), "copy_file_range");
+    if (missing(real)) { // in glibc since 2.27
+        return -1;
+    }
+    return transfer(in_fd, in_offset, out_fd, out_offset,
+                    [&] { return (*real)(in_fd, in_offset, out_fd, out_offset, length, flags); });
+}
+
 /*Streaming**************************************************************************************************/
 
 FILE *trackFileFopen(std::string name, std::string metaName, MonitorFile::Type type, const char *__restrict fileName, const char *__restrict modes) {
@@ -919,8 +1195,7 @@ FILE *trackFileFopen(std::string name, std::string metaName, MonitorFile::Type t
     int fd = fileno(fp);
     MonitorFile *file = MonitorFile::addNewMonitorFile(type, name, metaName, fd);
     if (file) {
-      MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex());
-      MonitorFileStream::addStream(fp, fd);
+      MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex(fd));
       DPRINTF("Lib.cpp: trackFileOpen add new  file success: %s , fd = %d\n", fileName, fd);
     }
   }
@@ -935,8 +1210,7 @@ FILE *monitorFopen(std::string name, std::string metaName, MonitorFile::Type typ
         int fd = fileno(fp);
         MonitorFile *file = MonitorFile::addNewMonitorFile(type, name, metaName, fd);
         if (file) {
-            MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex());
-            MonitorFileStream::addStream(fp, fd);
+            MonitorFileDescriptor::addMonitorFileDescriptor(fd, file, file->newFilePosIndex(fd));
         }
     }
     return fp;
@@ -944,7 +1218,7 @@ FILE *monitorFopen(std::string name, std::string metaName, MonitorFile::Type typ
 
 FILE *fopen(const char *__restrict fileName, const char *__restrict modes) {
   DPRINTF("Lib.cpp: Calling fopen on %s \n", fileName);  
-  if (isMonitorInternalIO() || isMonitorOwnedPath(fileName, Config::dataLifeOutputPath)) {
+  if (leavesRecordsAlone() || isMonitorOwnedPath(fileName, Config::dataLifeOutputPath)) {
     return (*unixfopen)(fileName, modes);
   }
   Timer::Metric metric = (modes[0] == 'r') ? Timer::Metric::in_fopen : Timer::Metric::out_fopen;
@@ -963,7 +1237,7 @@ FILE *fopen(const char *__restrict fileName, const char *__restrict modes) {
 
 FILE *fopen64(const char *__restrict fileName, const char *__restrict modes) {
   DPRINTF("Lib.cpp: Calling fopen64 on %s \n", fileName);  
-  if (isMonitorInternalIO() || isMonitorOwnedPath(fileName, Config::dataLifeOutputPath)) {
+  if (leavesRecordsAlone() || isMonitorOwnedPath(fileName, Config::dataLifeOutputPath)) {
     return (*unixfopen64)(fileName, modes);
   }
   Timer::Metric metric = (modes[0] == 'r') ? Timer::Metric::in_fopen : Timer::Metric::out_fopen;
@@ -984,11 +1258,10 @@ FILE *fopen64(const char *__restrict fileName, const char *__restrict modes) {
 
 // A stream on a descriptor the program opened itself, as bowtie2 does for its
 // reads: open(), then fdopen(). On a monitored descriptor the stream is monitored
-// like one from fopen(), and fclose() closes the file.
+// like one from fopen() (see MonitoredFile), and fclose() closes the file.
 FILE *monitorFdopen(MonitorFile *file, unsigned int pos, int fd, const char *modes) {
     FILE *fp = (*unixfdopen)(fd, modes);
     if (fp) {
-        MonitorFileStream::addStream(fp, fd);
         // An appending stream starts at the end of the file.
         int saved_errno = errno;
         long start = (*unixftell)(fp);
@@ -1032,15 +1305,13 @@ struct StreamBuffer {
 };
 
 // Records the bytes a monitored stream moved without a wrapper seeing them.
-// `buffer` is the stream's buffer and `now` its position at one moment; the
+// `buffer` is the stream's buffer and `now` its position at this moment; the
 // bytes are those of the buffer that are not recorded yet (see
 // streamRecorded()), and they end at `now`. Counting them in the buffer, not by
 // how far the position moved, keeps a seek, or a file that another writer
 // appends to, from being taken for I/O. This also covers what stdio calls
-// without a wrapper (getline(), fprintf(), ...) left in the buffer, but not what
-// they moved through earlier buffers. After a seek without a wrapper
-// (fsetpos()), the part of the new buffer before the new position counts as
-// read.
+// without a wrapper (the wide-character ones, getw(), ...) left in the buffer,
+// but not what they moved through earlier buffers.
 static void trackUnseenStreamIO(MonitorFile *file, unsigned int pos, const StreamBuffer &buffer, long now) {
     long unseen = buffer.bytes - std::max(file->streamRecorded(pos), 0L);
     if (unseen < 0) {
@@ -1063,30 +1334,51 @@ static void trackUnseenStreamIO(MonitorFile *file, unsigned int pos, const Strea
     file->setFilePos(pos, now);
 }
 
+// Where a stream that is writing is: ftell(), which counts what waits in its
+// buffer from the descriptor's offset. Through a descriptor that appends, that
+// goes to the end of the file instead, and only a stream opened to append
+// knows: one from fdopen(fd, "w") does not.
+static long writePosition(MonitorFile *file, unsigned int pos, FILE *fp) {
+    if (file->appends(pos)) {
+        const off_t end = TrackFile::appendedAt(fp->_fileno, 0);
+        if (end >= 0) {
+            return (long)end + (fp->_IO_write_ptr - fp->_IO_write_base);
+        }
+    }
+    return (*unixftell)(fp);
+}
+
 // After a call on fp that read or wrote was recorded: so is all the program has
 // done in the stream's buffer, but for the last `pending` bytes.
 static void streamRecorded(MonitorFile *file, unsigned int pos, FILE *fp, long pending = 0) {
     file->setStreamRecorded(pos, std::max(StreamBuffer(fp).bytes - pending, 0L));
 }
 
-// The same before a call that empties the buffer or moves the position. Only on
+// Looks at the stream's buffer and does that, before every call on the stream
+// that a wrapper makes: the call may empty the buffer or fill it anew. Only on
 // a stream already seen reading, writing or seeking: one used with nothing but
-// calls that have no wrapper is left alone, as before, rather than reported with
-// the last part of its I/O. Costs a system call (ftell() on a stream that was never
-// positioned) only if the buffer holds bytes that are not recorded. A stream that
-// cannot seek, such as one on a FIFO, has no position to record them at, so they
-// are not.
-static void trackUnseenStreamIO(MonitorFile *file, unsigned int pos, FILE *fp) {
+// calls that have no wrapper is left alone, rather than reported with the last
+// part of its I/O. A call that writes (`writes`) sees the stream from here on,
+// and what already waits in its buffer goes to the file with what the call
+// adds: characters put with the unlocked macros, or what the program wrote
+// before dup2() gave the stream this file. Costs a system call (ftell() on a
+// stream that was never positioned) only if the buffer holds bytes that are not
+// recorded. A stream that cannot seek, such as one on a FIFO, has no position to
+// record them at, so they are not.
+static void trackUnseenStreamIO(MonitorFile *file, unsigned int pos, FILE *fp, bool writes = false) {
     long recorded = file->streamRecorded(pos);
-    if (recorded < 0) {
-        return;
-    }
     StreamBuffer buffer(fp);
+    if (recorded < 0) {
+        if (!writes || !buffer.writing) {
+            return;
+        }
+        recorded = 0;
+    }
     if (buffer.bytes <= 0 || buffer.bytes == recorded) {
         return;
     }
     int saved_errno = errno;
-    long now = (*unixftell)(fp);
+    long now = buffer.writing ? writePosition(file, pos, fp) : (*unixftell)(fp);
     errno = saved_errno;
     if (now >= 0) {
         trackUnseenStreamIO(file, pos, buffer, now);
@@ -1094,102 +1386,111 @@ static void trackUnseenStreamIO(MonitorFile *file, unsigned int pos, FILE *fp) {
     }
 }
 
-// The stream's own lock, the one flockfile() takes, held by a stream wrapper
-// from before it looks at the stream's buffer until the call is recorded. The
-// thread then has the stream to itself for the whole of it, as it has inside the
-// real call, and as a thread using the unlocked macros under flockfile() has:
-// neither sees the buffer while the other is at work in it.
-class StreamLock {
-  public:
-    explicit StreamLock(FILE *fp) : _fp(fp) { (*unixflockfile)(_fp); }
-    ~StreamLock() { (*unixfunlockfile)(_fp); }
-    StreamLock(const StreamLock &) = delete;
-    StreamLock &operator=(const StreamLock &) = delete;
-
-  private:
-    FILE *_fp;
-};
-
-// The monitored file behind a stream, for fflush() and the calls behind the
-// unlocked macros (__uflow() and the others below), which do not take the lock
-// the other stream wrappers take. A program calls those with the stream locked
-// by flockfile(); another thread writing to the same stream through a wrapper
-// holds the wrappers' lock while it waits for that one, so taking it here would
-// block both for good.
-static bool monitoredStream(FILE *fp, MonitorFile *&file, unsigned int &pos) {
-    if (!init || isMonitorInternalIO()) {
+// Before the file of a monitored stream is closed, by fclose() or freopen():
+// records what the program left in the stream's buffer and pushes the buffer to
+// the descriptor, so that the size TrackFile::close() reads is the final one.
+// Returns whether the stream is monitored. Sets flush_errno if the buffer could
+// not be written: the C library has dropped it then, and its own close will not
+// report the failure. Gives the name of the stream's file if asked.
+static bool finishStream(FILE *fp, int &flush_errno, std::string *name = NULL) {
+    if (!mayBeMonitored(fp)) {
         return false;
     }
-    ReaderWriterLock *lock = NULL;
-    int fd = MonitorFileStream::lookupStream(fp, lock);
-    return fd != -1 && MonitorFileDescriptor::lookupMonitorFileDescriptor(fd, file, pos);
-}
-
-int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
-  DPRINTF("Lib.cpp: In monitor fclose \n");
-  if (fp) {
     StreamLock lock(fp);
-    trackUnseenStreamIO(file, pos, fp);
-  }
-  // Push buffered stdio data to the descriptor first, so the size captured in
-  // TrackFile::close() (fstat while the fd is open) is the final one.
-  if (fp && unixfflush) {
-    (*unixfflush)(fp);
-  }
-#ifdef TRACKFILECHANGES
-  // Once, however many patterns the name matches.
-  if (file->traced()) {
-    file->close(fd);
-    DPRINTF("Lib.cpp: Successfully closed a file with fd %d\n", fd);
-  }
-#endif
-    MonitorFile::removeMonitorFile(file);
-    MonitorFileDescriptor::removeMonitorFileDescriptor(fd);
-    
-// #ifdef TRACKFILECHANGES
-//     return 0;
-// #else
-    return (*unixfclose)(fp);
-// #endif
+    MonitoredFile monitored(fp);
+    if (!monitored) {
+        return false;
+    }
+    trackUnseenStreamIO(monitored.file, monitored.pos, fp);
+    if ((*unixfflush)(fp) != 0) {
+        flush_errno = errno;
+    }
+    if (name) {
+        *name = monitored.file->name();
+    }
+    return true;
 }
 
 int fclose(FILE *fp) {
     DPRINTF("Lib.cpp: Invoking fclose \n");
-    if (init && !isMonitorInternalIO()) {
+    if (!init || leavesRecordsAlone()) {
+        unixfclose_t realFclose = unixfclose ? unixfclose : (unixfclose_t)dlsym(RTLD_NEXT, "fclose");
+        return (*realFclose)(fp);
+    }
+    const int fd = fp->_fileno;
+    {
         // As close() does for the descriptor of a stream from fdopen().
-        ReaderWriterLock *lock = NULL;
-        int fd = MonitorFileStream::lookupStream(fp, lock);
-        if (fd != -1) {
-            std::lock_guard<CountedMutex> guard(fdToFileMapMutex);
-            fdToFileMap.erase(fd);
-        }
+        std::lock_guard<CountedMutex> guard(fdToFileMapMutex);
+        fdToFileMap.erase(fd);
     }
-    return outerWrapper("fclose", fp, Timer::Metric::close, monitorFclose, unixfclose, fp);
-}
-
-// fflush() of a monitored stream empties its buffer: record what the program put
-// there unseen first. Under the stream's own lock, which the program may already
-// hold, not the wrappers' (see monitoredStream()). fflush(NULL) is passed
-// through, so bytes unseen in a monitored stream at that moment are not recorded.
-int fflush(FILE *fp) {
-    unixfflush_t realFflush = unixfflush ? unixfflush : (unixfflush_t)dlsym(RTLD_NEXT, "fflush");
-    MonitorFile *file = NULL;
-    unsigned int pos = 0;
-    if (!fp || !monitoredStream(fp, file, pos)) {
-        return (*realFflush)(fp);
+    timer->start();
+    int flush_errno = 0;
+    const bool monitored = finishStream(fp, flush_errno);
+    if (monitored) {
+        MonitorFileDescriptor::removeMonitorFileDescriptor(fd, fd); // once, however many patterns the name matches
     }
-    StreamLock lock(fp);
-    trackUnseenStreamIO(file, pos, fp);
-    int ret = (*realFflush)(fp);
-    if (file->streamRecorded(pos) >= 0) {
-        streamRecorded(file, pos, fp);
+    int ret = (*unixfclose)(fp);
+    timer->end(monitored ? Timer::MetricType::monitor : Timer::MetricType::system, Timer::Metric::close);
+    if (ret == 0 && flush_errno != 0) {
+        errno = flush_errno;
+        ret = EOF;
     }
     return ret;
 }
 
-// After a real fread()-like call read items_read items of size bytes from fp,
-// whose buffer was `before`.
-static size_t trackFread(size_t items_read, size_t size, MonitorFile *file, unsigned int pos, FILE *fp, const StreamBuffer &before) {
+// fflush() of a monitored stream empties its buffer: record what the program put
+// there unseen first. fflush(NULL) is passed through, so bytes unseen in a
+// monitored stream at that moment are not recorded.
+// unlocked: the call is one the program makes without the stream's lock (see
+// StreamLock).
+static int flushStream(unixfflush_t real, FILE *fp, bool unlocked = false) {
+    if (!fp || !mayBeMonitored(fp)) {
+        return (*real)(fp);
+    }
+    StreamLock lock(fp, !unlocked);
+    if (!lock) {
+        return (*real)(fp);
+    }
+    MonitoredFile monitored(fp);
+    if (!monitored) {
+        return (*real)(fp);
+    }
+    trackUnseenStreamIO(monitored.file, monitored.pos, fp);
+    int ret = (*real)(fp);
+    if (monitored.file->streamRecorded(monitored.pos) >= 0) {
+        streamRecorded(monitored.file, monitored.pos, fp);
+    }
+    return ret;
+}
+
+int fflush(FILE *fp) {
+    return flushStream(unixfflush ? unixfflush : (unixfflush_t)dlsym(RTLD_NEXT, "fflush"), fp);
+}
+
+// A program seldom closes its standard streams. What it took from the buffer of
+// one that is on a monitored file, or left in it to be written at the exit,
+// since the last call recorded (getchar() and putchar() are recorded a buffer
+// at a time) is recorded here, when the library is unloaded, before the timer's
+// totals are written. A stream another thread holds at that moment is left
+// alone.
+static void recordStandardStreams(void) {
+    for (FILE *fp : {stdin, stdout, stderr}) {
+        if (!mayBeMonitored(fp)) {
+            continue;
+        }
+        StreamLock lock(fp, false);
+        if (!lock) {
+            continue;
+        }
+        MonitoredFile monitored(fp);
+        if (monitored) {
+            trackUnseenStreamIO(monitored.file, monitored.pos, fp, fp != stdin);
+        }
+    }
+}
+
+// After a real fread()-like call read items_read items of size bytes from fp.
+static size_t trackFread(size_t items_read, size_t size, MonitorFile *file, unsigned int pos, FILE *fp) {
     auto read_bytes = items_read * size;
 
     // Update the timer with the number of bytes read
@@ -1199,7 +1500,6 @@ static size_t trackFread(size_t items_read, size_t size, MonitorFile *file, unsi
     if (read_bytes > 0) {
         long new_pos = (*unixftell)(fp);
         if (new_pos >= 0) {
-            trackUnseenStreamIO(file, pos, before, new_pos - (long)read_bytes);
             streamRecorded(file, pos, fp);
             file->setFilePos(pos, new_pos);
             // Call tracking method for trace collection
@@ -1214,15 +1514,13 @@ static size_t trackFread(size_t items_read, size_t size, MonitorFile *file, unsi
 
 size_t monitorFread(MonitorFile *file, unsigned int pos, int fd, void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
   DPRINTF("Lib.cpp: In monitor fread \n");
-    StreamLock lock(fp);
-    StreamBuffer before(fp);
-    return trackFread((*unixfread)(ptr, size, n, fp), size, file, pos, fp, before);
+    trackUnseenStreamIO(file, pos, fp);
+    return trackFread((*unixfread)(ptr, size, n, fp), size, file, pos, fp);
 }
 
 size_t monitorFreadUnlocked(MonitorFile *file, unsigned int pos, int fd, void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
-    StreamLock lock(fp);
-    StreamBuffer before(fp);
-    return trackFread((*unixfread_unlocked)(ptr, size, n, fp), size, file, pos, fp, before);
+    trackUnseenStreamIO(file, pos, fp);
+    return trackFread((*unixfread_unlocked)(ptr, size, n, fp), size, file, pos, fp);
 }
 
 size_t fread(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
@@ -1234,26 +1532,20 @@ size_t fread(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
 }
 
 size_t fread_unlocked(void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
-  return outerWrapper("fread_unlocked", fp, Timer::Metric::read, monitorFreadUnlocked, unixfread_unlocked, ptr, size, n, fp);
+  return outerWrapper("fread_unlocked", UnlockedStream{fp}, Timer::Metric::read, monitorFreadUnlocked, unixfread_unlocked, ptr, size, n, fp);
 }
 
-size_t monitorFwrite(MonitorFile *file, unsigned int pos, int fd, const void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
-    DPRINTF("Lib.cpp: In monitor fwrite \n");
-    // auto written_bytes = (size_t)file->write(ptr, size * n, pos);
-    // auto written_bytes = file->write(ptr, size * n, pos, -1);
-    StreamLock lock(fp);
-    StreamBuffer before(fp);
-    auto items_written = (*unixfwrite)(ptr, size, n, fp);
-    auto written_bytes = items_written * size;
-
+// After a real call wrote written_bytes through fp.
+static void trackFwrite(size_t written_bytes, MonitorFile *file, unsigned int pos, FILE *fp) {
     // Update the timer with the number of bytes written
     timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, written_bytes);
 
     // Track for JSON tracing (if file is TrackFile)
     if (written_bytes > 0) {
-        long new_pos = (*unixftell)(fp);
+        int saved_errno = errno;
+        long new_pos = writePosition(file, pos, fp);
+        errno = saved_errno;
         if (new_pos >= 0) {
-            trackUnseenStreamIO(file, pos, before, new_pos - (long)written_bytes);
             streamRecorded(file, pos, fp);
             file->setFilePos(pos, new_pos);
             // Call tracking method for trace collection
@@ -1262,7 +1554,13 @@ size_t monitorFwrite(MonitorFile *file, unsigned int pos, int fd, const void *__
             }
         }
     }
+}
 
+size_t monitorFwrite(MonitorFile *file, unsigned int pos, int fd, const void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp) {
+    DPRINTF("Lib.cpp: In monitor fwrite \n");
+    trackUnseenStreamIO(file, pos, fp, true);
+    auto items_written = (*unixfwrite)(ptr, size, n, fp);
+    trackFwrite(items_written * size, file, pos, fp);
     return items_written;
 }
 
@@ -1273,17 +1571,11 @@ size_t fwrite(const void *__restrict ptr, size_t size, size_t n, FILE *__restric
 
 int monitorVfprintf(MonitorFile *file, unsigned int pos, int fd, FILE * stream,
 		     const char * format, va_list arg) {
-  StreamLock lock(stream);
-  StreamBuffer before(stream);
+  trackUnseenStreamIO(file, pos, stream, true);
   auto count = unix_vfprintf(stream, format, arg);
   if (count > 0) {
-    long new_pos = (*unixftell)(stream);
-    if (new_pos >= 0) {
-      trackUnseenStreamIO(file, pos, before, new_pos - count);
-      streamRecorded(file, pos, stream);
-    }
+    trackFwrite(count, file, pos, stream);
   }
-  file->vfprintf(pos, count);
   return count;
 }
 int vfprintf(FILE * stream, const char * format, va_list arg ) {
@@ -1304,11 +1596,11 @@ long int ftell(FILE *fp) {
 // fseek(), fseeko() and fseeko64() on a monitored stream. bowtie2 positions its
 // index files with fseeko64(): the position recorded for the stream must follow,
 // or the bytes skipped would later pass for bytes read.
-template <typename Seek, typename Offset>
-static int seekStream(Seek realSeek, MonitorFile *file, unsigned int pos, FILE *fp, Offset off, int whence) {
-    StreamLock lock(fp);
+// `reposition` makes the real call.
+template <typename Reposition>
+static int repositionStream(MonitorFile *file, unsigned int pos, FILE *fp, Reposition reposition) {
     trackUnseenStreamIO(file, pos, fp);
-    int result = (*realSeek)(fp, off, whence);
+    int result = reposition();
     // The stream as the seek left it: what lies before the new position in the
     // buffer was not read, and what the program takes after it is. From here on
     // the stream counts as seen, though only its position was.
@@ -1320,6 +1612,11 @@ static int seekStream(Seek realSeek, MonitorFile *file, unsigned int pos, FILE *
         }
     }
     return result;
+}
+
+template <typename Seek, typename Offset>
+static int seekStream(Seek realSeek, MonitorFile *file, unsigned int pos, FILE *fp, Offset off, int whence) {
+    return repositionStream(file, pos, fp, [&] { return (*realSeek)(fp, off, whence); });
 }
 
 int monitorFseek(MonitorFile *file, unsigned int pos, int fd, FILE *fp, long int off, int whence) {
@@ -1354,17 +1651,16 @@ int monitorFgetc(MonitorFile *file, unsigned int pos, int fd, FILE *fp) {
     // }
     // return EOF;
 
-    StreamLock lock(fp);
-    StreamBuffer before(fp);
+    trackUnseenStreamIO(file, pos, fp);
     int result = (*unixfgetc)(fp);
 
     // Sync internal position tracking with actual FILE* position
     if (result != EOF) {
         long new_pos = (*unixftell)(fp);
         if (new_pos >= 0) {
-            trackUnseenStreamIO(file, pos, before, new_pos - 1);
             streamRecorded(file, pos, fp);
             file->setFilePos(pos, new_pos);
+            timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, 1);
             // Call tracking method for trace collection
             if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
                 trackFile->trackRead(1, pos, new_pos);
@@ -1379,44 +1675,54 @@ int fgetc(FILE *fp) {
     return outerWrapper("fgetc", fp, Timer::Metric::fgetc, monitorFgetc, unixfgetc, fp);
 }
 
+// After a real call read through fp a number of bytes it does not tell: fgets(),
+// whose line is longer than strlen() says if it holds a NUL, and the scanf()
+// family. What it read is what lies between the position last recorded and the
+// stream's position now.
+static void trackReadTo(MonitorFile *file, unsigned int pos, FILE *fp) {
+    int saved_errno = errno;
+    long new_pos = (*unixftell)(fp);
+    errno = saved_errno;
+    if (new_pos < 0) {
+        return;
+    }
+    long prev_pos = file->filePos(pos);
+    file->setFilePos(pos, new_pos);
+    streamRecorded(file, pos, fp);
+    if (new_pos > prev_pos) {
+        timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, new_pos - prev_pos);
+        // Call tracking method for trace collection
+        if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
+            trackFile->trackRead(new_pos - prev_pos, pos, new_pos);
+        }
+    }
+}
+
 // After a real fgets()-like call on fp returned result.
 static char *trackFgets(char *result, MonitorFile *file, unsigned int pos, FILE *fp) {
     if (result != NULL) {
-        long new_pos = (*unixftell)(fp);
-        if (new_pos >= 0) {
-            // The line, and anything the program took unseen before it, as one
-            // read from the position last recorded: a line that holds a NUL is
-            // longer than strlen(result), so the two cannot be told apart.
-            long prev_pos = file->filePos(pos);
-            file->setFilePos(pos, new_pos);
-            streamRecorded(file, pos, fp);
-            // Call tracking method for trace collection
-            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
-                trackFile->trackRead(new_pos - prev_pos, pos, new_pos);
-            }
-        }
+        trackReadTo(file, pos, fp);
     }
-
     return result;
 }
 
 char *monitorFgets(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, int n, FILE *__restrict fp) {
-    StreamLock lock(fp);
+    trackUnseenStreamIO(file, pos, fp);
     return trackFgets((*unixfgets)(s, n, fp), file, pos, fp);
 }
 
 char *monitorFgetsUnlocked(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, int n, FILE *__restrict fp) {
-    StreamLock lock(fp);
+    trackUnseenStreamIO(file, pos, fp);
     return trackFgets((*unixfgets_unlocked)(s, n, fp), file, pos, fp);
 }
 
 char *monitorFgetsChk(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, size_t size, int n, FILE *__restrict fp) {
-    StreamLock lock(fp);
+    trackUnseenStreamIO(file, pos, fp);
     return trackFgets((*unix__fgets_chk)(s, size, n, fp), file, pos, fp);
 }
 
 char *monitorFgetsUnlockedChk(MonitorFile *file, unsigned int pos, int fd, char *__restrict s, size_t size, int n, FILE *__restrict fp) {
-    StreamLock lock(fp);
+    trackUnseenStreamIO(file, pos, fp);
     return trackFgets((*unix__fgets_unlocked_chk)(s, size, n, fp), file, pos, fp);
 }
 
@@ -1425,23 +1731,22 @@ char *fgets(char *__restrict s, int n, FILE *__restrict fp) {
 }
 
 char *fgets_unlocked(char *__restrict s, int n, FILE *__restrict fp) {
-    return outerWrapper("fgets_unlocked", fp, Timer::Metric::fgets, monitorFgetsUnlocked, unixfgets_unlocked, s, n, fp);
+    return outerWrapper("fgets_unlocked", UnlockedStream{fp}, Timer::Metric::fgets, monitorFgetsUnlocked, unixfgets_unlocked, s, n, fp);
 }
 
 int monitorFputc(MonitorFile *file, unsigned int pos, int fd, int c, FILE *fp) {
     // write(fd, (void *)&c, 1);
     // return c;
 
-    StreamLock lock(fp);
-    StreamBuffer before(fp);
+    trackUnseenStreamIO(file, pos, fp, true);
     int result = (*unixfputc)(c, fp);
 
     if (result != EOF) {
-        long new_pos = (*unixftell)(fp);
+        long new_pos = writePosition(file, pos, fp);
         if (new_pos >= 0) {
-            trackUnseenStreamIO(file, pos, before, new_pos - 1);
             streamRecorded(file, pos, fp);
             file->setFilePos(pos, new_pos);
+            timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, 1);
             // Call tracking method for trace collection
             if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
                 trackFile->trackWrite(1, pos, new_pos);
@@ -1472,24 +1777,11 @@ int monitorFputs(MonitorFile *file, unsigned int pos, int fd, const char *__rest
     //     return EOF;
     // return res;
 
-    StreamLock lock(fp);
-    StreamBuffer before(fp);
+    trackUnseenStreamIO(file, pos, fp, true);
     int result = (*unixfputs)(s, fp);
-
     if (result != EOF) {
-        long new_pos = (*unixftell)(fp);
-        if (new_pos >= 0) {
-            trackUnseenStreamIO(file, pos, before, new_pos - (long)strlen(s));
-            streamRecorded(file, pos, fp);
-            long prev_pos = file->filePos(pos);
-            file->setFilePos(pos, new_pos);
-            // Call tracking method for trace collection
-            if (auto* trackFile = dynamic_cast<TrackFile*>(file)) {
-                trackFile->trackWrite(new_pos - prev_pos, pos, new_pos);
-            }
-        }
+        trackFwrite(strlen(s), file, pos, fp);
     }
-
     return result;
 }
 
@@ -1520,65 +1812,459 @@ int feof(FILE *fp) ADD_THROW {
 // functions do not come here.
 extern "C" int __underflow(FILE *fp);
 
-// Other streams go straight to libc: these are called for every character of an
-// unbuffered stream.
-// taken: the call takes the character it returns, as __uflow() does.
-static int refillStream(unixuflow_t real, FILE *fp, bool taken) {
-    MonitorFile *file = NULL;
-    unsigned int pos = 0;
-    if (!monitoredStream(fp, file, pos)) {
-        return (*real)(fp);
-    }
+// A call that finds a monitored stream's buffer empty and fills it: `take` makes
+// it. taken: the call takes the character it returns, as __uflow() does.
+template <typename Take>
+static int refillStream(MonitorFile *file, unsigned int pos, FILE *fp, bool taken, Take take) {
     timer->start();
     if (file->streamRecorded(pos) < 0) {
         file->setStreamRecorded(pos, 0); // seen reading from here on
     }
     trackUnseenStreamIO(file, pos, fp);
-    int result = (*real)(fp);
+    int result = take();
     // A character taken from the new buffer is recorded with the rest of it.
     streamRecorded(file, pos, fp, (taken && result != EOF) ? 1 : 0);
     timer->end(Timer::MetricType::monitor, Timer::Metric::read);
     return result;
 }
 
-int __uflow(FILE *fp) {
-    return refillStream(unix__uflow ? unix__uflow : (unixuflow_t)dlsym(RTLD_NEXT, "__uflow"), fp, true);
-}
-
-int __underflow(FILE *fp) {
-    return refillStream(unix__underflow ? unix__underflow : (unixuflow_t)dlsym(RTLD_NEXT, "__underflow"), fp, false);
-}
-
-int __overflow(FILE *fp, int ch) {
-    unixoverflow_t real = unix__overflow ? unix__overflow : (unixoverflow_t)dlsym(RTLD_NEXT, "__overflow");
-    MonitorFile *file = NULL;
-    unsigned int pos = 0;
-    if (!monitoredStream(fp, file, pos)) {
-        return (*real)(fp, ch);
-    }
+// A call that finds a monitored stream's buffer full, puts ch in it and writes
+// the buffer: `put` makes it.
+template <typename Put>
+static int overflowStream(MonitorFile *file, unsigned int pos, FILE *fp, int ch, Put put) {
     timer->start();
     if (file->streamRecorded(pos) < 0) {
         file->setStreamRecorded(pos, 0); // seen writing from here on
     }
     trackUnseenStreamIO(file, pos, fp);
-    int result = (*real)(fp, ch);
+    int result = put();
     // The character now waits in the buffer, to be recorded with the rest of it,
     // unless the stream wrote it at once: an unbuffered stream does, and a
     // line-buffered one given a newline.
-    const bool put = ch != EOF && result != EOF;
-    const bool written = put && fp->_IO_write_ptr == fp->_IO_write_base;
+    const bool stored = ch != EOF && result != EOF;
+    const bool written = stored && fp->_IO_write_ptr == fp->_IO_write_base;
     if (written) {
         int saved_errno = errno;
-        long now = (*unixftell)(fp);
+        long now = writePosition(file, pos, fp);
         errno = saved_errno;
         if (now > 0) {
             file->setStreamRecorded(pos, 0);
             trackUnseenStreamIO(file, pos, StreamBuffer(1), now);
         }
     }
-    streamRecorded(file, pos, fp, (put && !written) ? 1 : 0);
+    streamRecorded(file, pos, fp, (stored && !written) ? 1 : 0);
     timer->end(Timer::MetricType::monitor, Timer::Metric::write);
     return result;
+}
+
+// Other streams go straight to libc: these are called for every character of an
+// unbuffered stream. The stream is not locked here: the program has locked it
+// (flockfile()) if other threads use it.
+int __uflow(FILE *fp) {
+    unixuflow_t real = unix__uflow ? unix__uflow : (unixuflow_t)dlsym(RTLD_NEXT, "__uflow");
+    MonitoredFile monitored(fp);
+    if (!monitored) {
+        return (*real)(fp);
+    }
+    return refillStream(monitored.file, monitored.pos, fp, true, [&] { return (*real)(fp); });
+}
+
+int __underflow(FILE *fp) {
+    unixuflow_t real = unix__underflow ? unix__underflow : (unixuflow_t)dlsym(RTLD_NEXT, "__underflow");
+    MonitoredFile monitored(fp);
+    if (!monitored) {
+        return (*real)(fp);
+    }
+    return refillStream(monitored.file, monitored.pos, fp, false, [&] { return (*real)(fp); });
+}
+
+int __overflow(FILE *fp, int ch) {
+    unixoverflow_t real = unix__overflow ? unix__overflow : (unixoverflow_t)dlsym(RTLD_NEXT, "__overflow");
+    MonitoredFile monitored(fp);
+    if (!monitored) {
+        return (*real)(fp, ch);
+    }
+    return overflowStream(monitored.file, monitored.pos, fp, ch, [&] { return (*real)(fp, ch); });
+}
+
+/* More calls on streams **********************************************************************************/
+
+INTERPOSE(int, fflush_unlocked, (FILE *fp)) {
+    return flushStream(NEXT_SYMBOL(unixfflush_t, "fflush_unlocked"), fp, true);
+}
+
+// getc(), putc() and their variants as real calls: what the macros above do, in
+// libc. A character taken from the buffer, or put where there is room, is
+// recorded with the rest of the buffer; the buffer is recorded when the call
+// finds it empty, or full, as __uflow() and __overflow() do it. The stream is
+// locked from the look at the buffer to the end of the call, so that no other
+// thread empties or fills the buffer in between, unrecorded.
+typedef int (*unixgetc_t)(FILE *fp);
+typedef int (*unixputc_t)(int ch, FILE *fp);
+
+// unlocked: the call is one the program makes without the stream's lock (see
+// StreamLock).
+static int takeCharacter(unixgetc_t real, FILE *fp, bool unlocked = false) {
+    if (!mayBeMonitored(fp)) {
+        return (*real)(fp);
+    }
+    StreamLock lock(fp, !unlocked);
+    if (!lock || fp->_IO_read_ptr < fp->_IO_read_end) {
+        return (*real)(fp);
+    }
+    MonitoredFile monitored(fp);
+    if (!monitored) {
+        return (*real)(fp);
+    }
+    return refillStream(monitored.file, monitored.pos, fp, true, [&] { return (*real)(fp); });
+}
+
+static int putCharacter(unixputc_t real, int ch, FILE *fp, bool unlocked = false) {
+    if (!mayBeMonitored(fp)) {
+        return (*real)(ch, fp);
+    }
+    StreamLock lock(fp, !unlocked);
+    if (!lock || fp->_IO_write_ptr < fp->_IO_write_end) {
+        return (*real)(ch, fp);
+    }
+    MonitoredFile monitored(fp);
+    if (!monitored) {
+        return (*real)(ch, fp);
+    }
+    return overflowStream(monitored.file, monitored.pos, fp, ch, [&] { return (*real)(ch, fp); });
+}
+
+#define TAKE_CHARACTER(name, unlocked)                                          \
+    INTERPOSE(int, name, (FILE *fp)) {                                          \
+        return takeCharacter(NEXT_SYMBOL(unixgetc_t, #name), fp, unlocked);     \
+    }
+#define PUT_CHARACTER(name, unlocked)                                           \
+    INTERPOSE(int, name, (int ch, FILE *fp)) {                                  \
+        return putCharacter(NEXT_SYMBOL(unixputc_t, #name), ch, fp, unlocked);  \
+    }
+TAKE_CHARACTER(getc, false)
+TAKE_CHARACTER(getc_unlocked, true)
+TAKE_CHARACTER(fgetc_unlocked, true)
+TAKE_CHARACTER(_IO_getc, false) // getc() in programs built with glibc before 2.28
+PUT_CHARACTER(putc, false)
+PUT_CHARACTER(putc_unlocked, true)
+PUT_CHARACTER(fputc_unlocked, true)
+PUT_CHARACTER(_IO_putc, false)
+
+// The calls that name no stream are those above on stdin and stdout, which are
+// monitored when their descriptors are: after freopen(), or dup2() onto 0 or 1.
+INTERPOSE(int, getchar, (void)) {
+    return takeCharacter(NEXT_SYMBOL(unixgetc_t, "getc"), stdin);
+}
+
+INTERPOSE(int, getchar_unlocked, (void)) {
+    return takeCharacter(NEXT_SYMBOL(unixgetc_t, "getc_unlocked"), stdin, true);
+}
+
+INTERPOSE(int, putchar, (int ch)) {
+    return putCharacter(NEXT_SYMBOL(unixputc_t, "putc"), ch, stdout);
+}
+
+INTERPOSE(int, putchar_unlocked, (int ch)) {
+    return putCharacter(NEXT_SYMBOL(unixputc_t, "putc_unlocked"), ch, stdout, true);
+}
+
+// A call on a stream: `real` makes it. On a monitored stream `monitored` makes
+// and records it, timed, with the stream locked (see StreamLock). unlocked: the
+// call is one the program makes without that lock.
+template <typename Real, typename Monitored>
+static auto streamCall(FILE *fp, Timer::Metric metric, Real real, Monitored monitored, bool unlocked = false)
+    -> decltype(real()) {
+    if (!mayBeMonitored(fp)) {
+        return real();
+    }
+    StreamLock lock(fp, !unlocked);
+    if (!lock) {
+        return real();
+    }
+    MonitoredFile stream(fp);
+    if (!stream) {
+        return real();
+    }
+    timer->start();
+    auto result = monitored(stream.file, stream.pos);
+    timer->end(Timer::MetricType::monitor, metric);
+    return result;
+}
+
+// fsetpos() and fsetpos64() are seeks to a position fgetpos() gave.
+INTERPOSE(int, fsetpos, (FILE *fp, const fpos_t *position)) {
+    auto real = NEXT_SYMBOL(int (*)(FILE *, const fpos_t *), "fsetpos");
+    return streamCall(
+        fp, Timer::Metric::seek, [&] { return (*real)(fp, position); },
+        [&](MonitorFile *file, unsigned int pos) {
+            return repositionStream(file, pos, fp, [&] { return (*real)(fp, position); });
+        });
+}
+
+INTERPOSE(int, fsetpos64, (FILE *fp, const fpos64_t *position)) {
+    auto real = NEXT_SYMBOL(int (*)(FILE *, const fpos64_t *), "fsetpos64");
+    return streamCall(
+        fp, Timer::Metric::seek, [&] { return (*real)(fp, position); },
+        [&](MonitorFile *file, unsigned int pos) {
+            return repositionStream(file, pos, fp, [&] { return (*real)(fp, position); });
+        });
+}
+
+// getline() and getdelim() return the bytes they read.
+typedef ssize_t (*unixgetdelim_t)(char **line, size_t *size, int delimiter, FILE *fp);
+
+static ssize_t readDelimited(unixgetdelim_t real, char **line, size_t *size, int delimiter, FILE *fp) {
+    return streamCall(
+        fp, Timer::Metric::fgets, [&] { return (*real)(line, size, delimiter, fp); },
+        [&](MonitorFile *file, unsigned int pos) {
+            trackUnseenStreamIO(file, pos, fp);
+            ssize_t got = (*real)(line, size, delimiter, fp);
+            if (got > 0) {
+                trackFread(got, 1, file, pos, fp);
+            }
+            return got;
+        });
+}
+
+INTERPOSE(ssize_t, getline, (char **line, size_t *size, FILE *fp)) {
+    return readDelimited(NEXT_SYMBOL(unixgetdelim_t, "getdelim"), line, size, '\n', fp);
+}
+
+INTERPOSE(ssize_t, getdelim, (char **line, size_t *size, int delimiter, FILE *fp)) {
+    return readDelimited(NEXT_SYMBOL(unixgetdelim_t, "getdelim"), line, size, delimiter, fp);
+}
+
+// What getline() is in a program compiled with optimization.
+INTERPOSE(ssize_t, __getdelim, (char **line, size_t *size, int delimiter, FILE *fp)) {
+    return readDelimited(NEXT_SYMBOL(unixgetdelim_t, "__getdelim"), line, size, delimiter, fp);
+}
+
+// The scanf() family does not tell how much it read (see trackReadTo()). A
+// program calls fscanf() by one of three names, depending on the C library it
+// was built with and for which standard; each reads numbers its own way, so each
+// goes to its own real function.
+typedef int (*unixvfscanf_t)(FILE *fp, const char *format, va_list arguments);
+
+static int scanStream(unixvfscanf_t real, FILE *fp, const char *format, va_list arguments) {
+    return streamCall(
+        fp, Timer::Metric::fgets, [&] { return (*real)(fp, format, arguments); },
+        [&](MonitorFile *file, unsigned int pos) {
+            trackUnseenStreamIO(file, pos, fp);
+            int items = (*real)(fp, format, arguments);
+            trackReadTo(file, pos, fp);
+            return items;
+        });
+}
+
+#define SCAN_FAMILY(prefix)                                                                    \
+    INTERPOSE(int, prefix##vfscanf, (FILE *fp, const char *format, va_list arguments)) {       \
+        unixvfscanf_t real = NEXT_SYMBOL(unixvfscanf_t, #prefix "vfscanf");                    \
+        if (!real) { /* no __isoc23_ names before glibc 2.38 */                                \
+            real = NEXT_SYMBOL(unixvfscanf_t, "__isoc99_vfscanf");                             \
+        }                                                                                      \
+        return scanStream(real, fp, format, arguments);                                        \
+    }                                                                                          \
+    INTERPOSE(int, prefix##fscanf, (FILE *fp, const char *format, ...)) {                      \
+        va_list arguments;                                                                     \
+        va_start(arguments, format);                                                           \
+        int items = monitor_##prefix##vfscanf(fp, format, arguments);                          \
+        va_end(arguments);                                                                     \
+        return items;                                                                          \
+    }                                                                                          \
+    INTERPOSE(int, prefix##vscanf, (const char *format, va_list arguments)) {                  \
+        return monitor_##prefix##vfscanf(stdin, format, arguments);                            \
+    }                                                                                          \
+    INTERPOSE(int, prefix##scanf, (const char *format, ...)) {                                 \
+        va_list arguments;                                                                     \
+        va_start(arguments, format);                                                           \
+        int items = monitor_##prefix##vfscanf(stdin, format, arguments);                       \
+        va_end(arguments);                                                                     \
+        return items;                                                                          \
+    }
+SCAN_FAMILY()
+SCAN_FAMILY(__isoc99_)
+SCAN_FAMILY(__isoc23_)
+
+// The calls that write through a stream: `write` makes the call, and `bytes`
+// tells from what it returned how many bytes it wrote.
+template <typename Write, typename Bytes>
+static auto writeStream(FILE *fp, Write write, Bytes bytes, bool unlocked = false) -> decltype(write()) {
+    return streamCall(
+        fp, Timer::Metric::write, write,
+        [&](MonitorFile *file, unsigned int pos) {
+            trackUnseenStreamIO(file, pos, fp, true);
+            auto result = write();
+            long written = bytes(result);
+            if (written > 0) {
+                trackFwrite(written, file, pos, fp);
+            }
+            return result;
+        },
+        unlocked);
+}
+
+// printf() and its variants return the bytes they wrote. The names with _chk
+// are what the others are in a program built with _FORTIFY_SOURCE; they check
+// the format as they go.
+typedef int (*unixvfprintf_chk_t)(FILE *fp, int flag, const char *format, va_list arguments);
+
+static int printStream(FILE *fp, const char *format, va_list arguments) {
+    unix_vfprintf_t real = NEXT_SYMBOL(unix_vfprintf_t, "vfprintf");
+    return writeStream(
+        fp, [&] { return (*real)(fp, format, arguments); }, [](int printed) { return (long)printed; });
+}
+
+static int printStreamChecked(FILE *fp, int flag, const char *format, va_list arguments) {
+    unixvfprintf_chk_t real = NEXT_SYMBOL(unixvfprintf_chk_t, "__vfprintf_chk");
+    return writeStream(
+        fp, [&] { return (*real)(fp, flag, format, arguments); }, [](int printed) { return (long)printed; });
+}
+
+INTERPOSE(int, fprintf, (FILE *fp, const char *format, ...)) {
+    va_list arguments;
+    va_start(arguments, format);
+    int printed = printStream(fp, format, arguments);
+    va_end(arguments);
+    return printed;
+}
+
+INTERPOSE(int, printf, (const char *format, ...)) {
+    va_list arguments;
+    va_start(arguments, format);
+    int printed = printStream(stdout, format, arguments);
+    va_end(arguments);
+    return printed;
+}
+
+INTERPOSE(int, vprintf, (const char *format, va_list arguments)) {
+    return printStream(stdout, format, arguments);
+}
+
+INTERPOSE(int, __vfprintf_chk, (FILE *fp, int flag, const char *format, va_list arguments)) {
+    return printStreamChecked(fp, flag, format, arguments);
+}
+
+INTERPOSE(int, __fprintf_chk, (FILE *fp, int flag, const char *format, ...)) {
+    va_list arguments;
+    va_start(arguments, format);
+    int printed = printStreamChecked(fp, flag, format, arguments);
+    va_end(arguments);
+    return printed;
+}
+
+INTERPOSE(int, __printf_chk, (int flag, const char *format, ...)) {
+    va_list arguments;
+    va_start(arguments, format);
+    int printed = printStreamChecked(stdout, flag, format, arguments);
+    va_end(arguments);
+    return printed;
+}
+
+INTERPOSE(int, __vprintf_chk, (int flag, const char *format, va_list arguments)) {
+    return printStreamChecked(stdout, flag, format, arguments);
+}
+
+// puts() and fputs_unlocked() write the whole string, puts() a newline too, or
+// fail.
+INTERPOSE(int, puts, (const char *s)) {
+    auto real = NEXT_SYMBOL(int (*)(const char *), "puts");
+    return writeStream(
+        stdout, [&] { return (*real)(s); }, [&](int result) { return result == EOF ? 0L : (long)strlen(s) + 1; });
+}
+
+INTERPOSE(int, fputs_unlocked, (const char *s, FILE *fp)) {
+    auto real = NEXT_SYMBOL(int (*)(const char *, FILE *), "fputs_unlocked");
+    return writeStream(
+        fp, [&] { return (*real)(s, fp); }, [&](int result) { return result == EOF ? 0L : (long)strlen(s); }, true);
+}
+
+INTERPOSE(size_t, fwrite_unlocked, (const void *ptr, size_t size, size_t n, FILE *fp)) {
+    unixfwrite_t real = NEXT_SYMBOL(unixfwrite_t, "fwrite_unlocked");
+    return writeStream(
+        fp, [&] { return (*real)(ptr, size, n, fp); }, [&](size_t items) { return (long)(items * size); }, true);
+}
+
+// freopen() closes the file of a stream and opens another on it, or the same in
+// another mode when it is given no name. What fclose() does for a monitored
+// stream is done for the file it leaves, and the stream is monitored again if
+// the file it gets would be with fopen(). The stream stays locked from the one
+// to the other: a thread that writes to it meanwhile waits, as it does in libc,
+// and finds the new file. One that begins a call while the C library has the
+// stream between its two descriptors takes it for a stream that is not
+// monitored: what that call writes is recorded with the buffer it lands in.
+typedef FILE *(*unixfreopen_t)(const char *pathname, const char *modes, FILE *fp);
+
+static FILE *reopenStream(unixfreopen_t real, const char *pathname, const char *modes, FILE *fp) {
+    if (!init || leavesRecordsAlone()) {
+        return (*real)(pathname, modes, fp);
+    }
+    timer->start();
+    MonitorFile *left = NULL;  // the file the stream leaves, if it is monitored
+    MonitorFile *stale = NULL; // one still recorded under the number the stream gets
+    int kept = -1;             // a descriptor of the file it leaves, for its size
+    bool monitored = false;
+    FILE *reopened;
+    {
+        StreamLock lock(fp);
+        const int fd = fp->_fileno;
+        {
+            std::lock_guard<CountedMutex> guard(fdToFileMapMutex);
+            fdToFileMap.erase(fd);
+        }
+        std::string name;
+        int flush_errno = 0; // freopen() ignores a buffer it cannot write
+        const bool leaves = finishStream(fp, flush_errno, &name);
+        if (leaves) {
+            kept = (*NEXT_SYMBOL(unixfcntl_t, "fcntl"))(fd, F_DUPFD_CLOEXEC, 3);
+        }
+
+        reopened = (*real)(pathname, modes, fp);
+        int saved_errno = errno;
+        if (pathname) {
+            name = (MonitorFile::matchesPatterns(pathname) && !isMonitorOwnedPath(pathname, Config::dataLifeOutputPath)) ? pathname : "";
+        }
+        MonitorFile *file = NULL;
+        const int new_fd = reopened ? reopened->_fileno : -1;
+        if (reopened && !name.empty()) {
+            file = MonitorFile::addNewMonitorFile(MonitorFile::TrackLocal, name, name, new_fd);
+        }
+        monitored = (file != NULL);
+        // The C library gives the stream its old number back when it can: the
+        // record of that number then goes from the one file to the other.
+        if (leaves && new_fd != fd) {
+            left = MonitorFileDescriptor::replaceMonitorFileDescriptor(fd, NULL, 0);
+        }
+        if (file || (leaves && new_fd == fd)) {
+            MonitorFile *replaced = MonitorFileDescriptor::replaceMonitorFileDescriptor(
+                new_fd, file, file ? file->newFilePosIndex(new_fd) : 0);
+            if (leaves && new_fd == fd) {
+                left = replaced;
+            } else {
+                stale = replaced;
+            }
+        }
+        errno = saved_errno;
+    }
+    int saved_errno = errno;
+    MonitorFileDescriptor::closeMonitorFile(stale, -1);
+    MonitorFileDescriptor::closeMonitorFile(left, kept);
+    if (kept >= 0) {
+        (*unixclose)(kept);
+    }
+    errno = saved_errno;
+    const bool reading = modes && modes[0] == 'r';
+    timer->end(monitored ? Timer::MetricType::monitor : Timer::MetricType::system,
+               reading ? Timer::Metric::in_fopen : Timer::Metric::out_fopen);
+    return reopened;
+}
+
+INTERPOSE(FILE *, freopen, (const char *pathname, const char *modes, FILE *fp)) {
+    return reopenStream(NEXT_SYMBOL(unixfreopen_t, "freopen"), pathname, modes, fp);
+}
+
+INTERPOSE(FILE *, freopen64, (const char *pathname, const char *modes, FILE *fp)) {
+    return reopenStream(NEXT_SYMBOL(unixfreopen_t, "freopen64"), pathname, modes, fp);
 }
 
 off_t monitorRewind(MonitorFile *file, unsigned int pos, int fd, int fd2, off_t offset, int whence) {
@@ -1586,11 +2272,10 @@ off_t monitorRewind(MonitorFile *file, unsigned int pos, int fd, int fd2, off_t 
     return ret;
 }
 
+// rewind() is fseek() to the start, with the stream's error indicator cleared.
 void rewind(FILE *fp) {
-    // ReaderWriterLock * lock = NULL;
-    // int fd = MonitorFileStream::lookupStream(fp, lock);
-    // outerWrapper(fp, Timer::Metric::rewind, monitorRewind, unixlseek, fd, 0L, SEEK_SET);
     fseek(fp, 0L, SEEK_SET);
+    clearerr(fp);
 }
 
 ssize_t monitorMmapRead(MonitorFile *file, void *addr, size_t length, off_t offset) {
@@ -1613,15 +2298,11 @@ ssize_t monitorMmapWrite(MonitorFile *file, void *addr, size_t length, off_t off
     return length;
 }
 
-void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-    if (!unixmmap) unixmmap = (mmap_t)dlsym(RTLD_NEXT, "mmap");
-
-    DPRINTF("Lib.cpp: Intercepting mmap: addr=%p, length=%zu, prot=%d, flags=%d, fd=%d, offset=%ld\n",
-            addr, length, prot, flags, fd, offset);
-
-    void *result = unixmmap(addr, length, prot, flags, fd, offset);
-    if (isMonitorInternalIO()) {
-        return result; // as in close()
+// After the real mmap() or mmap64() returned: the whole mapping counts as read,
+// written or both, as its protection says, when it is mapped.
+static void trackMapping(void *result, size_t length, int prot, int fd, off64_t offset) {
+    if (!init || isMonitorInternalIO()) {
+        return; // as in close(); before the constructor the map of descriptors is not there
     }
 
     // Look up file path from fd
@@ -1639,7 +2320,26 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
             }
         }
     }
+}
 
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+    if (!unixmmap) unixmmap = (mmap_t)dlsym(RTLD_NEXT, "mmap");
+
+    DPRINTF("Lib.cpp: Intercepting mmap: addr=%p, length=%zu, prot=%d, flags=%d, fd=%d, offset=%ld\n",
+            addr, length, prot, flags, fd, offset);
+
+    void *result = unixmmap(addr, length, prot, flags, fd, offset);
+    trackMapping(result, length, prot, fd, offset);
+    return result;
+}
+
+// What mmap() is in a program built with _FILE_OFFSET_BITS=64: Python, among
+// others. Looked up in the constructor, as for mmap(): a memory allocator that
+// stands in for the C library's maps memory in the middle of a lookup.
+INTERPOSE(void *, mmap64, (void *addr, size_t length, int prot, int flags, int fd, off64_t offset)) {
+    if (!unixmmap64) unixmmap64 = (mmap64_t)dlsym(RTLD_NEXT, "mmap64");
+    void *result = unixmmap64(addr, length, prot, flags, fd, offset);
+    trackMapping(result, length, prot, fd, offset);
     return result;
 }
 
@@ -1660,7 +2360,9 @@ ssize_t monitorPread(MonitorFile *file, unsigned int pos, int fd, void *buf, siz
     auto read_bytes = (ssize_t)file->read(fd, buf, count, pos, offset);
 
     // Update the timer with the number of bytes read
-    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, read_bytes);
+    if (read_bytes > 0) {
+        timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, read_bytes);
+    }
 
     return read_bytes;
 }
@@ -1678,7 +2380,9 @@ ssize_t monitorPwrite(MonitorFile *file, unsigned int pos, int fd, const void *b
     // Pass `offset` to the TrackFile::write method
     auto bytes_written = (ssize_t)file->write(fd, buf, count, pos, offset);
 
-    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, bytes_written);
+    if (bytes_written > 0) {
+        timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, bytes_written);
+    }
     return bytes_written;
 }
 
@@ -1697,7 +2401,9 @@ ssize_t monitorPread64(MonitorFile *file, unsigned int pos, int fd, void *buf, s
     auto read_bytes = (ssize_t)file->read(fd, buf, count, pos, offset);
 
     // Update the timer with the number of bytes read
-    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, read_bytes);
+    if (read_bytes > 0) {
+        timer->addAmt(Timer::MetricType::monitor, Timer::Metric::read, read_bytes);
+    }
 
     return read_bytes;
 }
@@ -1715,7 +2421,9 @@ ssize_t monitorPwrite64(MonitorFile *file, unsigned int pos, int fd, const void 
     // Pass the correct `pos` as the `index` to TrackFile::write
     // auto bytes_written = (ssize_t)file->write(buf, count, pos);
     auto bytes_written = (ssize_t)file->write(fd, buf, count, pos, offset);
-    timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, bytes_written);
+    if (bytes_written > 0) {
+        timer->addAmt(Timer::MetricType::monitor, Timer::Metric::write, bytes_written);
+    }
     return bytes_written;
 }
 
@@ -1781,7 +2489,7 @@ char *__fgets_chk(char *__restrict s, size_t size, int n, FILE *__restrict fp) {
 }
 
 char *__fgets_unlocked_chk(char *__restrict s, size_t size, int n, FILE *__restrict fp) {
-    return outerWrapper("__fgets_unlocked_chk", fp, Timer::Metric::fgets, monitorFgetsUnlockedChk, unix__fgets_unlocked_chk, s, size, n, fp);
+    return outerWrapper("__fgets_unlocked_chk", UnlockedStream{fp}, Timer::Metric::fgets, monitorFgetsUnlockedChk, unix__fgets_unlocked_chk, s, size, n, fp);
 }
 
 /* Fortified opens ***************************************************************************************/

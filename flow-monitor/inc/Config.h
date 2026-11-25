@@ -200,10 +200,20 @@ const uint64_t hashtableSizeForStat = 1000;
 #define PRINTF(...)
 
 // Flow Monitoring Parameter
-const std::string dataLifeOutputPath = getenv("DATALIFE_OUTPUT_PATH") ? std::string(getenv("DATALIFE_OUTPUT_PATH")) : "";
+// The output directory and the task's name as the environment gives them. The
+// timer keeps copies of its own (see Timer::Timer()): it writes its file when
+// the library is unloaded, which at the exit of a program that loaded the
+// library with dlopen() is after the strings of this file are destroyed.
+inline std::string dataLifeOutputPathFromEnvironment() {
+    return getenv("DATALIFE_OUTPUT_PATH") ? std::string(getenv("DATALIFE_OUTPUT_PATH")) : "";
+}
+inline std::string taskNameFromEnvironment() {
+    return getenv("DATALIFE_TASK_NAME") ? std::string(getenv("DATALIFE_TASK_NAME")) : "task_name";
+}
+const std::string dataLifeOutputPath = dataLifeOutputPathFromEnvironment();
 const std::string passin_patterns = getenv("DATALIFE_FILE_PATTERNS") ? std::string(getenv("DATALIFE_FILE_PATTERNS")) : "*.datalifetest";
 const bool enableJsonOutput = getenv("DATALIFE_JSON_OUTPUT") ? atoi(getenv("DATALIFE_JSON_OUTPUT")) : 0;
-const std::string task_name_env = getenv("DATALIFE_TASK_NAME") ? std::string(getenv("DATALIFE_TASK_NAME")) : "task_name";
+const std::string task_name_env = taskNameFromEnvironment();
 
 
 } // namespace Config

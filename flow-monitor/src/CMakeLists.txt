@@ -64,7 +64,6 @@ set(MONITOR_FILES
     TrackFile.cpp
     MonitorPathPolicy.cpp
     HeldLocks.cpp
-    MonitorFileStream.cpp
     CacheStats.cpp
     Lib.cpp
     PriorityThreadPool.cpp
@@ -90,8 +89,9 @@ add_library(monitor SHARED ${MONITOR_HEADERS} ${MONITOR_FILES})
 #target_link_libraries(monitor ${RDMACM_LIB} ${RT_LIB} ${CURL_LIB} ${SSL_LIB} stdc++fs) 
 target_link_libraries(monitor stdc++fs) 
 # A symbol nothing defines fails the link here instead of every program that
-# preloads the library with LD_BIND_NOW=1. dlsym() is in libdl before glibc 2.34.
-target_link_libraries(monitor ${CMAKE_DL_LIBS} -Wl,--no-undefined)
+# preloads the library with LD_BIND_NOW=1. Before glibc 2.34 dlsym() is in libdl
+# and shm_open() in librt; since, both libraries are there but empty.
+target_link_libraries(monitor ${CMAKE_DL_LIBS} rt -Wl,--no-undefined)
 target_include_directories(monitor PUBLIC ${MONITOR_INC_DIR})
 install(TARGETS monitor LIBRARY DESTINATION lib)
  

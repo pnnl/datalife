@@ -25,6 +25,7 @@
 //#include "ErrorTester.h"
 //#include "InputFile.h"
 //#include "OutputFile.h"
+#include <sys/syscall.h>
 #include "RSocketAdapter.h"
 #include "Request.h"
 #include "HeldLocks.h"
@@ -32,7 +33,6 @@
 #include "MonitorFile.h"
 #include "MonitorFileDescriptor.h"
 #include "MonitorPathPolicy.h"
-#include "MonitorFileStream.h"
 #include "Timer.h"
 #include "Trackable.h"
 #include "UnixIO.h"
@@ -178,6 +178,7 @@ unix_Exit_t unix_Exit = NULL;
 unix_exit_group_t unix_exit_group = NULL;
 unix_vfprintf_t unix_vfprintf = NULL;
 mmap_t unixmmap = NULL;
+mmap64_t unixmmap64 = NULL;
 // For POSIX
 pread_t unixpread = NULL;
 pwrite_t unixpwrite = NULL;
@@ -279,69 +280,154 @@ inline bool ignoreFile(std::string pathname) {
     return false;
 }
 
-template <typename T>
-inline void removeFileStream(T posixFun, FILE *fp) {}
-inline void removeFileStream(unixfclose_t posixFun, FILE *fp) {
-    if (posixFun == unixfclose)
-        MonitorFileStream::removeStream(fp);
+// The process the records of monitored descriptors belong to: this one, since
+// the library was loaded or since fork(). A vfork() child is another process
+// that runs in this one's memory until it calls exec. The descriptors it opens,
+// copies and closes there, to redirect the program it starts, are its own, and
+// the parent's records must stay as they are: the wrappers of the calls that
+// open, copy or close a descriptor make just the real call for it, as they do
+// for the library's own I/O.
+static pid_t monitorPid = -1;
+inline bool leavesRecordsAlone() {
+    if (isMonitorInternalIO()) {
+        return true;
+    }
+    const pid_t pid = init ? getpid() : monitorPid;
+    if (pid == monitorPid) {
+        return false;
+    }
+#ifdef SYS_kcmp
+    // A child made without fork()'s handlers (clone(), _Fork()) is another
+    // process too, but in memory of its own, with its own copy of the records:
+    // they are its to keep from here on. It is told from a vfork() child by not
+    // sharing the memory of the process it has the records of, or by that
+    // process being gone, which the parent of a vfork() child cannot be.
+    const int saved_errno = errno;
+    const long shared = syscall(SYS_kcmp, pid, monitorPid, 1 /* KCMP_VM */, 0, 0);
+    const bool own = shared > 0 || (shared < 0 && errno == ESRCH);
+    errno = saved_errno;
+    if (own) {
+        monitorPid = pid;
+        return false;
+    }
+#endif
+    return true;
 }
+
+// The monitored file behind a descriptor or a stream, for the length of one
+// call: the call is a user of the file, so the file stays to the end of it
+// though another thread closes the descriptor meanwhile. A stream is monitored
+// when its descriptor is, however it came by it: fopen(), fdopen(), freopen(),
+// or dup2() onto the descriptor of a stream already open.
+class MonitoredFile {
+  public:
+    explicit MonitoredFile(int descriptor) : file(NULL), pos(0), fd(descriptor) {
+        if (!init || isMonitorInternalIO() || !MonitorFileDescriptor::useMonitorFileDescriptor(fd, file, pos)) {
+            file = NULL;
+        }
+    }
+    explicit MonitoredFile(FILE *fp) : MonitoredFile(fp->_fileno) {}
+    ~MonitoredFile() {
+        if (file) {
+            MonitorFile::removeMonitorFile(file);
+        }
+    }
+    MonitoredFile(const MonitoredFile &) = delete;
+    MonitoredFile &operator=(const MonitoredFile &) = delete;
+    explicit operator bool() const { return file != NULL; }
+
+    MonitorFile *file;
+    unsigned int pos; // the index of the descriptor's position in the file
+    const int fd;
+};
 
 template <typename Func, typename FuncLocal, typename... Args>
 inline auto innerWrapper(int fd, bool &isMonitorFile, Func monitorFun, FuncLocal localFun, Args... args) {
-    DPRINTF("[MONITOR] in innerwrapper fd: %ld\n", fd);
-
-    MonitorFile *file = NULL;
-    unsigned int fp = 0;
-
-    DPRINTF("[MONITOR] in innerwrapper 3 init val: %d , fd val %d \n", init, fd);
-
-    
-    if (init && MonitorFileDescriptor::lookupMonitorFileDescriptor(fd, file, fp)) {
-      DPRINTF("Found a file with fd %d\n", fd);
-      isMonitorFile = true;
-      DPRINTF("calling Monitor function\n");	
-      return monitorFun(file, fp, args...);
+    MonitoredFile monitored(fd);
+    if (monitored) {
+        isMonitorFile = true;
+        return monitorFun(monitored.file, monitored.pos, args...);
     }
-    // else if (not internal write) {
-    // do track
-    
-    //}
-    DPRINTF("[MONITOR] in innerwrapper 3 for write calling localfun\n");
+    return localFun(args...);
+}
 
+// The stream's own lock, the one flockfile() takes, held by a stream wrapper
+// from before it looks up the stream's file until the call is recorded. The
+// thread then has the stream to itself for the whole of it, as it has inside the
+// real call, and as a thread using the unlocked macros under flockfile() has:
+// none sees the buffer while another is at work in it, and the stream's file
+// stays the one found, since freopen() changes it under this lock. It is the
+// only lock a stream wrapper holds across the real call, and the program may
+// hold it already: the lock is recursive.
+//
+// wait: false in the wrapper of a call the program makes without the lock
+// (fwrite_unlocked() and the other _unlocked functions), having the stream by
+// other means. Another thread may hold the lock then, for as long as it likes
+// (one that locked the stream for good and leaves the writing to others), and
+// the C library does not wait for it: neither does the wrapper. It takes the
+// lock if it is free and otherwise is false, and the caller makes the call as
+// the program meant it, unrecorded: what the call leaves in the stream's buffer
+// is recorded with the next call that is.
+class StreamLock {
+  public:
+    explicit StreamLock(FILE *fp, bool wait = true) : _fp(fp), _held(true) {
+        if (wait) {
+            (*unixflockfile)(_fp);
+        } else {
+            _held = (*unixftrylockfile)(_fp) == 0;
+        }
+    }
+    ~StreamLock() {
+        if (_held) {
+            (*unixfunlockfile)(_fp);
+        }
+    }
+    StreamLock(const StreamLock &) = delete;
+    StreamLock &operator=(const StreamLock &) = delete;
+    explicit operator bool() const { return _held; }
+
+  private:
+    FILE *_fp;
+    bool _held;
+};
+
+// False for a stream that is not monitored, without locking anything: such a
+// stream is not locked or looked up.
+inline bool mayBeMonitored(FILE *fp) { return init && MonitorFileDescriptor::mayBeMonitored(fp->_fileno); }
+
+// monitorFun runs with the stream locked. Not for fclose(): the lock goes with
+// the stream. wait: see StreamLock.
+template <typename Func, typename FuncLocal, typename... Args>
+inline auto streamWrapper(FILE *fp, bool wait, bool &isMonitorFile, Func monitorFun, FuncLocal localFun, Args... args) {
+    if (mayBeMonitored(fp)) {
+        StreamLock lock(fp, wait);
+        if (lock) {
+            MonitoredFile monitored(fp);
+            if (monitored) {
+                isMonitorFile = true;
+                return monitorFun(monitored.file, monitored.pos, monitored.fd, args...);
+            }
+        }
+    }
     return localFun(args...);
 }
 
 template <typename Func, typename FuncLocal, typename... Args>
 inline auto innerWrapper(FILE *fp, bool &isMonitorFile, Func monitorFun, FuncLocal localFun, Args... args) {
-  // if (write_printf == true) {
-  //   DPRINTF("[MONITOR] in innerwrapper 2 for write\n");
-  // }
-  DPRINTF("[MONITOR] in innerwrapper fp: %ld\n", fp);
+    return streamWrapper(fp, true, isMonitorFile, monitorFun, localFun, args...);
+}
 
-  if (init) {
-        ReaderWriterLock *lock = NULL;
-        int fd = MonitorFileStream::lookupStream(fp, lock);
-        if (fd != -1) {
-            lock->writerLock();
-            MonitorFile *file = NULL;
-            unsigned int pos = 0;
-            if (MonitorFileDescriptor::lookupMonitorFileDescriptor(fd, file, pos)) {
-                isMonitorFile = true;
-	        // if (write_printf == true) {
-	        //   DPRINTF("[MONITOR] in innerwrapper 2 for write calling Monitorfun\n");
-	        // }
-                auto ret = monitorFun(file, pos, fd, args...);
-                lock->writerUnlock();
-                removeFileStream(localFun, fp);
-                return ret;
-            }
-            // The program closed the descriptor itself, with close(fileno(fp)):
-            // the file is no longer monitored and the stream is an ordinary one.
-            lock->writerUnlock();
-            removeFileStream(localFun, fp);
-        }
-    }
-  return localFun(args...);
+// The stream of a call to an _unlocked function, for outerWrapper(): the
+// wrapper does not wait for the stream's lock (see StreamLock).
+struct UnlockedStream {
+    FILE *fp;
+};
+inline bool trackFile(UnlockedStream stream) { return trackFile(stream.fp); }
+inline bool ignoreFile(UnlockedStream stream) { return ignoreFile(stream.fp); }
+
+template <typename Func, typename FuncLocal, typename... Args>
+inline auto innerWrapper(UnlockedStream stream, bool &isMonitorFile, Func monitorFun, FuncLocal localFun, Args... args) {
+    return streamWrapper(stream.fp, false, isMonitorFile, monitorFun, localFun, args...);
 }
 
 template <typename Func, typename FuncPosix, typename... Args>
@@ -586,7 +672,6 @@ FILE *monitorFopen(std::string name, std::string metaName, MonitorFile::Type typ
 FILE *fopen(const char *__restrict fileName, const char *__restrict modes);
 FILE *fopen64(const char *__restrict fileName, const char *__restrict modes);
 
-int monitorFclose(MonitorFile *file, unsigned int pos, int fd, FILE *fp);
 int fclose(FILE *fp);
 
 size_t monitorFread(MonitorFile *file, unsigned int pos, int fd, void *__restrict ptr, size_t size, size_t n, FILE *__restrict fp);

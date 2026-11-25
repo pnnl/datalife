@@ -344,24 +344,64 @@ bool MonitorFile::regularFile() {
     return _regularFile;
 }
 
-uint32_t MonitorFile::newFilePosIndex() {
+uint32_t MonitorFile::newFilePosIndex(int fd) {
+    // Asked before the position can be used: nothing has been written through
+    // the descriptor yet.
+    const int flags = fd >= 0 ? ::fcntl(fd, F_GETFL) : -1;
     uint32_t ret;
     std::unique_lock<std::mutex> lock(_fpMutex);
     ret = _filePos.add();
+    _shares.add();
+    _shares[ret] = ret;
     _streamRecorded.add();
+    _appends.add();
     _eof.push_back(false);
     lock.unlock();
+    setAppends(ret, flags != -1 && (flags & O_APPEND));
     return ret;
+}
+
+uint32_t MonitorFile::newFilePosIndexSharing(uint32_t index) {
+    uint32_t ret;
+    std::unique_lock<std::mutex> lock(_fpMutex);
+    if (!_freeCopies.empty()) {
+        ret = _freeCopies.back();
+        _freeCopies.pop_back();
+        _streamRecorded[ret] = 0; // no stream seen on it
+    } else {
+        ret = _filePos.add();
+        _shares.add();
+        _streamRecorded.add();
+        _appends.add();
+        _eof.push_back(false);
+    }
+    _shares[ret] = _shares[index].load(); // the copy of a copy shares with the first
+    return ret;
+}
+
+void MonitorFile::releaseFilePosIndex(uint32_t index) {
+    if (_shares[index].load() != index) {
+        std::unique_lock<std::mutex> lock(_fpMutex);
+        _freeCopies.push_back(index);
+    }
+}
+
+bool MonitorFile::appends(uint32_t index) {
+    return _appends[(uint32_t)_shares[index].load()].load() != 0;
+}
+
+void MonitorFile::setAppends(uint32_t index, bool appends) {
+    _appends[(uint32_t)_shares[index].load()] = appends ? 1 : 0;
 }
 
 uint64_t MonitorFile::filePos(uint32_t index) {
     //no lock here... we are assuming the fp index is inbounds...
-    return _filePos[index];
+    return offsetAt(index);
 }
 
 void MonitorFile::setFilePos(uint32_t index, uint64_t pos) {
     //no lock here... we are assuming the fp index is inbounds...
-    _filePos[index] = pos;
+    offsetAt(index) = pos;
 }
 
 long MonitorFile::streamRecorded(uint32_t index) {
@@ -472,7 +512,8 @@ bool MonitorFile::removeMonitorFile(MonitorFile *file) {
     // The file's name now, read with the registry locked: a rename on another
     // thread changes it under that lock, and the old name may already be that
     // of another file.
-    return Trackable<std::string, MonitorFile *>::RemoveTrackableBy([file]() { return file->_metaName; });
+    return !file->dropUser() &&
+           Trackable<std::string, MonitorFile *>::RemoveTrackableBy([file]() { return file->_metaName; });
 }
 
 bool MonitorFile::renameMonitorFile(const std::string &from, const std::string &to, bool &open) {
