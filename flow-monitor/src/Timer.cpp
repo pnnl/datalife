@@ -415,6 +415,14 @@ void Timer::ioBusyEnd(Metric metric) {
     }
 }
 
+void Timer::excludeFromCurrentCall(uint64_t since) {
+    if (_depth) {
+        const uint64_t now = getCurrentTime();
+        if (now > since)
+            _current += now - since;
+    }
+}
+
 void Timer::start() {
     if (!_depth) {
         _current = getCurrentTime();
